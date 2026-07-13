@@ -61,13 +61,11 @@ export function Panel({
     initialSelectedAudio ?? undefined,
   );
   const [volume, setVolume] = useState(100);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const syncRef = useRef<PlayerSync>(null);
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const syncRef = useRef<PlayerSync>(null);
 
   useEffect(() => {
     const audio = document.createElement("audio");
@@ -158,6 +156,8 @@ export function Panel({
       audioRef.current.volume = nextVolume / 100;
     }
   }
+
+  const inputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
