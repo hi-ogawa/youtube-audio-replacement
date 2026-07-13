@@ -19,8 +19,8 @@ function patchCiManifest() {
       const manifestPath = "dist/extension/manifest.json";
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
       manifest.name = prMatch
-        ? `YouTube External Audio [PR#${prMatch[1]} ${revision}]`
-        : `YouTube External Audio [${revision}]`;
+        ? `YouTube Audio Replacement [PR#${prMatch[1]} ${revision}]`
+        : `YouTube Audio Replacement [${revision}]`;
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
     },
   };

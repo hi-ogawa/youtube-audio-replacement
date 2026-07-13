@@ -28,5 +28,5 @@ jobs:
       - run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v7
         with:
-          name: youtube-external-audio-${{ github.event.pull_request.number && format('pr{0}-{1}', github.event.pull_request.number, env.SHORT_SHA) || env.SHORT_SHA }}
+          name: youtube-audio-replacement-${{ github.event.pull_request.number && format('pr{0}-{1}', github.event.pull_request.number, env.SHORT_SHA) || env.SHORT_SHA }}
           path: dist/extension.zip

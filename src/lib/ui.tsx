@@ -148,7 +148,7 @@ export function Panel({
     const nextSync = new PlayerSync(video, audio, {
       onError(error) {
         console.error(error);
-        onError("External audio playback failed.");
+        onError("Replacement audio playback failed.");
       },
     });
     nextSync.enable();
@@ -323,8 +323,8 @@ export function Fab({
   onClick(): void;
 }) {
   const label = open
-    ? "Hide external audio controls"
-    : "Show external audio controls";
+    ? "Hide audio replacement controls"
+    : "Show audio replacement controls";
 
   return (
     <button

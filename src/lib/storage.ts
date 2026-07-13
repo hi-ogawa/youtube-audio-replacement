@@ -14,13 +14,13 @@ interface StoredVideoStates {
   videos: Record<string, VideoState>;
 }
 
-const VIDEO_STATE_KEY = "youtube-external-audio:video-state:v1";
+const VIDEO_STATE_KEY = "youtube-audio-replacement:video-state:v1";
 const DEFAULT_VIDEO_STATE: VideoState = {
   panelOpen: false,
 };
 
 const audioStore = new IdbStore<StoredAudio>({
-  databaseName: "youtube-external-audio",
+  databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
   keyPath: "videoId",

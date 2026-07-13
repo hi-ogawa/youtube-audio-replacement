@@ -6,7 +6,7 @@ import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 
-const HOST_ID = "youtube-external-audio-host";
+const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
 
 interface MountedController {

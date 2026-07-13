@@ -20,12 +20,12 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
     timeout: 30_000,
   });
 
-  const host = page.locator("#youtube-external-audio-host");
+  const host = page.locator("#youtube-audio-replacement-host");
   await expect(host).toBeAttached({ timeout: 15_000 });
   await host
-    .getByRole("button", { name: "Show external audio controls" })
+    .getByRole("button", { name: "Show audio replacement controls" })
     .click();
-  await expect(host.getByText("External audio", { exact: true })).toBeVisible();
+  await expect(host.getByText("Audio replacement", { exact: true })).toBeVisible();
 
   await host
     .locator('input[type="file"]')
@@ -39,6 +39,6 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
   });
   await expect(host).toBeAttached();
   await expect(
-    host.getByRole("button", { name: "Show external audio controls" }),
+    host.getByRole("button", { name: "Show audio replacement controls" }),
   ).toBeVisible();
 });
