@@ -127,13 +127,6 @@ export function Panel({
     setEnabled(false);
   }
 
-  function changeVolume(nextVolume: number) {
-    setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume / 100;
-    }
-  }
-
   function toggle() {
     const sync = syncRef.current;
     if (sync?.enabled) {
@@ -157,6 +150,13 @@ export function Panel({
     nextSync.enable();
     syncRef.current = nextSync;
     setEnabled(true);
+  }
+
+  function changeVolume(nextVolume: number) {
+    setVolume(nextVolume);
+    if (audioRef.current) {
+      audioRef.current.volume = nextVolume / 100;
+    }
   }
 
   return (
