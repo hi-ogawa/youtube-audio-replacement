@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import contentCss from "./content.css?inline";
-import type { VideoClock } from "./lib/player-sync.ts";
+import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 
@@ -23,7 +23,7 @@ interface YouTubePlayer extends HTMLElement {
 // YouTube can overwrite video.muted from its own player state. In MAIN world,
 // this adapter keeps mute state and its UI in sync through #movie_player while
 // continuing to use the native video element as the playback clock.
-class YouTubeVideoClock implements VideoClock {
+class YouTubeVideo implements VideoSyncSource {
   constructor(
     private video: HTMLVideoElement,
     private player: YouTubePlayer | null,
@@ -115,7 +115,7 @@ function getMainVideo() {
     return null;
   }
   const player = document.querySelector<YouTubePlayer>("#movie_player");
-  return new YouTubeVideoClock(video, player);
+  return new YouTubeVideo(video, player);
 }
 
 function App({ videoId }: { videoId: string }) {

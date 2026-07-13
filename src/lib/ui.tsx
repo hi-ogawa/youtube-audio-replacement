@@ -1,6 +1,6 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { PlayerSync, type VideoClock } from "./player-sync.ts";
+import { PlayerSync, type VideoSyncSource } from "./player-sync.ts";
 import { type StoredAudio, videoStorage } from "./storage.ts";
 
 export function StoredPanel({
@@ -9,7 +9,7 @@ export function StoredPanel({
   onError,
 }: {
   videoId: string;
-  getVideo: () => VideoClock | null | undefined;
+  getVideo: () => VideoSyncSource | null | undefined;
   onError(message: string): void;
 }) {
   const storedAudioQuery = useSuspenseQuery({
@@ -52,7 +52,7 @@ export function Panel({
   onError,
 }: {
   videoId: string;
-  getVideo: () => VideoClock | null | undefined;
+  getVideo: () => VideoSyncSource | null | undefined;
   initialSelectedAudio: StoredAudio | null;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;

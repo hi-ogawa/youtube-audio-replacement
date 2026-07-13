@@ -1,4 +1,4 @@
-export interface VideoClock extends EventTarget {
+export interface VideoSyncSource extends EventTarget {
   currentTime: number;
   muted: boolean;
   paused: boolean;
@@ -15,11 +15,11 @@ export interface ReplacementAudio {
 }
 
 export class PlayerSync {
-  #enabled = false;
+  enabled = false;
   #originalMuted = false;
 
   constructor(
-    private readonly video: VideoClock,
+    private readonly video: VideoSyncSource,
     private readonly audio: ReplacementAudio,
     private readonly onError: (error: unknown) => void = console.error,
   ) {
@@ -30,20 +30,16 @@ export class PlayerSync {
     video.addEventListener("ratechange", this.#onRateChange);
   }
 
-  get enabled() {
-    return this.#enabled;
-  }
-
   enable() {
-    if (this.#enabled) {
+    if (this.enabled) {
       return;
     }
 
+    this.enabled = true;
     this.#originalMuted = this.video.muted;
-    this.#enabled = true;
     this.#alignTime();
     this.#alignRate();
-    this.#alignVolume();
+    this.audio.volume = this.#originalMuted ? 0 : this.video.volume;
     this.video.muted = true;
 
     if (!this.video.paused) {
@@ -52,11 +48,11 @@ export class PlayerSync {
   }
 
   disable() {
-    if (!this.#enabled) {
+    if (!this.enabled) {
       return;
     }
 
-    this.#enabled = false;
+    this.enabled = false;
     this.audio.pause();
     this.video.muted = this.#originalMuted;
   }
@@ -71,7 +67,7 @@ export class PlayerSync {
   }
 
   #onPlay = () => {
-    if (!this.#enabled) {
+    if (!this.enabled) {
       return;
     }
     this.#alignTime();
@@ -80,19 +76,19 @@ export class PlayerSync {
   };
 
   #onPause = () => {
-    if (this.#enabled) {
+    if (this.enabled) {
       this.audio.pause();
     }
   };
 
   #onSeeking = () => {
-    if (this.#enabled) {
+    if (this.enabled) {
       this.#alignTime();
     }
   };
 
   #onSeeked = () => {
-    if (!this.#enabled) {
+    if (!this.enabled) {
       return;
     }
     this.#alignTime();
@@ -104,7 +100,7 @@ export class PlayerSync {
   };
 
   #onRateChange = () => {
-    if (this.#enabled) {
+    if (this.enabled) {
       this.#alignRate();
     }
   };
@@ -115,10 +111,6 @@ export class PlayerSync {
 
   #alignRate() {
     this.audio.playbackRate = this.video.playbackRate;
-  }
-
-  #alignVolume() {
-    this.audio.volume = this.#originalMuted ? 0 : this.video.volume;
   }
 
   async #play() {
