@@ -163,39 +163,23 @@ export function Panel({
     }
   }
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
   return (
-    <div className="w-75 rounded-lg border border-border bg-panel p-3 text-sm text-foreground shadow-lg">
-      <div className="mb-2 font-semibold">External audio</div>
-      <div className="flex gap-2">
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45"
-          type="button"
-          onClick={() => inputRef.current?.click()}
-        >
-          Choose file
-        </button>
-        <button
-          className="min-w-0 flex-1 cursor-pointer rounded-md border border-button-border bg-button px-2.5 py-1.5 text-xs text-inherit hover:bg-button-hover disabled:cursor-default disabled:opacity-45 data-[active=true]:border-accent-border data-[active=true]:bg-accent data-[active=true]:text-white"
-          type="button"
+    <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
+      <div className="flex items-center justify-between gap-3">
+        <div className="font-semibold">Audio replacement</div>
+        <Toggle
+          checked={enabled}
           disabled={!selectedAudio}
-          data-active={enabled}
-          onClick={toggle}
-        >
-          {enabled ? "Disable" : "Enable"}
-        </button>
+          onChange={toggle}
+        />
       </div>
-      <div className="mt-2 truncate text-muted-foreground">
-        {selectedAudio?.name ?? "No audio selected"}
-      </div>
-      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>External</span>
-        <span className="ml-auto font-mono tabular-nums">
-          {formatTime(currentTime)} / {formatTime(duration)}
-        </span>
-      </div>
-      <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+      <AudioDrop
+        audio={selectedAudio}
+        currentTime={currentTime}
+        duration={duration}
+        onChoose={chooseFile}
+      />
+      <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Volume</span>
         <input
           className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
@@ -205,19 +189,127 @@ export function Panel({
           step="1"
           value={volume}
           disabled={!selectedAudio}
-          aria-label="External audio volume"
+          aria-label="Replacement audio volume"
           onChange={(event) => changeVolume(Number(event.target.value))}
         />
         <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
       </label>
+    </div>
+  );
+}
+
+function Toggle({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled: boolean;
+  onChange(): void;
+}) {
+  return (
+    <button
+      className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground disabled:cursor-default disabled:opacity-45"
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label="Use replacement audio"
+      disabled={disabled}
+      onClick={onChange}
+    >
+      <span>{checked ? "On" : "Off"}</span>
+      <span
+        className={`relative h-5 w-9 rounded-full transition-colors ${checked ? "bg-accent" : "bg-button"}`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-4" : "translate-x-0"}`}
+        />
+      </span>
+    </button>
+  );
+}
+
+function AudioDrop({
+  audio,
+  currentTime,
+  duration,
+  onChoose,
+}: {
+  audio: StoredAudio | undefined;
+  currentTime: number | undefined;
+  duration: number | undefined;
+  onChoose(file: File | undefined): void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <>
+      <button
+        className={`mt-2.5 flex h-13 w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 text-left transition-colors ${audio ? "border-button-border bg-button hover:bg-button-hover" : "border-dashed border-button-border text-muted-foreground hover:border-accent-border hover:bg-button-hover"} ${dragging ? "border-accent-border bg-button-hover" : ""}`}
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setDragging(true);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDragging(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          onChoose(event.dataTransfer.files[0]);
+        }}
+      >
+        <svg
+          aria-hidden="true"
+          className="size-5 shrink-0 text-muted-foreground"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M9 18V5l10-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="16" cy="16" r="3" />
+        </svg>
+        {audio ? (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs text-foreground">
+                {audio.name}
+              </span>
+              <span className="mt-0.5 block font-mono text-[11px] text-muted-foreground tabular-nums">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              Change
+            </span>
+          </>
+        ) : (
+          <span className="text-xs">
+            Drop an audio file or <span className="text-foreground">browse</span>
+          </span>
+        )}
+      </button>
       <input
         ref={inputRef}
         type="file"
         accept="audio/*"
         hidden
-        onChange={(event) => chooseFile(event.target.files?.[0])}
+        onChange={(event) => {
+          onChoose(event.target.files?.[0]);
+          event.target.value = "";
+        }}
       />
-    </div>
+    </>
   );
 }
 

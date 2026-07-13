@@ -27,6 +27,7 @@ function Web() {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string>();
+  const [withAudio, setWithAudio] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -37,6 +38,13 @@ function Web() {
     <main className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
       <div className="flex flex-col items-end gap-3">
         <div className="flex gap-2">
+          <button
+            className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
+            type="button"
+            onClick={() => setWithAudio((value) => !value)}
+          >
+            {withAudio ? "Empty state" : "Selected state"}
+          </button>
           <button
             className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
             type="button"
@@ -66,9 +74,10 @@ function Web() {
           )}
           <div className={open ? "pointer-events-auto" : "hidden"}>
             <Panel
+              key={withAudio ? "selected" : "empty"}
               videoId="preview-video"
               getVideo={() => fakeVideo}
-              initialSelectedAudio={previewAudio}
+              initialSelectedAudio={withAudio ? previewAudio : null}
               onSelectAudio={() => undefined}
               onError={setError}
             />
