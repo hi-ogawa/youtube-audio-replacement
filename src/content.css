@@ -1,0 +1,18 @@
+@import "./styles.css";
+
+/* YouTube sets :root to 10px, so restore Tailwind's normal pixel scale. */
+@theme inline {
+  --spacing: 4px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 14px;
+  --text-sm--line-height: 20px;
+}
+
+:host {
+  color-scheme: light;
+}
+
+:host(.dark) {
+  color-scheme: dark;
+}

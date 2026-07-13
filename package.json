@@ -1,0 +1,31 @@
+{
+  "name": "youtube-external-audio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev-web": "vite --config vite.web.config.ts",
+    "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
+    "typecheck": "tsc --noEmit",
+    "lint": "pnpm typecheck",
+    "test-e2e": "playwright test"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  },
+  "packageManager": "pnpm@11.11.0"
+}
