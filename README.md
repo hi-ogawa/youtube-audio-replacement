@@ -1,14 +1,14 @@
-# YouTube External Audio Prototype
+# YouTube Audio Replacement
 
-A standalone Chrome extension prototype that replaces a normal YouTube video's audio with an arbitrary local audio file. YouTube remains the source of truth for play, pause, seeking, and playback rate.
+A Chrome extension that replaces a YouTube video's audio with a local audio file. YouTube remains the source of truth for play, pause, seeking, and playback rate.
 
-This implements the first three prototype milestones:
+## Features
 
-1. YouTube watch-page extension shell and SPA lifecycle.
-2. Local audio selection and replacement toggle.
-3. Discrete player synchronization.
-
-Continuous drift correction, automatic file lookup, acquisition, and audio processing are intentionally out of scope.
+- Drop or browse for a replacement audio file.
+- Remember the selected file for each video.
+- Turn audio replacement on or off from the watch page.
+- Follow YouTube playback, seeking, and playback-rate changes.
+- Handle navigation between videos without reloading the page.
 
 ## Build and load
 
@@ -21,7 +21,7 @@ After building, `pnpm test-e2e` loads the extension in Chromium against a real Y
 
 Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository's `dist/extension` directory. The packaged extension is available at `dist/extension.zip`.
 
-On a normal YouTube watch page, choose a local audio file from the control in the bottom-right corner and enable replacement audio. YouTube's existing controls and keyboard shortcuts continue to control the video, and the extension follows the resulting media events.
+On a YouTube watch page, open the control in the bottom-right corner, choose a local audio file, and turn on **Audio replacement**. YouTube's existing controls and keyboard shortcuts continue to control playback.
 
 ## UI development
 
@@ -31,4 +31,4 @@ Run the standalone panel preview with:
 pnpm dev-web
 ```
 
-The preview uses a fake paused video clock so the extension UI can be styled without loading YouTube.
+The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
