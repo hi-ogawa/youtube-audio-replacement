@@ -17,12 +17,14 @@ export interface ReplacementAudio {
 export class PlayerSync {
   enabled = false;
   #originalMuted = false;
+  readonly #onError: (error: unknown) => void;
 
   constructor(
     private readonly video: VideoSyncSource,
     private readonly audio: ReplacementAudio,
-    private readonly onError: (error: unknown) => void = console.error,
+    { onError = console.error }: { onError?: (error: unknown) => void } = {},
   ) {
+    this.#onError = onError;
     video.addEventListener("play", this.#onPlay);
     video.addEventListener("pause", this.#onPause);
     video.addEventListener("seeking", this.#onSeeking);
@@ -117,7 +119,7 @@ export class PlayerSync {
     try {
       await this.audio.play();
     } catch (error) {
-      this.onError(error);
+      this.#onError(error);
     }
   }
 }

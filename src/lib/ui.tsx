@@ -141,9 +141,11 @@ export function Panel({
       return;
     }
 
-    const nextSync = new PlayerSync(video, audio, (error) => {
-      console.error(error);
-      onError("External audio playback failed.");
+    const nextSync = new PlayerSync(video, audio, {
+      onError(error) {
+        console.error(error);
+        onError("External audio playback failed.");
+      },
     });
     nextSync.enable();
     syncRef.current = nextSync;
