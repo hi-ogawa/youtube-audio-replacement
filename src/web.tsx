@@ -15,12 +15,12 @@ class FakeVideo extends EventTarget implements VideoClock {
 }
 
 const fakeVideo = new FakeVideo();
+
 const previewAudio: StoredAudio = {
   videoId: "preview-video",
   blob: new Blob(),
   name: "preview-audio.wav",
 };
-const queryClient = new QueryClient();
 
 // TODO: Add Playwright coverage for the standalone panel preview.
 function Web() {
@@ -80,15 +80,20 @@ function Web() {
   );
 }
 
-const root = document.getElementById("root");
-if (!root) {
-  throw new Error("Root element not found");
+function main() {
+  const root = document.getElementById("root");
+  if (!root) {
+    throw new Error("Root element not found");
+  }
+
+  const queryClient = new QueryClient();
+  createRoot(root).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <Web />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
 }
 
-createRoot(root).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <Web />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+main();

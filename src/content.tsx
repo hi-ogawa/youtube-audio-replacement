@@ -266,10 +266,10 @@ function inject() {
  * This standalone prototype reuses those lifecycle patterns without its
  * caption-specific behavior.
  */
-function init() {
+function main() {
   inject();
   document.addEventListener("yt-navigate-start", remove);
   document.addEventListener("yt-navigate-finish", inject);
 }
 
-init();
+main();
