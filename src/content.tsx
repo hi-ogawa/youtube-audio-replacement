@@ -112,7 +112,7 @@ function getMainVideo() {
     "video.html5-main-video, video",
   );
   if (!video) {
-    return null;
+    return undefined;
   }
   const player = document.querySelector<YouTubePlayer>("#movie_player");
   return new YouTubeVideo(video, player);

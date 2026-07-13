@@ -9,7 +9,7 @@ export function StoredPanel({
   onError,
 }: {
   videoId: string;
-  getVideo: () => VideoSyncSource | null | undefined;
+  getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
 }) {
   const storedAudioQuery = useSuspenseQuery({
@@ -52,7 +52,7 @@ export function Panel({
   onError,
 }: {
   videoId: string;
-  getVideo: () => VideoSyncSource | null | undefined;
+  getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio: StoredAudio | null;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;
