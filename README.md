@@ -32,7 +32,3 @@ pnpm dev-web
 ```
 
 The preview uses a fake paused video clock so the extension UI can be styled without loading YouTube.
-
-## Attribution
-
-The YouTube content-script integration patterns are adapted from [Zamak (ytsub-v5)](https://github.com/hi-ogawa/ytsub-v5), as documented next to the adapted lifecycle code in `src/content.tsx`.
