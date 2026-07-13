@@ -63,18 +63,53 @@ export function Panel({
   const [volume, setVolume] = useState(100);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const syncRef = useRef<PlayerSync>(null);
-  const [enabled, setEnabled] = useState(false);
+  const [activeAudio, setActiveAudio] = useState<HTMLAudioElement>();
+  const disposeSessionRef = useRef<(() => void) | undefined>(undefined);
+  const enabled = activeAudio !== undefined;
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
 
   useEffect(() => {
+    return () => disposeSessionRef.current?.();
+  }, []);
+
+  function disable() {
+    disposeSessionRef.current?.();
+    setActiveAudio(undefined);
+    setCurrentTime(undefined);
+    setDuration(undefined);
+  }
+
+  function chooseFile(file: File | undefined) {
+    if (!file) {
+      return;
+    }
+
+    disable();
+    const nextAudio = {
+      videoId,
+      blob: file,
+      name: file.name,
+    };
+    setSelectedAudio(nextAudio);
+    onSelectAudio(nextAudio);
+  }
+
+  function toggle() {
+    if (activeAudio) {
+      disable();
+      return;
+    }
+
+    const video = getVideo();
+    if (!video || !selectedAudio) {
+      onError("YouTube video player not found.");
+      return;
+    }
+
     const audio = document.createElement("audio");
     audio.preload = "auto";
     audio.volume = volume / 100;
-    audioRef.current = audio;
-
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => {
       setDuration(Number.isFinite(audio.duration) ? audio.duration : undefined);
@@ -85,78 +120,36 @@ export function Panel({
     audio.addEventListener("durationchange", updateDuration);
     audio.addEventListener("volumechange", updateVolume);
 
-    return () => {
-      syncRef.current?.destroy();
+    const objectUrl = URL.createObjectURL(selectedAudio.blob);
+    audio.src = objectUrl;
+    audio.load();
+
+    const sync = new PlayerSync(video, audio, (error) => {
+      console.error(error);
+      onError("External audio playback failed.");
+    });
+    disposeSessionRef.current = () => {
+      disposeSessionRef.current = undefined;
+      sync.destroy();
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
       audio.removeEventListener("durationchange", updateDuration);
       audio.removeEventListener("volumechange", updateVolume);
       audio.removeAttribute("src");
       audio.load();
+      URL.revokeObjectURL(objectUrl);
     };
-  }, []);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !selectedAudio) {
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(selectedAudio.blob);
-    audio.src = objectUrl;
-    audio.load();
+    setActiveAudio(audio);
+    sync.enable();
     setCurrentTime(0);
     setDuration(undefined);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [selectedAudio?.blob]);
-
-  function chooseFile(file: File | undefined) {
-    if (!file) {
-      return;
-    }
-
-    syncRef.current?.destroy();
-    syncRef.current = null;
-    const nextAudio = {
-      videoId,
-      blob: file,
-      name: file.name,
-    };
-    setSelectedAudio(nextAudio);
-    onSelectAudio(nextAudio);
-    setEnabled(false);
   }
 
   function changeVolume(nextVolume: number) {
     setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume / 100;
+    if (activeAudio) {
+      activeAudio.volume = nextVolume / 100;
     }
-  }
-
-  function toggle() {
-    const sync = syncRef.current;
-    if (sync?.enabled) {
-      sync.destroy();
-      syncRef.current = null;
-      setEnabled(false);
-      return;
-    }
-
-    const video = getVideo();
-    const audio = audioRef.current;
-    if (!video || !audio) {
-      onError("YouTube video player not found.");
-      return;
-    }
-
-    const nextSync = new PlayerSync(video, audio, (error) => {
-      console.error(error);
-      onError("External audio playback failed.");
-    });
-    nextSync.enable();
-    syncRef.current = nextSync;
-    setEnabled(true);
   }
 
   return (
