@@ -67,6 +67,8 @@ export function Panel({
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);
 
+  // The detached player and its event wiring live for the panel's lifetime, so
+  // this effect owns both setup and teardown as one external resource.
   useEffect(() => {
     const audio = document.createElement("audio");
     audio.preload = "auto";
@@ -94,6 +96,8 @@ export function Panel({
     };
   }, []);
 
+  // The source can come from initial storage or a later upload. Synchronizing
+  // it here keeps Blob URL replacement and cleanup in one lifecycle owner.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !selectedAudio) {
