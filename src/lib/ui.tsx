@@ -1,5 +1,6 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { resolveAudioFile } from "./audio-file.ts";
 import { PlayerSync, type VideoSyncSource } from "./player-sync.ts";
 import { type StoredAudio, videoStorage } from "./storage.ts";
 
@@ -112,22 +113,27 @@ export function Panel({
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedAudio?.blob]);
 
-  function chooseFile(file: File | undefined) {
-    if (!file) {
-      return;
-    }
-
-    syncRef.current?.destroy();
-    syncRef.current = null;
-    const nextAudio = {
-      videoId,
-      blob: file,
-      name: file.name,
-    };
-    setSelectedAudio(nextAudio);
-    onSelectAudio(nextAudio);
-    setEnabled(false);
-  }
+  const chooseFileMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const audioFile = await resolveAudioFile(file);
+      syncRef.current?.destroy();
+      syncRef.current = null;
+      const nextAudio = {
+        videoId,
+        blob: audioFile,
+        name: audioFile.name,
+      };
+      setSelectedAudio(nextAudio);
+      onSelectAudio(nextAudio);
+      setEnabled(false);
+    },
+    onError: (error) => {
+      console.error(error);
+      onError(
+        error instanceof Error ? error.message : "Could not read audio file.",
+      );
+    },
+  });
 
   function toggle() {
     const sync = syncRef.current;
@@ -177,7 +183,7 @@ export function Panel({
         audio={selectedAudio}
         currentTime={currentTime}
         duration={duration}
-        onChoose={chooseFile}
+        onChoose={chooseFileMutation.mutate}
       />
       <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Volume</span>
@@ -238,7 +244,7 @@ function AudioDrop({
   audio: StoredAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
-  onChoose(file: File | undefined): void;
+  onChoose(file: File): void;
 }) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -262,7 +268,10 @@ function AudioDrop({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          onChoose(event.dataTransfer.files[0]);
+          const file = event.dataTransfer.files[0];
+          if (file) {
+            onChoose(file);
+          }
         }}
       >
         <svg
@@ -295,17 +304,21 @@ function AudioDrop({
           </>
         ) : (
           <span className="text-xs">
-            Drop an audio file or <span className="text-foreground">browse</span>
+            Drop audio or a stem ZIP, or{" "}
+            <span className="text-foreground">browse</span>
           </span>
         )}
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept="audio/*"
+        accept="audio/*,.zip,application/zip"
         hidden
         onChange={(event) => {
-          onChoose(event.target.files?.[0]);
+          const file = event.target.files?.[0];
+          if (file) {
+            onChoose(file);
+          }
           event.target.value = "";
         }}
       />
