@@ -8,7 +8,7 @@
     "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm typecheck",
-    "test-ui": "vitest run --config vite.web.config.ts",
+    "test-ui": "vitest --config vite.web.config.ts",
     "test-e2e": "playwright test"
   },
   "dependencies": {
