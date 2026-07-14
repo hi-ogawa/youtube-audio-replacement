@@ -8,6 +8,7 @@
     "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
     "lint": "pnpm typecheck",
+    "test-ui": "vitest run --config vite.web.config.ts",
     "test-e2e": "playwright test"
   },
   "dependencies": {
@@ -21,11 +22,13 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitest/browser-playwright": "5.0.0-beta.6",
+    "@vitest/ui": "5.0.0-beta.6",
     "@vitejs/plugin-react": "^6.0.3",
     "tailwindcss": "^4.3.2",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
-    "vitest": "^4.1.10"
+    "vitest": "5.0.0-beta.6"
   },
   "packageManager": "pnpm@11.11.0"
 }
