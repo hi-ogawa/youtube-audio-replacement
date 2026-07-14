@@ -107,6 +107,41 @@ function getVideoId() {
   return new URL(location.href).searchParams.get("v");
 }
 
+function openGeneratorTab(videoId: string) {
+  const id = crypto.randomUUID();
+  return new Promise<void>((resolve, reject) => {
+    const abortController = new AbortController();
+    const timeout = window.setTimeout(() => {
+      abortController.abort();
+      reject(new Error("Timed out while opening the generator"));
+    }, 5_000);
+    window.addEventListener(
+      "message",
+      (event: MessageEvent) => {
+        if (
+          event.source !== window ||
+          event.data?.type !== "audio-replacement-open-response" ||
+          event.data.id !== id
+        ) {
+          return;
+        }
+        window.clearTimeout(timeout);
+        abortController.abort();
+        if (event.data.error) {
+          reject(new Error(String(event.data.error)));
+        } else {
+          resolve();
+        }
+      },
+      { signal: abortController.signal },
+    );
+    window.postMessage(
+      { type: "audio-replacement-open-request", id, videoId },
+      "*",
+    );
+  });
+}
+
 function getMainVideo() {
   const video = document.querySelector<HTMLVideoElement>(
     "video.html5-main-video, video",
@@ -145,6 +180,15 @@ function App({ videoId }: { videoId: string }) {
     });
   };
 
+  const openGenerator = async () => {
+    try {
+      await openGeneratorTab(videoId);
+    } catch (nextError) {
+      console.error(nextError);
+      setError("Could not open the stem generator.");
+    }
+  };
+
   return (
     <>
       <div className="pointer-events-none fixed right-4 bottom-14 flex flex-col items-end gap-2">
@@ -156,6 +200,7 @@ function App({ videoId }: { videoId: string }) {
             videoId={videoId}
             getVideo={getMainVideo}
             onError={setError}
+            onGenerate={() => void openGenerator()}
           />
         </div>
       </div>

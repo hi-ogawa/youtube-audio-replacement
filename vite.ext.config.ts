@@ -28,17 +28,54 @@ function patchCiManifest() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), patchCiManifest()],
-  build: {
-    outDir: "dist/extension",
-    minify: false,
-    rolldownOptions: {
-      input: {
-        content: "./src/content.tsx",
+  environments: {
+    generator: {
+      consumer: "client",
+      build: {
+        outDir: "dist/extension",
+        minify: false,
+        rolldownOptions: {
+          input: {
+            generator: "./generator.html",
+          },
+        },
       },
-      output: {
-        format: "iife",
-        entryFileNames: "[name].js",
-      },
+    },
+    content: scriptBuild("content", "./src/content.tsx"),
+    acquisition: scriptBuild("acquisition", "./src/acquisition.ts"),
+    relay: scriptBuild("relay", "./src/relay.ts"),
+    opener: scriptBuild("opener", "./src/opener.ts"),
+    background: scriptBuild("background", "./src/background.ts"),
+  },
+  builder: {
+    async buildApp(builder) {
+      await builder.build(builder.environments.generator);
+      await builder.build(builder.environments.content);
+      await builder.build(builder.environments.acquisition);
+      await builder.build(builder.environments.relay);
+      await builder.build(builder.environments.opener);
+      await builder.build(builder.environments.background);
     },
   },
 });
+
+function scriptBuild(name: string, input: string) {
+  return {
+    consumer: "client" as const,
+    build: {
+      outDir: "dist/extension",
+      minify: false,
+      emptyOutDir: false,
+      copyPublicDir: false,
+      rolldownOptions: {
+        input: {
+          [name]: input,
+        },
+        output: {
+          format: "iife" as const,
+          entryFileNames: "[name].js",
+        },
+      },
+    },
+  };
+}

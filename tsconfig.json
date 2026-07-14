@@ -1,7 +1,7 @@
 {
   "include": ["src", "e2e", "*.ts"],
   "compilerOptions": {
-    "types": ["vite/client", "node"],
+    "types": ["vite/client", "node", "chrome"],
     "target": "esnext",
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",

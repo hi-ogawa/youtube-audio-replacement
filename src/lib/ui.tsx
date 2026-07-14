@@ -8,10 +8,12 @@ export function StoredPanel({
   videoId,
   getVideo,
   onError,
+  onGenerate,
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
+  onGenerate(): void;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
@@ -41,6 +43,7 @@ export function StoredPanel({
       initialSelectedAudio={storedAudioQuery.data}
       onSelectAudio={storeAudioMutation.mutate}
       onError={onError}
+      onGenerate={onGenerate}
     />
   );
 }
@@ -51,12 +54,14 @@ export function Panel({
   initialSelectedAudio,
   onSelectAudio,
   onError,
+  onGenerate,
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio: StoredAudio | null;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;
+  onGenerate?: () => void;
 }) {
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
@@ -181,6 +186,15 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
+      {onGenerate && (
+        <button
+          className="mt-2.5 cursor-pointer text-xs font-medium text-accent hover:underline"
+          type="button"
+          onClick={onGenerate}
+        >
+          Generate stems
+        </button>
+      )}
       <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Volume</span>
         <input
