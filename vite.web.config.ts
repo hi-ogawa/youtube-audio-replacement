@@ -7,10 +7,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     include: ["src/**/*.browser.test.tsx"],
-    reporters: ["html"],
+    reporters: [["html", { singleFile: true }]],
     browser: {
       enabled: true,
-      provider: playwright(),
+      provider: playwright({
+        launchOptions: { channel: "chromium" },
+      }),
       instances: [{ browser: "chromium" }],
       headless: true,
       traceView: true,

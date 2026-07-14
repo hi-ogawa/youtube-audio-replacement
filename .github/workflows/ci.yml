@@ -24,6 +24,13 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+      - run: pnpm exec playwright install --with-deps --no-shell chromium
+      - run: pnpm test-ui
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          path: .vitest/index.html
+          archive: false
       - run: pnpm build
       - run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
       - uses: actions/upload-artifact@v7
