@@ -1,13 +1,13 @@
 // Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/rpc.ts
 export interface RpcRequest {
-  type: "ytdl-request";
+  type: "audio-replacement-window-rpc-request";
   id: string;
   method: string;
   params: unknown;
 }
 
 export interface RpcResponse {
-  type: "ytdl-response";
+  type: "audio-replacement-window-rpc-response";
   id: string;
   result?: unknown;
   error?: string;
@@ -18,7 +18,7 @@ interface RpcCallbackStub {
 }
 
 export interface RpcCallbackInvoke {
-  type: "ytdl-callback-invoke";
+  type: "audio-replacement-window-rpc-callback";
   requestId: string;
   callbackId: string;
   args: unknown[];

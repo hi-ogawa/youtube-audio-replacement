@@ -1,8 +1,7 @@
 import type { backgroundRpcHandlers } from "./background.ts";
 import { fromBase64 } from "./lib/base64.ts";
 import { createRuntimeRelayRpc } from "./lib/extension-rpc.ts";
-import type { RpcCallbackInvoke, RpcRequest, RpcResponse } from "./lib/rpc.ts";
-import { deserializeParams } from "./lib/rpc.ts";
+import { registerWindowRpcHandlers } from "./lib/window-rpc.ts";
 import type { YouTubeStreamingFormat } from "./lib/youtube.ts";
 import { fetchPlayerApi } from "./lib/youtube.ts";
 
@@ -123,61 +122,10 @@ export const acquisitionRpcHandlers = {
   },
 };
 
-window.addEventListener("message", async (event: MessageEvent<RpcRequest>) => {
-  if (event.source !== window.parent || event.data?.type !== "ytdl-request") {
-    return;
-  }
-
-  const { id, method, params } = event.data;
-  const handler =
-    acquisitionRpcHandlers[method as keyof typeof acquisitionRpcHandlers];
-  if (!handler) {
-    window.parent.postMessage(
-      {
-        type: "ytdl-response",
-        id,
-        error: `Unknown method: ${method}`,
-      } satisfies RpcResponse,
-      "*",
-    );
-    return;
-  }
-
-  const deserializedParams = deserializeParams(params, (callbackId, args) => {
-    window.parent.postMessage(
-      {
-        type: "ytdl-callback-invoke",
-        requestId: id,
-        callbackId,
-        args,
-      } satisfies RpcCallbackInvoke,
-      "*",
-    );
-  });
-
-  try {
-    const result = await (handler as (value: never) => Promise<unknown>)(
-      deserializedParams as never,
-    );
-    const response: RpcResponse = { type: "ytdl-response", id, result };
-    const transferables: Transferable[] = [];
-    if (result && typeof result === "object" && "data" in result) {
-      const data = (result as { data: unknown }).data;
-      if (data instanceof ArrayBuffer) {
-        transferables.push(data);
-      }
-    }
-    window.parent.postMessage(response, "*", transferables);
-  } catch (error) {
-    window.parent.postMessage(
-      {
-        type: "ytdl-response",
-        id,
-        error: error instanceof Error ? error.message : String(error),
-      } satisfies RpcResponse,
-      "*",
-    );
-  }
+registerWindowRpcHandlers(acquisitionRpcHandlers, {
+  sourceWindow: window.parent,
+  targetWindow: window.parent,
+  targetOrigin: "*",
 });
 
-window.parent.postMessage({ type: "ytdl-ready" }, "*");
+window.parent.postMessage({ type: "audio-replacement-acquisition-ready" }, "*");

@@ -1,13 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import type { backgroundRpcHandlers } from "./background.ts";
 import contentCss from "./content.css?inline";
+import { createRuntimeRelayRpc } from "./lib/extension-rpc.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
+const backgroundRpc = createRuntimeRelayRpc<typeof backgroundRpcHandlers>();
 
 interface MountedController {
   cleanup(): void;
@@ -107,41 +110,6 @@ function getVideoId() {
   return new URL(location.href).searchParams.get("v");
 }
 
-function openGeneratorTab(videoId: string) {
-  const id = crypto.randomUUID();
-  return new Promise<void>((resolve, reject) => {
-    const abortController = new AbortController();
-    const timeout = window.setTimeout(() => {
-      abortController.abort();
-      reject(new Error("Timed out while opening the generator"));
-    }, 5_000);
-    window.addEventListener(
-      "message",
-      (event: MessageEvent) => {
-        if (
-          event.source !== window ||
-          event.data?.type !== "audio-replacement-open-response" ||
-          event.data.id !== id
-        ) {
-          return;
-        }
-        window.clearTimeout(timeout);
-        abortController.abort();
-        if (event.data.error) {
-          reject(new Error(String(event.data.error)));
-        } else {
-          resolve();
-        }
-      },
-      { signal: abortController.signal },
-    );
-    window.postMessage(
-      { type: "audio-replacement-open-request", id, videoId },
-      "*",
-    );
-  });
-}
-
 function getMainVideo() {
   const video = document.querySelector<HTMLVideoElement>(
     "video.html5-main-video, video",
@@ -182,7 +150,7 @@ function App({ videoId }: { videoId: string }) {
 
   const openGenerator = async () => {
     try {
-      await openGeneratorTab(videoId);
+      await backgroundRpc.openGenerator({ videoId });
     } catch (nextError) {
       console.error(nextError);
       setError("Could not open the stem generator.");

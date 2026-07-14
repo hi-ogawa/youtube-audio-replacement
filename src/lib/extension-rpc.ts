@@ -1,4 +1,4 @@
-// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/extension-rpc.ts
+// Typed MAIN-world -> isolated-world -> background service worker RPC.
 import { createRpcProxy, type RpcClient } from "./rpc.ts";
 
 type RuntimeRequest = {
@@ -9,23 +9,32 @@ type RuntimeRequest = {
 };
 
 type RuntimeResponse = {
-  id: string;
   result?: unknown;
   error?: string;
 };
 
-const RUNTIME_CHANNEL = "youtube-audio-replacement:runtime-rpc";
+type RelayRequest = Omit<RuntimeRequest, "type"> & {
+  type: "audio-replacement-relay-request";
+};
+
+type RelayResponse = RuntimeResponse & {
+  type: "audio-replacement-relay-response";
+  id: string;
+};
 
 export function createRuntimeRelayRpc<Handlers>(): RpcClient<Handlers> {
-  const channel = new BroadcastChannel(RUNTIME_CHANNEL);
   return createRpcProxy<Handlers>((method, params) => {
     const id = crypto.randomUUID();
     return new Promise((resolve, reject) => {
       const abortController = new AbortController();
-      channel.addEventListener(
+      window.addEventListener(
         "message",
-        (event: MessageEvent<RuntimeResponse>) => {
-          if (event.data.id !== id) {
+        (event: MessageEvent<RelayResponse>) => {
+          if (
+            event.source !== window ||
+            event.data?.type !== "audio-replacement-relay-response" ||
+            event.data.id !== id
+          ) {
             return;
           }
           abortController.abort();
@@ -37,16 +46,29 @@ export function createRuntimeRelayRpc<Handlers>(): RpcClient<Handlers> {
         },
         { signal: abortController.signal },
       );
-      channel.postMessage({ id, method, params });
+      window.postMessage(
+        {
+          type: "audio-replacement-relay-request",
+          id,
+          method,
+          params,
+        } satisfies RelayRequest,
+        "*",
+      );
     });
   });
 }
 
 export function setupRuntimeRelay() {
-  const channel = new BroadcastChannel(RUNTIME_CHANNEL);
-  channel.addEventListener(
+  window.addEventListener(
     "message",
-    async (event: MessageEvent<Omit<RuntimeRequest, "type">>) => {
+    async (event: MessageEvent<RelayRequest>) => {
+      if (
+        event.source !== window ||
+        event.data?.type !== "audio-replacement-relay-request"
+      ) {
+        return;
+      }
       const { id, method, params } = event.data;
       try {
         const response = await chrome.runtime.sendMessage({
@@ -55,12 +77,23 @@ export function setupRuntimeRelay() {
           method,
           params,
         } satisfies RuntimeRequest);
-        channel.postMessage({ id, ...response } satisfies RuntimeResponse);
+        window.postMessage(
+          {
+            type: "audio-replacement-relay-response",
+            id,
+            ...response,
+          } satisfies RelayResponse,
+          "*",
+        );
       } catch (error) {
-        channel.postMessage({
-          id,
-          error: error instanceof Error ? error.message : String(error),
-        } satisfies RuntimeResponse);
+        window.postMessage(
+          {
+            type: "audio-replacement-relay-response",
+            id,
+            error: error instanceof Error ? error.message : String(error),
+          } satisfies RelayResponse,
+          "*",
+        );
       }
     },
   );
