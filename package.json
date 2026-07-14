@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prepare": "vp config",
     "dev-web": "vite --config vite.web.config.ts",
-    "build": "vite build && cd dist/extension && zip -r ../extension.zip .",
+    "build": "vite build --config vite.ext.config.ts && cd dist/extension && zip -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
-    "lint": "pnpm typecheck",
+    "lint": "vp check --fix && pnpm lint-dead-code && pnpm typecheck",
+    "lint-check": "vp check && pnpm lint-dead-code && pnpm typecheck",
+    "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "test-e2e": "playwright test"
   },
   "dependencies": {
@@ -23,9 +26,11 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "fallow": "^3.3.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
+    "vite-plus": "^0.2.4",
     "vitest": "^4.1.10"
   },
   "packageManager": "pnpm@11.11.0"

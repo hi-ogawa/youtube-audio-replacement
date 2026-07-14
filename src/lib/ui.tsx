@@ -173,11 +173,7 @@ export function Panel({
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">Audio replacement</div>
-        <Toggle
-          checked={enabled}
-          disabled={!selectedAudio}
-          onChange={toggle}
-        />
+        <Toggle checked={enabled} disabled={!selectedAudio} onChange={toggle} />
       </div>
       <AudioDrop
         audio={selectedAudio}

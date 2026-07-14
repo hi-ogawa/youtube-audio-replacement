@@ -6,7 +6,7 @@ export interface StoredAudio {
   name: string;
 }
 
-export interface VideoState {
+interface VideoState {
   panelOpen: boolean;
 }
 
