@@ -4,7 +4,7 @@ A Chrome extension that replaces a YouTube video's audio with a local audio file
 
 ## Features
 
-- Drop or browse for a replacement audio file.
+- Drop or browse for a replacement audio file or stem ZIP. ZIP input selects its first audio entry.
 - Remember the selected file for each video.
 - Turn audio replacement on or off from the watch page.
 - Follow YouTube playback, seeking, and playback-rate changes.

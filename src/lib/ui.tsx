@@ -1,4 +1,5 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
+import JSZip from "jszip";
 import { useEffect, useRef, useState } from "react";
 import { PlayerSync, type VideoSyncSource } from "./player-sync.ts";
 import { type StoredAudio, videoStorage } from "./storage.ts";
@@ -112,8 +113,19 @@ export function Panel({
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedAudio?.blob]);
 
-  function chooseFile(file: File | undefined) {
+  async function chooseFile(file: File | undefined) {
     if (!file) {
+      return;
+    }
+
+    let audioFile: File;
+    try {
+      audioFile = await resolveAudioFile(file);
+    } catch (error) {
+      console.error(error);
+      onError(
+        error instanceof Error ? error.message : "Could not read audio file.",
+      );
       return;
     }
 
@@ -121,8 +133,8 @@ export function Panel({
     syncRef.current = null;
     const nextAudio = {
       videoId,
-      blob: file,
-      name: file.name,
+      blob: audioFile,
+      name: audioFile.name,
     };
     setSelectedAudio(nextAudio);
     onSelectAudio(nextAudio);
@@ -295,14 +307,15 @@ function AudioDrop({
           </>
         ) : (
           <span className="text-xs">
-            Drop an audio file or <span className="text-foreground">browse</span>
+            Drop audio or a stem ZIP, or{" "}
+            <span className="text-foreground">browse</span>
           </span>
         )}
       </button>
       <input
         ref={inputRef}
         type="file"
-        accept="audio/*"
+        accept="audio/*,.zip,application/zip"
         hidden
         onChange={(event) => {
           onChoose(event.target.files?.[0]);
@@ -311,6 +324,44 @@ function AudioDrop({
       />
     </>
   );
+}
+
+const AUDIO_MIME_TYPES: Record<string, string> = {
+  wav: "audio/wav",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  ogg: "audio/ogg",
+  oga: "audio/ogg",
+  opus: "audio/ogg",
+  flac: "audio/flac",
+  webm: "audio/webm",
+};
+
+async function resolveAudioFile(file: File): Promise<File> {
+  if (!file.name.toLowerCase().endsWith(".zip")) {
+    return file;
+  }
+
+  let zip: JSZip;
+  try {
+    zip = await JSZip.loadAsync(file);
+  } catch {
+    throw new Error("Could not read ZIP file.");
+  }
+
+  for (const entry of Object.values(zip.files)) {
+    if (entry.dir) {
+      continue;
+    }
+    const name = entry.name.split("/").at(-1) ?? "";
+    const extension = name.split(".").at(-1)?.toLowerCase() ?? "";
+    const type = AUDIO_MIME_TYPES[extension];
+    if (name && type) {
+      return new File([await entry.async("blob")], name, { type });
+    }
+  }
+  throw new Error("ZIP does not contain a supported audio file.");
 }
 
 export function Fab({
