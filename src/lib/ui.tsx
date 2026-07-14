@@ -67,27 +67,6 @@ export function Panel({
   const [duration, setDuration] = useState<number>();
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncRef = useRef<PlayerSync>(null);
-  const resolveAudioMutation = useMutation({
-    mutationFn: resolveAudioFile,
-    onSuccess: (audioFile) => {
-      syncRef.current?.destroy();
-      syncRef.current = null;
-      const nextAudio = {
-        videoId,
-        blob: audioFile,
-        name: audioFile.name,
-      };
-      setSelectedAudio(nextAudio);
-      onSelectAudio(nextAudio);
-      setEnabled(false);
-    },
-    onError: (error) => {
-      console.error(error);
-      onError(
-        error instanceof Error ? error.message : "Could not read audio file.",
-      );
-    },
-  });
 
   // The detached player and its event wiring live for the panel's lifetime, so
   // this effect owns both setup and teardown as one external resource.
@@ -133,6 +112,28 @@ export function Panel({
     setDuration(undefined);
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedAudio?.blob]);
+
+  const chooseFileMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const audioFile = await resolveAudioFile(file);
+      syncRef.current?.destroy();
+      syncRef.current = null;
+      const nextAudio = {
+        videoId,
+        blob: audioFile,
+        name: audioFile.name,
+      };
+      setSelectedAudio(nextAudio);
+      onSelectAudio(nextAudio);
+      setEnabled(false);
+    },
+    onError: (error) => {
+      console.error(error);
+      onError(
+        error instanceof Error ? error.message : "Could not read audio file.",
+      );
+    },
+  });
 
   function toggle() {
     const sync = syncRef.current;
@@ -182,7 +183,7 @@ export function Panel({
         audio={selectedAudio}
         currentTime={currentTime}
         duration={duration}
-        onChoose={resolveAudioMutation.mutate}
+        onChoose={chooseFileMutation.mutate}
       />
       <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Volume</span>
