@@ -23,8 +23,7 @@ const initEmbedContentRpc = once(() =>
   }),
 );
 
-function ExtensionPage() {
-  const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
+function ExtensionPage({ initialInput }: { initialInput: string }) {
   const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
     status: "empty",
   });
@@ -119,9 +118,10 @@ function main() {
   if (!root) {
     throw new Error("Root element not found");
   }
+  const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
   createRoot(root).render(
     <StrictMode>
-      <ExtensionPage />
+      <ExtensionPage initialInput={initialInput} />
     </StrictMode>,
   );
 }
