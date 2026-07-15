@@ -1,26 +1,11 @@
 // Typed MAIN-world -> isolated-world -> background service worker RPC.
 import { createRpcProxy, type RpcClient } from "./core.ts";
-
-type RuntimeRequest = {
-  type: "audio-replacement-runtime-rpc";
-  id: string;
-  method: string;
-  params: unknown;
-};
-
-type RuntimeResponse = {
-  result?: unknown;
-  error?: string;
-};
-
-type RelayRequest = Omit<RuntimeRequest, "type"> & {
-  type: "audio-replacement-relay-request";
-};
-
-type RelayResponse = RuntimeResponse & {
-  type: "audio-replacement-relay-response";
-  id: string;
-};
+import type { RelayRequest, RelayResponse, RuntimeRequest } from "./shared.ts";
+import {
+  RUNTIME_RELAY_REQUEST,
+  RUNTIME_RELAY_RESPONSE,
+  RUNTIME_RPC_REQUEST,
+} from "./shared.ts";
 
 export function createRuntimeRelayRpc<Handlers>(): RpcClient<Handlers> {
   return createRpcProxy<Handlers>((method, params) => {
@@ -32,7 +17,7 @@ export function createRuntimeRelayRpc<Handlers>(): RpcClient<Handlers> {
         (event: MessageEvent<RelayResponse>) => {
           if (
             event.source !== window ||
-            event.data?.type !== "audio-replacement-relay-response" ||
+            event.data?.type !== RUNTIME_RELAY_RESPONSE ||
             event.data.id !== id
           ) {
             return;
@@ -48,7 +33,7 @@ export function createRuntimeRelayRpc<Handlers>(): RpcClient<Handlers> {
       );
       window.postMessage(
         {
-          type: "audio-replacement-relay-request",
+          type: RUNTIME_RELAY_REQUEST,
           id,
           method,
           params,
@@ -65,21 +50,21 @@ export function setupRuntimeRelay() {
     async (event: MessageEvent<RelayRequest>) => {
       if (
         event.source !== window ||
-        event.data?.type !== "audio-replacement-relay-request"
+        event.data?.type !== RUNTIME_RELAY_REQUEST
       ) {
         return;
       }
       const { id, method, params } = event.data;
       try {
         const response = await chrome.runtime.sendMessage({
-          type: "audio-replacement-runtime-rpc",
+          type: RUNTIME_RPC_REQUEST,
           id,
           method,
           params,
         } satisfies RuntimeRequest);
         window.postMessage(
           {
-            type: "audio-replacement-relay-response",
+            type: RUNTIME_RELAY_RESPONSE,
             id,
             ...response,
           } satisfies RelayResponse,
@@ -88,7 +73,7 @@ export function setupRuntimeRelay() {
       } catch (error) {
         window.postMessage(
           {
-            type: "audio-replacement-relay-response",
+            type: RUNTIME_RELAY_RESPONSE,
             id,
             error: error instanceof Error ? error.message : String(error),
           } satisfies RelayResponse,
@@ -104,7 +89,7 @@ export function registerRuntimeHandlers(
 ) {
   chrome.runtime.onMessage.addListener(
     (message: RuntimeRequest, _sender, sendResponse) => {
-      if (message.type !== "audio-replacement-runtime-rpc") {
+      if (message.type !== RUNTIME_RPC_REQUEST) {
         return;
       }
       const handler = handlers[message.method];
