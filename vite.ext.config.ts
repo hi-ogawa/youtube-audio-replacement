@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/vite.ext.config.ts
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";

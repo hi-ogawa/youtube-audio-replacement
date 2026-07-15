@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/content.ts
 import type { BackgroundRpcHandlers } from "./background.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";

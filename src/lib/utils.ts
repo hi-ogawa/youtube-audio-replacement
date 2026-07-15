@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/rpc.ts
 export function once<T>(fn: () => T): () => T {
   let result: { value: T } | undefined;
   return () => {
@@ -6,6 +7,7 @@ export function once<T>(fn: () => T): () => T {
   };
 }
 
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/base64.ts
 export function toBase64(bytes: Uint8Array): string {
   let binary = "";
   for (let i = 0; i < bytes.length; i += 0x8000) {

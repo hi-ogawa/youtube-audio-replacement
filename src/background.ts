@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/background.ts
 import { registerRuntimeHandlers } from "./lib/rpc/runtime.ts";
 import { toBase64 } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";

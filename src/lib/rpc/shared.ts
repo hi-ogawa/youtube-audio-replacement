@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/rpc.ts
 export const WINDOW_RPC_REQUEST = "audio-replacement-window-rpc-request";
 export const WINDOW_RPC_RESPONSE = "audio-replacement-window-rpc-response";
 export const WINDOW_RPC_CALLBACK = "audio-replacement-window-rpc-callback";

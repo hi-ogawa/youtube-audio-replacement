@@ -1,3 +1,5 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/content-rpc.ts
+// and https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/content.ts
 import type { RpcClient } from "./core.ts";
 import { createRpcProxy, deserializeParams, serializeParams } from "./core.ts";
 import type { RpcCallbackInvoke, RpcRequest, RpcResponse } from "./shared.ts";

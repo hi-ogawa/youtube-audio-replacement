@@ -37,7 +37,8 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import {
-  type StemGeneratorSourceState,
+  type StemGeneratorSourceMode,
+  type StemGeneratorSourceStates,
   StemGeneratorView,
 } from "./ui/stem-generator.tsx";
 import "./styles.css";
@@ -52,10 +53,13 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const [sourceState, setSourceState] = useState<StemGeneratorSourceState>({
-    status: "empty",
+  const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
+    youtube: { status: "empty" },
+    local: { status: "empty" },
   });
-  const sourceFileRef = useRef<File>(null);
+  const sourceFilesRef = useRef<Partial<Record<StemGeneratorSourceMode, File>>>(
+    {},
+  );
   const outputCleanupRef = useRef<(() => void)[]>([]);
   const [configuration, setConfiguration] = useState<SeparationConfiguration>({
     model: "htdemucs_ft",
@@ -105,8 +109,8 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   useEffect(() => clearOutputUrls, []);
 
   const runSeparationMutation = useMutation({
-    mutationFn: async () => {
-      const sourceFile = sourceFileRef.current;
+    mutationFn: async (sourceMode: StemGeneratorSourceMode) => {
+      const sourceFile = sourceFilesRef.current[sourceMode];
       if (!sourceFile || !modelSource) {
         throw new Error("Audio and model files are required.");
       }
@@ -149,6 +153,13 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     setRunProgress(undefined);
   }
 
+  function setSourceState(
+    mode: StemGeneratorSourceMode,
+    state: StemGeneratorSourceStates[StemGeneratorSourceMode],
+  ) {
+    setSourceStates((current) => ({ ...current, [mode]: state }));
+  }
+
   const loadYouTubeAudioMutation = useMutation({
     mutationFn: async (input: string) => {
       const videoId = parseVideoId(input);
@@ -157,7 +168,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       }
       const rpc = await initEmbedContentRpc();
       const onProgress = (progress: DownloadProgress) => {
-        setSourceState({ status: "loading", progress });
+        setSourceState("youtube", { status: "loading", progress });
       };
       const result = await rpc.download({
         videoId,
@@ -170,48 +181,47 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     },
     onMutate: () => {
       resetSeparation();
-      sourceFileRef.current = null;
-      setSourceState({ status: "loading" });
+      delete sourceFilesRef.current.youtube;
+      setSourceState("youtube", { status: "loading" });
     },
     onSuccess: ({ file, video }) => {
-      sourceFileRef.current = file;
-      setSourceState({
+      sourceFilesRef.current.youtube = file;
+      setSourceState("youtube", {
         status: "ready",
         source: {
-          kind: "YouTube",
           name: video.title,
           detail: `${video.channelName} / ${formatDuration(video.duration)} / ${formatBytes(file.size)}`,
         },
       });
     },
     onError: () => {
-      setSourceState({ status: "empty" });
+      setSourceState("youtube", { status: "empty" });
     },
   });
 
   function chooseLocalFile(file: File) {
-    loadYouTubeAudioMutation.reset();
     resetSeparation();
-    sourceFileRef.current = file;
-    setSourceState({
+    sourceFilesRef.current.local = file;
+    setSourceState("local", {
       status: "ready",
       source: {
-        kind: "Local file",
         name: file.name,
         detail: formatBytes(file.size),
       },
     });
   }
 
-  function removeSource() {
-    loadYouTubeAudioMutation.reset();
+  function removeSource(mode: StemGeneratorSourceMode) {
     resetSeparation();
-    sourceFileRef.current = null;
-    setSourceState({ status: "empty" });
+    if (mode === "youtube") {
+      loadYouTubeAudioMutation.reset();
+    }
+    delete sourceFilesRef.current[mode];
+    setSourceState(mode, { status: "empty" });
   }
 
   function saveSource() {
-    const file = sourceFileRef.current;
+    const file = sourceFilesRef.current.youtube;
     if (!file) {
       return;
     }
@@ -268,7 +278,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   return (
     <StemGeneratorView
       initialInput={initialInput}
-      sourceState={sourceState}
+      sourceStates={sourceStates}
       sourceError={
         loadYouTubeAudioMutation.error instanceof Error
           ? loadYouTubeAudioMutation.error.message
@@ -276,6 +286,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       }
       onLoadYouTube={loadYouTubeAudioMutation.mutate}
       onChooseLocalFile={chooseLocalFile}
+      onSourceModeChange={resetSeparation}
       onRemoveSource={removeSource}
       onSaveSource={saveSource}
       configuration={configuration}
@@ -299,7 +310,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
           : undefined
       }
       onSeparate={runSeparationMutation.mutate}
-      canSeparate={Boolean(sourceFileRef.current && modelSource)}
+      canSeparate={Boolean(modelSource)}
       results={runSeparationMutation.data}
     />
   );
@@ -310,6 +321,8 @@ function main() {
   if (!root) {
     throw new Error("Root element not found");
   }
+  // Start loading the YouTube iframe before the user requests a download.
+  initEmbedContentRpc();
   const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
   const queryClient = new QueryClient();
   createRoot(root).render(
