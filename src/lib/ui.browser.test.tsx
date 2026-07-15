@@ -17,22 +17,25 @@ test("basic", async () => {
           getVideo={() => video}
           initialSelectedAudio={null}
           onSelectAudio={onSelectAudio}
+          onGenerate={vi.fn()}
           onError={vi.fn()}
         />
       </QueryClientProvider>
     </div>,
   );
 
-  const toggle = screen.getByRole("switch", {
-    name: "Use replacement audio",
-  });
-  await expect.element(toggle).toBeDisabled();
+  await expect
+    .element(screen.getByRole("button", { name: "Prepare stems" }))
+    .toBeVisible();
   await page.mark("empty panel");
 
   const fileInput = screen.getByLabelText("Replacement audio file");
   await userEvent.upload(fileInput, "./fixtures/sine-2s.wav");
 
   await expect.element(screen.getByText("sine-2s.wav")).toBeVisible();
+  const toggle = screen.getByRole("switch", {
+    name: "Use replacement audio",
+  });
   await expect.element(toggle).toBeEnabled();
   await page.mark("audio selected");
 

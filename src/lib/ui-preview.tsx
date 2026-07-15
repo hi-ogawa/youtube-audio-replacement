@@ -75,6 +75,7 @@ export function UiPreview() {
               getVideo={() => fakeVideo}
               initialSelectedAudio={withAudio ? previewAudio : null}
               onSelectAudio={() => undefined}
+              onGenerate={() => undefined}
               onError={setError}
             />
           </div>

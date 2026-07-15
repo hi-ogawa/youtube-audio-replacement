@@ -178,7 +178,21 @@ export function Panel({
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">Audio replacement</div>
-        <Toggle checked={enabled} disabled={!selectedAudio} onChange={toggle} />
+        {!selectedAudio && onGenerate ? (
+          <button
+            className="h-5 cursor-pointer rounded-full bg-accent px-2.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
+            type="button"
+            onClick={onGenerate}
+          >
+            Prepare stems
+          </button>
+        ) : (
+          <Toggle
+            checked={enabled}
+            disabled={!selectedAudio}
+            onChange={toggle}
+          />
+        )}
       </div>
       <AudioDrop
         audio={selectedAudio}
@@ -186,15 +200,6 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      {onGenerate && (
-        <button
-          className="mt-2.5 cursor-pointer text-xs font-medium text-accent hover:underline"
-          type="button"
-          onClick={onGenerate}
-        >
-          Generate stems
-        </button>
-      )}
       <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
         <span>Volume</span>
         <input
