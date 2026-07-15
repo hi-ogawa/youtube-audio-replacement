@@ -1,12 +1,9 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { StrictMode, useEffect, useState } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles.css";
-import type { VideoSyncSource } from "./lib/player-sync.ts";
-import type { StoredAudio } from "./lib/storage.ts";
-import { ErrorPanel, Fab, Panel } from "./lib/ui.tsx";
+import { useEffect, useState } from "react";
+import type { VideoSyncSource } from "./player-sync.ts";
+import type { StoredAudio } from "./storage.ts";
+import { ErrorPanel, Fab, Panel } from "./ui.tsx";
 
-class FakeVideo extends EventTarget implements VideoSyncSource {
+export class FakeVideo extends EventTarget implements VideoSyncSource {
   currentTime = 0;
   muted = false;
   paused = true;
@@ -22,8 +19,7 @@ const previewAudio: StoredAudio = {
   name: "preview-audio.wav",
 };
 
-// TODO: Add Playwright coverage for the standalone panel preview.
-function Web() {
+export function UiPreview() {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string>();
@@ -88,21 +84,3 @@ function Web() {
     </main>
   );
 }
-
-function main() {
-  const root = document.getElementById("root");
-  if (!root) {
-    throw new Error("Root element not found");
-  }
-
-  const queryClient = new QueryClient();
-  createRoot(root).render(
-    <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <Web />
-      </QueryClientProvider>
-    </StrictMode>,
-  );
-}
-
-main();

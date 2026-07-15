@@ -28,7 +28,7 @@ On a YouTube watch page, open the control in the bottom-right corner, choose a l
 Run the standalone panel preview with:
 
 ```sh
-pnpm dev-web
+pnpm ui-preview
 ```
 
 The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
