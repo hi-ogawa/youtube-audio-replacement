@@ -1,4 +1,4 @@
-import { IdbStore } from "../idb.ts";
+import { IdbStore } from "../../idb.ts";
 import type { ModelArtifact, ModelFilename } from "./models.ts";
 
 type StoredModelArtifact = ModelArtifact & {

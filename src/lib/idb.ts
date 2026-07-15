@@ -23,6 +23,18 @@ export class IdbStore<T> {
     });
   }
 
+  async getAll(): Promise<T[]> {
+    const database = await this.openDatabase();
+    return new Promise((resolve, reject) => {
+      const request = database
+        .transaction(this.options.storeName, "readonly")
+        .objectStore(this.options.storeName)
+        .getAll();
+      request.onsuccess = () => resolve(request.result as T[]);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   async put(value: T): Promise<void> {
     const database = await this.openDatabase();
     return new Promise((resolve, reject) => {
@@ -31,6 +43,22 @@ export class IdbStore<T> {
         "readwrite",
       );
       transaction.objectStore(this.options.storeName).put(value);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+  }
+
+  async putAll(values: T[]): Promise<void> {
+    const database = await this.openDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(
+        this.options.storeName,
+        "readwrite",
+      );
+      const store = transaction.objectStore(this.options.storeName);
+      for (const value of values) {
+        store.put(value);
+      }
       transaction.oncomplete = () => resolve();
       transaction.onabort = () => reject(transaction.error);
     });
