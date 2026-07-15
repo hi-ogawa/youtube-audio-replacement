@@ -1,5 +1,6 @@
 import type { BackgroundRpcHandlers } from "./background.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
+import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import { fromBase64 } from "./lib/utils.ts";
 import type { YouTubeStreamingFormat } from "./lib/youtube.ts";
@@ -130,7 +131,7 @@ function main() {
     targetOrigin: "*",
   });
 
-  window.parent.postMessage({ type: "audio-replacement-embed-ready" }, "*");
+  window.parent.postMessage({ type: EMBED_READY }, "*");
 }
 
 main();

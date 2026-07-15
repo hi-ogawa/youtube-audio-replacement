@@ -5,6 +5,7 @@ import type {
   EmbedContentRpcHandlers,
 } from "./embed-content.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
+import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { once } from "./lib/utils.ts";
 import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
 import "./styles.css";
@@ -15,7 +16,7 @@ const initEmbedContentRpc = once(() =>
   createHiddenIframeRpc<EmbedContentRpcHandlers>({
     src: "https://www.youtube.com/embed/",
     origin: "https://www.youtube.com",
-    readyMessage: "audio-replacement-embed-ready",
+    readyMessage: EMBED_READY,
     timeoutMs: 15_000,
   }),
 );

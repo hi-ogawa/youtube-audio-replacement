@@ -4,6 +4,7 @@ export const WINDOW_RPC_CALLBACK = "audio-replacement-window-rpc-callback";
 export const RUNTIME_RPC_REQUEST = "audio-replacement-runtime-rpc";
 export const RUNTIME_RELAY_REQUEST = "audio-replacement-relay-request";
 export const RUNTIME_RELAY_RESPONSE = "audio-replacement-relay-response";
+export const EMBED_READY = "audio-replacement-embed-ready";
 
 export interface RpcRequest {
   type: string;
