@@ -1,14 +1,21 @@
 import { registerRuntimeHandlers } from "./lib/rpc/runtime.ts";
 import { toBase64 } from "./lib/utils.ts";
+import { parseVideoId } from "./lib/youtube.ts";
+
+async function openGenerator(videoId?: string) {
+  const url = new URL(chrome.runtime.getURL("index.html"));
+  if (videoId) {
+    url.searchParams.set("videoId", videoId);
+  }
+  await chrome.tabs.create({ url: url.href });
+}
 
 export const backgroundRpcHandlers = {
   async openGenerator({ videoId }: { videoId: string }) {
-    if (!/^[\w-]{11}$/.test(videoId)) {
+    if (parseVideoId(videoId) !== videoId) {
       throw new Error("Invalid YouTube video ID");
     }
-    const url = new URL(chrome.runtime.getURL("index.html"));
-    url.searchParams.set("videoId", videoId);
-    await chrome.tabs.create({ url: url.href });
+    await openGenerator(videoId);
   },
 
   async proxyFetch({ url }: { url: string }) {
@@ -33,4 +40,11 @@ export const backgroundRpcHandlers = {
   },
 };
 
-registerRuntimeHandlers(backgroundRpcHandlers);
+function main() {
+  chrome.action.onClicked.addListener((tab) => {
+    void openGenerator(parseVideoId(tab.url ?? ""));
+  });
+  registerRuntimeHandlers(backgroundRpcHandlers);
+}
+
+main();

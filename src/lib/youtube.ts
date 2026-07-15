@@ -18,6 +18,39 @@ export interface PlayerApiResult {
   streamingFormats: YouTubeStreamingFormat[];
 }
 
+export function parseVideoId(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (/^[\w-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const hostname = url.hostname.replace(/^www\./, "");
+    let videoId: string | undefined;
+    if (hostname === "youtu.be") {
+      videoId = url.pathname.split("/")[1];
+    } else if (
+      hostname === "youtube.com" ||
+      hostname.endsWith(".youtube.com")
+    ) {
+      videoId = url.searchParams.get("v") ?? undefined;
+      if (!videoId) {
+        const [kind, id] = url.pathname.split("/").filter(Boolean);
+        if (["embed", "live", "shorts"].includes(kind ?? "")) {
+          videoId = id;
+        }
+      }
+    }
+    if (videoId && /^[\w-]{11}$/.test(videoId)) {
+      return videoId;
+    }
+  } catch {
+    // Not a URL.
+  }
+  return undefined;
+}
+
 export async function fetchPlayerApi(
   videoId: string,
 ): Promise<PlayerApiResult> {
