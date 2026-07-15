@@ -32,80 +32,117 @@ export function UiMockup() {
             title="Choose audio"
             description="Use a YouTube video or an audio file from your computer."
           >
-            <form
-              className="flex flex-col gap-2 sm:flex-row"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setSource({
-                  kind: "YouTube",
-                  name: "Example YouTube track",
-                  detail: "Example channel / 4:32 / 38.4 MB",
-                });
-                setComplete(false);
-              }}
-            >
-              <label className="min-w-0 flex-1">
-                <span className="sr-only">YouTube video ID or URL</span>
-                <input
-                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
-                  value={input}
-                  placeholder="YouTube video ID or URL"
-                  onChange={(event) => setInput(event.target.value)}
-                />
-              </label>
-              <button
-                className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90"
-                type="submit"
-              >
-                Load from YouTube
-              </button>
-            </form>
-
-            <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              <span>or use a local file</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            <input
-              className="w-full cursor-pointer rounded-md border border-dashed border-button-border bg-button p-2.5 text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
-              type="file"
-              accept="audio/*"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  setSource({
-                    kind: "Local file",
-                    name: file.name,
-                    detail: `${(file.size / 1_000_000).toFixed(1)} MB`,
-                  });
-                  setComplete(false);
-                }
-              }}
-            />
-
-            {source && (
-              <div className="mt-4 flex items-center gap-4 rounded-md border border-border bg-button p-4">
+            {source ? (
+              <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
+                <span
+                  className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-white"
+                  aria-hidden="true"
+                >
+                  <svg
+                    className="size-4"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="m3 8 3 3 7-7" />
+                  </svg>
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold tracking-wide text-accent uppercase">
-                    Source ready
-                  </p>
-                  <p className="mt-1 truncate font-semibold">{source.name}</p>
+                  <p className="truncate font-semibold">{source.name}</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
                     {source.kind} / {source.detail}
                   </p>
                 </div>
-                <button
-                  className="shrink-0 cursor-pointer text-sm font-medium text-accent hover:underline"
-                  type="button"
-                  onClick={() => {
-                    setSource(undefined);
+                <div className="ml-12 flex w-full items-center gap-3 sm:ml-0 sm:w-auto">
+                  {source.kind === "YouTube" && (
+                    <button
+                      className="cursor-pointer text-sm font-medium text-accent hover:underline"
+                      type="button"
+                    >
+                      Save source audio
+                    </button>
+                  )}
+                  <button
+                    className="grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-button-hover hover:text-foreground"
+                    type="button"
+                    aria-label="Remove source"
+                    title="Remove source"
+                    onClick={() => {
+                      setSource(undefined);
+                      setComplete(false);
+                    }}
+                  >
+                    <svg
+                      className="size-4"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3.5 4.5h9M6 4.5V3h4v1.5M5 6.5v5M8 6.5v5M11 6.5v5M4.5 4.5l.5 9h6l.5-9" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <form
+                  className="flex flex-col gap-2 sm:flex-row"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    setSource({
+                      kind: "YouTube",
+                      name: "Example YouTube track",
+                      detail: "Example channel / 4:32 / 38.4 MB",
+                    });
                     setComplete(false);
                   }}
                 >
-                  Change
-                </button>
-              </div>
+                  <label className="min-w-0 flex-1">
+                    <span className="sr-only">YouTube video ID or URL</span>
+                    <input
+                      className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
+                      value={input}
+                      placeholder="YouTube video ID or URL"
+                      onChange={(event) => setInput(event.target.value)}
+                    />
+                  </label>
+                  <button
+                    className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90"
+                    type="submit"
+                  >
+                    Load from YouTube
+                  </button>
+                </form>
+
+                <div className="my-4 flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" />
+                  <span>or use a local file</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <input
+                  className="w-full cursor-pointer rounded-md border border-dashed border-button-border bg-button p-2.5 text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
+                  type="file"
+                  accept="audio/*"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) {
+                      return;
+                    }
+                    setSource({
+                      kind: "Local file",
+                      name: file.name,
+                      detail: `${(file.size / 1_000_000).toFixed(1)} MB`,
+                    });
+                    setComplete(false);
+                  }}
+                />
+              </>
             )}
           </Section>
 
