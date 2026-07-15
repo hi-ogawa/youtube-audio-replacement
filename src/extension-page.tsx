@@ -137,6 +137,8 @@ function main() {
   if (!root) {
     throw new Error("Root element not found");
   }
+  // Start loading the YouTube iframe before the user requests a download.
+  initEmbedContentRpc();
   const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
   const queryClient = new QueryClient();
   createRoot(root).render(
