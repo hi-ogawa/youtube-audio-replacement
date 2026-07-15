@@ -59,11 +59,21 @@ export function StemsGeneratorView({
   return (
     <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Stem generator
-          </h1>
-          <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+        <header className="mb-8 max-w-[760px]">
+          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
+            <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+              Stem generator
+            </h1>
+            <a
+              className="ml-auto text-sm font-semibold text-foreground underline underline-offset-3 hover:text-accent"
+              href="https://github.com/hi-ogawa/youtube-audio-replacement"
+              target="_blank"
+              rel="noreferrer"
+            >
+              View on GitHub
+            </a>
+          </div>
+          <p className="mt-4 mb-2 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             Load a YouTube video or choose a local audio file, then separate it
             into stems in your browser.
           </p>
