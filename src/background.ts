@@ -10,13 +10,13 @@ async function openGenerator(videoId?: string) {
   await chrome.tabs.create({ url: url.href });
 }
 
-export const backgroundRpcHandlers = {
+export class BackgroundRpcHandlers {
   async openGenerator({ videoId }: { videoId: string }) {
     if (parseVideoId(videoId) !== videoId) {
       throw new Error("Invalid YouTube video ID");
     }
     await openGenerator(videoId);
-  },
+  }
 
   async proxyFetch({ url }: { url: string }) {
     const parsedUrl = new URL(url);
@@ -37,14 +37,14 @@ export const backgroundRpcHandlers = {
     return {
       data: toBase64(new Uint8Array(await response.arrayBuffer())),
     };
-  },
-};
+  }
+}
 
 function main() {
   chrome.action.onClicked.addListener((tab) => {
     void openGenerator(parseVideoId(tab.url ?? ""));
   });
-  registerRuntimeHandlers(backgroundRpcHandlers);
+  registerRuntimeHandlers(new BackgroundRpcHandlers());
 }
 
 main();

@@ -84,19 +84,19 @@ export function setupRuntimeRelay() {
   );
 }
 
-export function registerRuntimeHandlers(
-  handlers: Record<string, (params: never) => Promise<unknown>>,
-) {
+export function registerRuntimeHandlers(handlers: object) {
   chrome.runtime.onMessage.addListener(
     (message: RuntimeRequest, _sender, sendResponse) => {
       if (message.type !== RUNTIME_RPC_REQUEST) {
         return;
       }
-      const handler = handlers[message.method];
+      const handler = (handlers as any)[message.method];
       if (!handler) {
         return;
       }
-      handler(message.params as never).then(
+      (
+        Reflect.apply(handler, handlers, [message.params]) as Promise<unknown>
+      ).then(
         (result) => sendResponse({ result }),
         (error: unknown) =>
           sendResponse({

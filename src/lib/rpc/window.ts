@@ -76,7 +76,7 @@ export function createWindowRpc<Handlers>({
 }
 
 export function registerWindowRpcHandlers(
-  handlers: Record<string, (params: never) => Promise<unknown>>,
+  handlers: object,
   {
     sourceWindow,
     targetWindow,
@@ -98,7 +98,7 @@ export function registerWindowRpcHandlers(
       }
 
       const { id, method, params } = event.data;
-      const handler = handlers[method];
+      const handler = (handlers as any)[method];
       if (!handler) {
         targetWindow.postMessage(
           {
@@ -127,7 +127,9 @@ export function registerWindowRpcHandlers(
       );
 
       try {
-        const result = await handler(deserializedParams as never);
+        const result = await Reflect.apply(handler, handlers, [
+          deserializedParams,
+        ]);
         targetWindow.postMessage(
           {
             type: WINDOW_RPC_RESPONSE,

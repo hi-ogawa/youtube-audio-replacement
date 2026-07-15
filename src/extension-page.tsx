@@ -2,7 +2,7 @@ import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
   DownloadProgress,
-  embedContentRpcHandlers,
+  EmbedContentRpcHandlers,
 } from "./embed-content.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { once } from "./lib/utils.ts";
@@ -12,7 +12,7 @@ import "./styles.css";
 type Phase = "connecting" | "ready" | "downloading" | "cancelled" | "error";
 
 const initEmbedContentRpc = once(() =>
-  createHiddenIframeRpc<typeof embedContentRpcHandlers>({
+  createHiddenIframeRpc<EmbedContentRpcHandlers>({
     src: "https://www.youtube.com/embed/",
     origin: "https://www.youtube.com",
     readyMessage: "audio-replacement-embed-ready",

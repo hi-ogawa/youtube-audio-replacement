@@ -1,4 +1,4 @@
-import type { backgroundRpcHandlers } from "./background.ts";
+import type { BackgroundRpcHandlers } from "./background.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import { fromBase64 } from "./lib/utils.ts";
@@ -6,8 +6,7 @@ import type { YouTubeStreamingFormat } from "./lib/youtube.ts";
 import { fetchPlayerApi } from "./lib/youtube.ts";
 
 const CHUNK_SIZE = 5_000_000;
-const downloads = new Map<string, AbortController>();
-const backgroundRpc = createRuntimeRelayRpc<typeof backgroundRpcHandlers>();
+const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
 
 export type DownloadProgress = {
   bytesReceived: number;
@@ -72,10 +71,12 @@ async function downloadBytes(
   return data;
 }
 
-export const embedContentRpcHandlers = {
+export class EmbedContentRpcHandlers {
+  private downloads = new Map<string, AbortController>();
+
   async getStreamingFormats({ videoId }: { videoId: string }) {
     return await fetchPlayerApiWhenReady(videoId);
-  },
+  }
 
   async downloadFormat({
     videoId,
@@ -89,7 +90,7 @@ export const embedContentRpcHandlers = {
     onProgress?: (progress: DownloadProgress) => void;
   }) {
     const abortController = new AbortController();
-    downloads.set(downloadId, abortController);
+    this.downloads.set(downloadId, abortController);
     try {
       const { result, format } = await resolveFormatUrl(videoId, itag);
       if (!format.contentLength) {
@@ -113,17 +114,17 @@ export const embedContentRpcHandlers = {
         mimeType,
       };
     } finally {
-      downloads.delete(downloadId);
+      this.downloads.delete(downloadId);
     }
-  },
+  }
 
   async cancelDownload({ downloadId }: { downloadId: string }) {
-    downloads.get(downloadId)?.abort();
-  },
-};
+    this.downloads.get(downloadId)?.abort();
+  }
+}
 
 function main() {
-  registerWindowRpcHandlers(embedContentRpcHandlers, {
+  registerWindowRpcHandlers(new EmbedContentRpcHandlers(), {
     sourceWindow: window.parent,
     targetWindow: window.parent,
     targetOrigin: "*",
