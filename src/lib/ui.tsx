@@ -321,6 +321,7 @@ function AudioDrop({
       </button>
       <input
         ref={inputRef}
+        aria-label="Replacement audio file"
         type="file"
         accept="audio/*,.zip,application/zip"
         hidden
