@@ -34,7 +34,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.1.4",
     "vite-plus": "^0.2.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "vitest-browser-react": "2.2.0"
   },
   "packageManager": "pnpm@11.11.0"
 }
