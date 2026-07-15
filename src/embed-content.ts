@@ -122,10 +122,14 @@ export const embedContentRpcHandlers = {
   },
 };
 
-registerWindowRpcHandlers(embedContentRpcHandlers, {
-  sourceWindow: window.parent,
-  targetWindow: window.parent,
-  targetOrigin: "*",
-});
+function main() {
+  registerWindowRpcHandlers(embedContentRpcHandlers, {
+    sourceWindow: window.parent,
+    targetWindow: window.parent,
+    targetOrigin: "*",
+  });
 
-window.parent.postMessage({ type: "audio-replacement-embed-ready" }, "*");
+  window.parent.postMessage({ type: "audio-replacement-embed-ready" }, "*");
+}
+
+main();

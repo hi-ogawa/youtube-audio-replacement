@@ -274,12 +274,16 @@ function formatDuration(seconds: number) {
   return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 }
 
-const root = document.getElementById("root");
-if (!root) {
-  throw new Error("Root element not found");
+function main() {
+  const root = document.getElementById("root");
+  if (!root) {
+    throw new Error("Root element not found");
+  }
+  createRoot(root).render(
+    <StrictMode>
+      <Generator />
+    </StrictMode>,
+  );
 }
-createRoot(root).render(
-  <StrictMode>
-    <Generator />
-  </StrictMode>,
-);
+
+main();
