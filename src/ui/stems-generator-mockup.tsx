@@ -1,39 +1,46 @@
 import { useState } from "react";
 import {
-  type StemsGeneratorSourceState,
+  type StemsGeneratorSourceMode,
+  type StemsGeneratorSourceStates,
   StemsGeneratorView,
 } from "./stems-generator.tsx";
 
 export function StemsGeneratorMockup() {
-  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
-    status: "empty",
+  const [sourceStates, setSourceStates] = useState<StemsGeneratorSourceStates>({
+    youtube: { status: "empty" },
+    local: { status: "empty" },
   });
+
+  function setSourceState(
+    mode: StemsGeneratorSourceMode,
+    state: StemsGeneratorSourceStates[StemsGeneratorSourceMode],
+  ) {
+    setSourceStates((current) => ({ ...current, [mode]: state }));
+  }
 
   return (
     <StemsGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
-      sourceState={sourceState}
+      sourceStates={sourceStates}
       onLoadYouTube={() =>
-        setSourceState({
+        setSourceState("youtube", {
           status: "ready",
           source: {
-            kind: "YouTube",
             name: "Example YouTube track",
             detail: "Example channel / 4:32 / 38.4 MB",
           },
         })
       }
       onChooseLocalFile={(file) =>
-        setSourceState({
+        setSourceState("local", {
           status: "ready",
           source: {
-            kind: "Local file",
             name: file.name,
             detail: `${(file.size / 1_000_000).toFixed(1)} MB`,
           },
         })
       }
-      onRemoveSource={() => setSourceState({ status: "empty" })}
+      onRemoveSource={(mode) => setSourceState(mode, { status: "empty" })}
       onSaveSource={() => undefined}
     />
   );

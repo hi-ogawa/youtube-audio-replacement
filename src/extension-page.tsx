@@ -14,7 +14,8 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import {
-  type StemsGeneratorSourceState,
+  type StemsGeneratorSourceMode,
+  type StemsGeneratorSourceStates,
   StemsGeneratorView,
 } from "./ui/stems-generator.tsx";
 import "./styles.css";
@@ -29,10 +30,20 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
-    status: "empty",
+  const [sourceStates, setSourceStates] = useState<StemsGeneratorSourceStates>({
+    youtube: { status: "empty" },
+    local: { status: "empty" },
   });
-  const sourceFileRef = useRef<File>(null);
+  const sourceFilesRef = useRef<
+    Partial<Record<StemsGeneratorSourceMode, File>>
+  >({});
+
+  function setSourceState(
+    mode: StemsGeneratorSourceMode,
+    state: StemsGeneratorSourceStates[StemsGeneratorSourceMode],
+  ) {
+    setSourceStates((current) => ({ ...current, [mode]: state }));
+  }
 
   const loadYouTubeAudioMutation = useMutation({
     mutationFn: async (input: string) => {
@@ -42,7 +53,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       }
       const rpc = await initEmbedContentRpc();
       const onProgress = (progress: DownloadProgress) => {
-        setSourceState({ status: "loading", progress });
+        setSourceState("youtube", { status: "loading", progress });
       };
       const result = await rpc.download({
         videoId,
@@ -54,46 +65,45 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       return { file, video: result.video };
     },
     onMutate: () => {
-      sourceFileRef.current = null;
-      setSourceState({ status: "loading" });
+      delete sourceFilesRef.current.youtube;
+      setSourceState("youtube", { status: "loading" });
     },
     onSuccess: ({ file, video }) => {
-      sourceFileRef.current = file;
-      setSourceState({
+      sourceFilesRef.current.youtube = file;
+      setSourceState("youtube", {
         status: "ready",
         source: {
-          kind: "YouTube",
           name: video.title,
           detail: `${video.channelName} / ${formatDuration(video.duration)} / ${formatBytes(file.size)}`,
         },
       });
     },
     onError: () => {
-      setSourceState({ status: "empty" });
+      setSourceState("youtube", { status: "empty" });
     },
   });
 
   function chooseLocalFile(file: File) {
-    loadYouTubeAudioMutation.reset();
-    sourceFileRef.current = file;
-    setSourceState({
+    sourceFilesRef.current.local = file;
+    setSourceState("local", {
       status: "ready",
       source: {
-        kind: "Local file",
         name: file.name,
         detail: formatBytes(file.size),
       },
     });
   }
 
-  function removeSource() {
-    loadYouTubeAudioMutation.reset();
-    sourceFileRef.current = null;
-    setSourceState({ status: "empty" });
+  function removeSource(mode: StemsGeneratorSourceMode) {
+    if (mode === "youtube") {
+      loadYouTubeAudioMutation.reset();
+    }
+    delete sourceFilesRef.current[mode];
+    setSourceState(mode, { status: "empty" });
   }
 
   function saveSource() {
-    const file = sourceFileRef.current;
+    const file = sourceFilesRef.current.youtube;
     if (!file) {
       return;
     }
@@ -108,7 +118,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   return (
     <StemsGeneratorView
       initialInput={initialInput}
-      sourceState={sourceState}
+      sourceStates={sourceStates}
       sourceError={
         loadYouTubeAudioMutation.error instanceof Error
           ? loadYouTubeAudioMutation.error.message
