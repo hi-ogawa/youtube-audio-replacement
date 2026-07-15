@@ -2,11 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { BackgroundRpcHandlers } from "./background.ts";
-import contentCss from "./content.css?inline";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { videoStorage } from "./lib/storage.ts";
-import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
+import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
+import contentCss from "./ui/content.css?inline";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();

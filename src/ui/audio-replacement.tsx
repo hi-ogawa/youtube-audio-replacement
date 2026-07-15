@@ -1,8 +1,8 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { resolveAudioFile } from "./audio-file.ts";
-import { PlayerSync, type VideoSyncSource } from "./player-sync.ts";
-import { type StoredAudio, videoStorage } from "./storage.ts";
+import { resolveAudioFile } from "../lib/audio-file.ts";
+import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
+import { type StoredAudio, videoStorage } from "../lib/storage.ts";
 
 export function StoredPanel({
   videoId,

@@ -22,8 +22,16 @@ pnpm build
 
 Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository's `dist/extension` directory. The packaged extension is available at `dist/extension.zip`.
 
-## Development
+To develop the extension UI as a regular web app, run:
 
-See [the extension architecture](docs/extension-architecture.html) for the execution contexts and acquisition RPC flow.
+```sh
+pnpm ui-preview
+```
 
-The YouTube acquisition path is adapted from [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext). Demucs inference, model management, progress reporting, and stem export are adapted from [demucs-onnx](https://github.com/hi-ogawa/demucs-onnx).
+Then open `http://localhost:5173/src/ui/preview.html`.
+
+## References
+
+- [Extension architecture](docs/extension-architecture.html): execution contexts and acquisition RPC flow.
+- [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext): source for the YouTube acquisition path.
+- [demucs-onnx](https://github.com/hi-ogawa/demucs-onnx): source for Demucs inference, model management, progress reporting, and stem export.

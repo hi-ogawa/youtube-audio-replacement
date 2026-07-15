@@ -42,7 +42,7 @@ import {
   type StemGeneratorSourceStates,
   StemGeneratorView,
 } from "./ui/stem-generator.tsx";
-import "./styles.css";
+import "./ui/styles.css";
 
 const initEmbedContentRpc = once(() =>
   createHiddenIframeRpc<EmbedContentRpcHandlers>({
