@@ -41,6 +41,7 @@ type GeneratedFile = {
 
 export function StemGeneratorView({
   initialInput,
+  sourceMode,
   sourceStates,
   sourceError,
   onLoadYouTube,
@@ -63,6 +64,7 @@ export function StemGeneratorView({
   results,
 }: {
   initialInput: string;
+  sourceMode: StemGeneratorSourceMode;
   sourceStates: StemGeneratorSourceStates;
   sourceError?: string;
   onLoadYouTube(input: string): void;
@@ -80,7 +82,7 @@ export function StemGeneratorView({
   separationProgress?: RunProgress | null;
   separationStatus?: string;
   separationError?: string;
-  onSeparate(mode: StemGeneratorSourceMode): void;
+  onSeparate(): void;
   canSeparate: boolean;
   results?: {
     outputs: GeneratedFile[];
@@ -88,8 +90,6 @@ export function StemGeneratorView({
   };
 }) {
   const [input, setInput] = useState(initialInput);
-  const [sourceMode, setSourceMode] =
-    useState<StemGeneratorSourceMode>("youtube");
   const sourceState = sourceStates[sourceMode];
   const source =
     sourceState.status === "ready" ? sourceState.source : undefined;
@@ -147,7 +147,6 @@ export function StemGeneratorView({
                 onClick={() => {
                   if (sourceMode !== "youtube") {
                     onSourceModeChange("youtube");
-                    setSourceMode("youtube");
                   }
                 }}
               >
@@ -161,7 +160,6 @@ export function StemGeneratorView({
                 onClick={() => {
                   if (sourceMode !== "local") {
                     onSourceModeChange("local");
-                    setSourceMode("local");
                   }
                 }}
               >
@@ -403,7 +401,7 @@ export function StemGeneratorView({
               className="h-13 w-full cursor-pointer rounded-md bg-accent text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-40"
               type="button"
               disabled={!source || !canSeparate || separationPending}
-              onClick={() => onSeparate(sourceMode)}
+              onClick={onSeparate}
             >
               {separationPending ? "Separating..." : "Separate track"}
             </button>

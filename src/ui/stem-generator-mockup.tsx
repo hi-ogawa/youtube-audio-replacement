@@ -8,6 +8,8 @@ import {
 
 export function StemGeneratorMockup() {
   const loadingTimeoutRef = useRef<number>(undefined);
+  const [sourceMode, setSourceMode] =
+    useState<StemGeneratorSourceMode>("youtube");
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
@@ -31,6 +33,7 @@ export function StemGeneratorMockup() {
   return (
     <StemGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
+      sourceMode={sourceMode}
       sourceStates={sourceStates}
       onLoadYouTube={() => {
         setSourceState("youtube", {
@@ -56,7 +59,7 @@ export function StemGeneratorMockup() {
           },
         })
       }
-      onSourceModeChange={() => undefined}
+      onSourceModeChange={setSourceMode}
       onRemoveSource={(mode) => setSourceState(mode, { status: "empty" })}
       onSaveSource={() => undefined}
       configuration={configuration}

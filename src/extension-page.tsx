@@ -54,6 +54,8 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
+  const [sourceMode, setSourceMode] =
+    useState<StemGeneratorSourceMode>("youtube");
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
@@ -116,7 +118,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   useEffect(() => clearOutputUrls, []);
 
   const runSeparationMutation = useMutation({
-    mutationFn: async (sourceMode: StemGeneratorSourceMode) => {
+    mutationFn: async () => {
       const sourceFile = sourceFilesRef.current[sourceMode];
       if (!sourceFile || !modelSource) {
         throw new Error("Audio and model files are required.");
@@ -185,6 +187,11 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     state: StemGeneratorSourceStates[StemGeneratorSourceMode],
   ) {
     setSourceStates((current) => ({ ...current, [mode]: state }));
+  }
+
+  function changeSourceMode(mode: StemGeneratorSourceMode) {
+    resetSeparation();
+    setSourceMode(mode);
   }
 
   const loadYouTubeAudioMutation = useMutation({
@@ -309,6 +316,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   return (
     <StemGeneratorView
       initialInput={initialInput}
+      sourceMode={sourceMode}
       sourceStates={sourceStates}
       sourceError={
         loadYouTubeAudioMutation.error instanceof Error
@@ -317,7 +325,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       }
       onLoadYouTube={loadYouTubeAudioMutation.mutate}
       onChooseLocalFile={chooseLocalFile}
-      onSourceModeChange={resetSeparation}
+      onSourceModeChange={changeSourceMode}
       onRemoveSource={removeSource}
       onSaveSource={saveSource}
       configuration={preferences}
@@ -341,8 +349,8 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
           ? runSeparationMutation.error.message
           : undefined
       }
-      onSeparate={runSeparationMutation.mutate}
-      canSeparate={Boolean(modelSource)}
+      onSeparate={() => runSeparationMutation.mutate()}
+      canSeparate={Boolean(sourceFilesRef.current[sourceMode] && modelSource)}
       results={runSeparationMutation.data}
     />
   );
