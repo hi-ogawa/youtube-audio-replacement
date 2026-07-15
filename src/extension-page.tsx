@@ -6,8 +6,9 @@ import type {
 } from "./embed-content.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
-import { once } from "./lib/utils.ts";
-import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
+import { formatBytes, formatDuration, once } from "./lib/utils.ts";
+import type { PlayerApiResult } from "./lib/youtube.ts";
+import { selectAudioFormat } from "./lib/youtube.ts";
 import "./styles.css";
 
 type Phase = "connecting" | "ready" | "downloading" | "cancelled" | "error";
@@ -20,19 +21,6 @@ const initEmbedContentRpc = once(() =>
     timeoutMs: 15_000,
   }),
 );
-
-function selectAudioFormat(formats: YouTubeStreamingFormat[]) {
-  const audioFormats = formats.filter(
-    (format) =>
-      format.mimeType.startsWith("audio/") && Boolean(format.contentLength),
-  );
-  const opusFormats = audioFormats.filter((format) =>
-    format.mimeType.includes("opus"),
-  );
-  return (opusFormats.length > 0 ? opusFormats : audioFormats).sort(
-    (left, right) => (right.contentLength ?? 0) - (left.contentLength ?? 0),
-  )[0];
-}
 
 function Generator() {
   const videoId = new URL(location.href).searchParams.get("videoId");
@@ -261,18 +249,6 @@ function Generator() {
       </div>
     </main>
   );
-}
-
-function formatBytes(bytes: number) {
-  if (!bytes) {
-    return "0 MB";
-  }
-  return `${(bytes / 1_000_000).toFixed(1)} MB`;
-}
-
-function formatDuration(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 }
 
 function main() {

@@ -18,6 +18,19 @@ export interface PlayerApiResult {
   streamingFormats: YouTubeStreamingFormat[];
 }
 
+export function selectAudioFormat(formats: YouTubeStreamingFormat[]) {
+  const audioFormats = formats.filter(
+    (format) =>
+      format.mimeType.startsWith("audio/") && Boolean(format.contentLength),
+  );
+  const opusFormats = audioFormats.filter((format) =>
+    format.mimeType.includes("opus"),
+  );
+  return (opusFormats.length > 0 ? opusFormats : audioFormats).sort(
+    (left, right) => (right.contentLength ?? 0) - (left.contentLength ?? 0),
+  )[0];
+}
+
 export function parseVideoId(value: string): string | undefined {
   const trimmed = value.trim();
   if (/^[\w-]{11}$/.test(trimmed)) {
