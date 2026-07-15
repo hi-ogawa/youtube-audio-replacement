@@ -1,3 +1,8 @@
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+} from "@tanstack/react-query";
 import { StrictMode, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
@@ -27,20 +32,14 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
     status: "empty",
   });
-  const [sourceError, setSourceError] = useState<string>();
   const sourceFileRef = useRef<File>(null);
 
-  async function loadYouTubeAudio(input: string) {
-    const videoId = parseVideoId(input);
-    if (!videoId) {
-      setSourceError("Enter a valid YouTube video ID or URL.");
-      return;
-    }
-
-    sourceFileRef.current = null;
-    setSourceError(undefined);
-    setSourceState({ status: "loading" });
-    try {
+  const loadYouTubeAudioMutation = useMutation({
+    mutationFn: async (input: string) => {
+      const videoId = parseVideoId(input);
+      if (!videoId) {
+        throw new Error("Enter a valid YouTube video ID or URL.");
+      }
       const rpc = await initEmbedContentRpc();
       const onProgress = (progress: DownloadProgress) => {
         setSourceState({ status: "loading", progress });
@@ -52,25 +51,31 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       const file = new File([result.data], result.filename, {
         type: result.mimeType,
       });
+      return { file, video: result.video };
+    },
+    onMutate: () => {
+      sourceFileRef.current = null;
+      setSourceState({ status: "loading" });
+    },
+    onSuccess: ({ file, video }) => {
       sourceFileRef.current = file;
       setSourceState({
         status: "ready",
         source: {
           kind: "YouTube",
-          name: result.video.title,
-          detail: `${result.video.channelName} / ${formatDuration(result.video.duration)} / ${formatBytes(file.size)}`,
+          name: video.title,
+          detail: `${video.channelName} / ${formatDuration(video.duration)} / ${formatBytes(file.size)}`,
         },
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    },
+    onError: () => {
       setSourceState({ status: "empty" });
-      setSourceError(message);
-    }
-  }
+    },
+  });
 
   function chooseLocalFile(file: File) {
+    loadYouTubeAudioMutation.reset();
     sourceFileRef.current = file;
-    setSourceError(undefined);
     setSourceState({
       status: "ready",
       source: {
@@ -82,8 +87,8 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   }
 
   function removeSource() {
+    loadYouTubeAudioMutation.reset();
     sourceFileRef.current = null;
-    setSourceError(undefined);
     setSourceState({ status: "empty" });
   }
 
@@ -104,8 +109,12 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     <StemsGeneratorView
       initialInput={initialInput}
       sourceState={sourceState}
-      sourceError={sourceError}
-      onLoadYouTube={(input) => void loadYouTubeAudio(input)}
+      sourceError={
+        loadYouTubeAudioMutation.error instanceof Error
+          ? loadYouTubeAudioMutation.error.message
+          : undefined
+      }
+      onLoadYouTube={loadYouTubeAudioMutation.mutate}
       onChooseLocalFile={chooseLocalFile}
       onRemoveSource={removeSource}
       onSaveSource={saveSource}
@@ -119,9 +128,12 @@ function main() {
     throw new Error("Root element not found");
   }
   const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
+  const queryClient = new QueryClient();
   createRoot(root).render(
     <StrictMode>
-      <ExtensionPage initialInput={initialInput} />
+      <QueryClientProvider client={queryClient}>
+        <ExtensionPage initialInput={initialInput} />
+      </QueryClientProvider>
     </StrictMode>,
   );
 }
