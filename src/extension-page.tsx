@@ -1,17 +1,18 @@
-import { StrictMode, useEffect, useRef, useState } from "react";
+import { StrictMode, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type {
   DownloadProgress,
   EmbedContentRpcHandlers,
 } from "./embed-content.ts";
+import {
+  type GeneratorSourceState,
+  GeneratorView,
+} from "./lib/generator-ui.tsx";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
-import type { PlayerApiResult } from "./lib/youtube.ts";
-import { selectAudioFormat } from "./lib/youtube.ts";
+import { parseVideoId, selectAudioFormat } from "./lib/youtube.ts";
 import "./styles.css";
-
-type Phase = "connecting" | "ready" | "downloading" | "cancelled" | "error";
 
 const initEmbedContentRpc = once(() =>
   createHiddenIframeRpc<EmbedContentRpcHandlers>({
@@ -22,95 +23,89 @@ const initEmbedContentRpc = once(() =>
   }),
 );
 
-function Generator() {
-  const videoId = new URL(location.href).searchParams.get("videoId");
-  const [phase, setPhase] = useState<Phase>(videoId ? "connecting" : "ready");
-  const [metadata, setMetadata] = useState<PlayerApiResult>();
-  const [progress, setProgress] = useState<DownloadProgress>();
-  const [source, setSource] = useState<File>();
-  const [sourceUrl, setSourceUrl] = useState<string>();
-  const [error, setError] = useState<string>();
-  const downloadIdRef = useRef<string | undefined>(undefined);
+function ExtensionPage() {
+  const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
+  const [sourceState, setSourceState] = useState<GeneratorSourceState>({
+    status: "empty",
+  });
+  const [sourceError, setSourceError] = useState<string>();
+  const sourceFileRef = useRef<File>(null);
+  const downloadIdRef = useRef<string>(null);
+  const loadAbortRef = useRef<AbortController>(null);
 
-  useEffect(() => {
+  async function loadYouTubeAudio(input: string) {
+    const videoId = parseVideoId(input);
     if (!videoId) {
-      return;
-    }
-    let active = true;
-    void initEmbedContentRpc()
-      .then((rpc) => rpc.getStreamingFormats({ videoId }))
-      .then((result) => {
-        if (active) {
-          setMetadata(result);
-          setPhase("ready");
-        }
-      })
-      .catch((nextError: unknown) => {
-        if (active) {
-          setError(
-            nextError instanceof Error ? nextError.message : String(nextError),
-          );
-          setPhase("error");
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [videoId]);
-
-  useEffect(() => {
-    if (!source) {
-      setSourceUrl(undefined);
-      return;
-    }
-    const url = URL.createObjectURL(source);
-    setSourceUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [source]);
-
-  async function loadYouTubeAudio() {
-    if (!videoId || !metadata) {
-      return;
-    }
-    const format = selectAudioFormat(metadata.streamingFormats);
-    if (!format) {
-      setError("No complete audio-only format is available for this video.");
-      setPhase("error");
+      setSourceError("Enter a valid YouTube video ID or URL.");
       return;
     }
 
     const downloadId = crypto.randomUUID();
+    const abortController = new AbortController();
     downloadIdRef.current = downloadId;
-    setProgress({ bytesReceived: 0, totalBytes: format.contentLength ?? 0 });
-    setError(undefined);
-    setPhase("downloading");
+    loadAbortRef.current = abortController;
+    sourceFileRef.current = null;
+    setSourceError(undefined);
+    setSourceState({ status: "loading" });
     try {
       const rpc = await initEmbedContentRpc();
+      abortController.signal.throwIfAborted();
+      const metadata = await rpc.getStreamingFormats({ videoId });
+      abortController.signal.throwIfAborted();
+      const format = selectAudioFormat(metadata.streamingFormats);
+      if (!format) {
+        throw new Error(
+          "No complete audio-only format is available for this video.",
+        );
+      }
+
+      const onProgress = (progress: DownloadProgress) => {
+        if (loadAbortRef.current === abortController) {
+          setSourceState({ status: "loading", progress });
+        }
+      };
       const result = await rpc.downloadFormat({
         videoId,
         itag: format.itag,
         downloadId,
-        onProgress: setProgress,
+        onProgress,
       });
-      setSource(
-        new File([result.data], result.filename, { type: result.mimeType }),
-      );
-      setPhase("ready");
-    } catch (nextError) {
-      const message =
-        nextError instanceof Error ? nextError.message : String(nextError);
-      if (message.includes("aborted")) {
-        setPhase("cancelled");
-      } else {
-        setError(message);
-        setPhase("error");
+      abortController.signal.throwIfAborted();
+      const file = new File([result.data], result.filename, {
+        type: result.mimeType,
+      });
+      if (loadAbortRef.current !== abortController) {
+        return;
+      }
+      sourceFileRef.current = file;
+      setSourceState({
+        status: "ready",
+        source: {
+          kind: "YouTube",
+          name: metadata.video.title,
+          detail: `${metadata.video.channelName} / ${formatDuration(metadata.video.duration)} / ${formatBytes(file.size)}`,
+        },
+      });
+    } catch (error) {
+      if (loadAbortRef.current !== abortController) {
+        return;
+      }
+      const message = error instanceof Error ? error.message : String(error);
+      setSourceState({ status: "empty" });
+      if (!message.includes("aborted")) {
+        setSourceError(message);
       }
     } finally {
-      downloadIdRef.current = undefined;
+      if (loadAbortRef.current === abortController) {
+        downloadIdRef.current = null;
+        loadAbortRef.current = null;
+      }
     }
   }
 
-  async function cancel() {
+  async function cancelLoad() {
+    loadAbortRef.current?.abort();
+    setSourceState({ status: "empty" });
     const downloadId = downloadIdRef.current;
     if (!downloadId) {
       return;
@@ -119,135 +114,49 @@ function Generator() {
     await rpc.cancelDownload({ downloadId });
   }
 
-  const progressPercent = progress?.totalBytes
-    ? Math.round((progress.bytesReceived / progress.totalBytes) * 100)
-    : 0;
+  function chooseLocalFile(file: File) {
+    sourceFileRef.current = file;
+    setSourceError(undefined);
+    setSourceState({
+      status: "ready",
+      source: {
+        kind: "Local file",
+        name: file.name,
+        detail: formatBytes(file.size),
+      },
+    });
+  }
+
+  function removeSource() {
+    sourceFileRef.current = null;
+    setSourceError(undefined);
+    setSourceState({ status: "empty" });
+  }
+
+  function saveSource() {
+    const file = sourceFileRef.current;
+    if (!file) {
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.name;
+    anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url));
+  }
 
   return (
-    <main className="min-h-screen bg-button px-5 py-10 font-sans text-foreground">
-      <div className="mx-auto max-w-2xl overflow-hidden rounded-xl border border-border bg-panel shadow-lg">
-        <header className="border-b border-border px-6 py-5">
-          <p className="text-xs font-semibold tracking-widest text-accent uppercase">
-            YouTube Audio Replacement
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold">Stem generator</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Prepare complete source audio for stem separation.
-          </p>
-        </header>
-
-        <div className="space-y-6 p-6">
-          {videoId && (
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold">YouTube source</h2>
-              {phase === "connecting" ? (
-                <p className="text-sm text-muted-foreground">
-                  Connecting to YouTube...
-                </p>
-              ) : metadata ? (
-                <div className="rounded-lg border border-border bg-button p-4">
-                  <p className="font-medium">{metadata.video.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {metadata.video.channelName} ·{" "}
-                    {formatDuration(metadata.video.duration)}
-                  </p>
-                  {phase === "downloading" ? (
-                    <div className="mt-4 space-y-2">
-                      <div className="h-2 overflow-hidden rounded-full bg-button-border">
-                        <div
-                          className="h-full bg-accent transition-[width]"
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                          {formatBytes(progress?.bytesReceived ?? 0)} /{" "}
-                          {formatBytes(progress?.totalBytes ?? 0)}
-                        </span>
-                        <button
-                          className="cursor-pointer font-medium text-error hover:underline"
-                          type="button"
-                          onClick={() => void cancel()}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      className="mt-4 cursor-pointer rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
-                      type="button"
-                      onClick={() => void loadYouTubeAudio()}
-                    >
-                      Load audio from YouTube
-                    </button>
-                  )}
-                </div>
-              ) : null}
-            </section>
-          )}
-
-          <section className="space-y-3">
-            <div>
-              <h2 className="text-sm font-semibold">Local source</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Use an audio file from your computer instead.
-              </p>
-            </div>
-            <label className="inline-flex cursor-pointer rounded-md border border-button-border bg-button px-4 py-2 text-sm font-medium hover:bg-button-hover">
-              Choose audio file
-              <input
-                type="file"
-                accept="audio/*"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) {
-                    setSource(file);
-                    setError(undefined);
-                    setPhase("ready");
-                  }
-                  event.target.value = "";
-                }}
-              />
-            </label>
-          </section>
-
-          {phase === "cancelled" && (
-            <p className="rounded-md border border-border bg-button p-3 text-sm">
-              Audio download cancelled.
-            </p>
-          )}
-          {error && (
-            <p
-              className="rounded-md border border-error/40 p-3 text-sm text-error"
-              role="alert"
-            >
-              {error}
-            </p>
-          )}
-
-          {source && sourceUrl && (
-            <section className="space-y-3 border-t border-border pt-5">
-              <div>
-                <h2 className="text-sm font-semibold">Source audio ready</h2>
-                <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {source.name} · {formatBytes(source.size)}
-                </p>
-              </div>
-              <audio className="w-full" controls src={sourceUrl} />
-              <a
-                className="inline-flex rounded-md border border-button-border bg-button px-4 py-2 text-sm font-medium hover:bg-button-hover"
-                href={sourceUrl}
-                download={source.name}
-              >
-                Save source audio
-              </a>
-            </section>
-          )}
-        </div>
-      </div>
-    </main>
+    <GeneratorView
+      initialInput={initialInput}
+      sourceState={sourceState}
+      sourceError={sourceError}
+      onLoadYouTube={(input) => void loadYouTubeAudio(input)}
+      onChooseLocalFile={chooseLocalFile}
+      onCancelLoad={() => void cancelLoad()}
+      onRemoveSource={removeSource}
+      onSaveSource={saveSource}
+    />
   );
 }
 
@@ -258,7 +167,7 @@ function main() {
   }
   createRoot(root).render(
     <StrictMode>
-      <Generator />
+      <ExtensionPage />
     </StrictMode>,
   );
 }
