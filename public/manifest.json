@@ -3,7 +3,7 @@
   "name": "YouTube Audio Replacement",
   "version": "0.0.1",
   "description": "Replace a YouTube video's audio with a synchronized local audio file.",
-  "permissions": ["activeTab", "unlimitedStorage"],
+  "permissions": ["activeTab"],
   "host_permissions": [
     "https://www.youtube.com/*",
     "https://*.googlevideo.com/*"
