@@ -1,8 +1,8 @@
+import "../styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
-import "../styles.css";
 import { FakeVideo } from "./ui-preview.tsx";
 import { Panel } from "./ui.tsx";
 
