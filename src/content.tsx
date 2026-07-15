@@ -1,13 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
+import type { BackgroundRpcHandlers } from "./background.ts";
 import contentCss from "./content.css?inline";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
+import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
+const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
 
 interface MountedController {
   cleanup(): void;
@@ -145,6 +148,15 @@ function App({ videoId }: { videoId: string }) {
     });
   };
 
+  const openGenerator = async () => {
+    try {
+      await backgroundRpc.openGenerator({ videoId });
+    } catch (nextError) {
+      console.error(nextError);
+      setError("Could not open the stem generator.");
+    }
+  };
+
   return (
     <>
       <div className="pointer-events-none fixed right-4 bottom-14 flex flex-col items-end gap-2">
@@ -156,6 +168,7 @@ function App({ videoId }: { videoId: string }) {
             videoId={videoId}
             getVideo={getMainVideo}
             onError={setError}
+            onGenerate={() => void openGenerator()}
           />
         </div>
       </div>

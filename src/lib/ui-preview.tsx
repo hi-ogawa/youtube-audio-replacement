@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { StemGeneratorMockup } from "../ui/stem-generator-mockup.tsx";
 import type { VideoSyncSource } from "./player-sync.ts";
 import type { StoredAudio } from "./storage.ts";
 import { ErrorPanel, Fab, Panel } from "./ui.tsx";
@@ -20,6 +21,7 @@ const previewAudio: StoredAudio = {
 };
 
 export function UiPreview() {
+  const [mockup, setMockup] = useState(isMockupRoute);
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string>();
@@ -30,10 +32,49 @@ export function UiPreview() {
     return () => document.documentElement.classList.remove("dark");
   }, [dark]);
 
+  useEffect(() => {
+    const syncRoute = () => setMockup(isMockupRoute());
+    window.addEventListener("popstate", syncRoute);
+    return () => window.removeEventListener("popstate", syncRoute);
+  }, []);
+
+  function navigateToMockup(nextMockup: boolean) {
+    const url = new URL(location.href);
+    if (nextMockup) {
+      url.searchParams.set("view", "mockup");
+    } else {
+      url.searchParams.delete("view");
+    }
+    history.pushState({}, "", url);
+    setMockup(nextMockup);
+  }
+
+  if (mockup) {
+    return (
+      <>
+        <StemGeneratorMockup />
+        <button
+          className="fixed top-3 right-3 z-20 cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs text-foreground shadow-lg hover:bg-button-hover"
+          type="button"
+          onClick={() => navigateToMockup(false)}
+        >
+          Panel preview
+        </button>
+      </>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
       <div className="flex flex-col items-end gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
+            type="button"
+            onClick={() => navigateToMockup(true)}
+          >
+            App mockup
+          </button>
           <button
             className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
             type="button"
@@ -75,6 +116,7 @@ export function UiPreview() {
               getVideo={() => fakeVideo}
               initialSelectedAudio={withAudio ? previewAudio : null}
               onSelectAudio={() => undefined}
+              onGenerate={() => undefined}
               onError={setError}
             />
           </div>
@@ -83,4 +125,8 @@ export function UiPreview() {
       </div>
     </main>
   );
+}
+
+function isMockupRoute() {
+  return new URL(location.href).searchParams.get("view") === "mockup";
 }

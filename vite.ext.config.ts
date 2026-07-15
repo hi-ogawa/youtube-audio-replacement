@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/vite.ext.config.ts
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
@@ -28,17 +29,52 @@ function patchCiManifest() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), patchCiManifest()],
-  build: {
-    outDir: "dist/extension",
-    minify: false,
-    rolldownOptions: {
-      input: {
-        content: "./src/content.tsx",
+  environments: {
+    extensionPage: {
+      consumer: "client",
+      build: {
+        outDir: "dist/extension",
+        minify: false,
+        rolldownOptions: {
+          input: {
+            "extension-page": "./index.html",
+          },
+        },
       },
-      output: {
-        format: "iife",
-        entryFileNames: "[name].js",
-      },
+    },
+    content: scriptBuild("content", "./src/content.tsx"),
+    rpcRelay: scriptBuild("rpc-relay", "./src/lib/rpc/entry.relay.ts"),
+    embedContent: scriptBuild("embed-content", "./src/embed-content.ts"),
+    background: scriptBuild("background", "./src/background.ts"),
+  },
+  builder: {
+    async buildApp(builder) {
+      await builder.build(builder.environments.extensionPage);
+      await builder.build(builder.environments.content);
+      await builder.build(builder.environments.rpcRelay);
+      await builder.build(builder.environments.embedContent);
+      await builder.build(builder.environments.background);
     },
   },
 });
+
+function scriptBuild(name: string, input: string) {
+  return {
+    consumer: "client" as const,
+    build: {
+      outDir: "dist/extension",
+      minify: false,
+      emptyOutDir: false,
+      copyPublicDir: false,
+      rolldownOptions: {
+        input: {
+          [name]: input,
+        },
+        output: {
+          format: "iife" as const,
+          entryFileNames: "[name].js",
+        },
+      },
+    },
+  };
+}

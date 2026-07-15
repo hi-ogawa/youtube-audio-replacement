@@ -1,0 +1,56 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  type StemGeneratorSourceMode,
+  type StemGeneratorSourceStates,
+  StemGeneratorView,
+} from "./stem-generator.tsx";
+
+export function StemGeneratorMockup() {
+  const loadingTimeoutRef = useRef<number>(undefined);
+  const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
+    youtube: { status: "empty" },
+    local: { status: "empty" },
+  });
+
+  useEffect(() => () => window.clearTimeout(loadingTimeoutRef.current), []);
+
+  function setSourceState(
+    mode: StemGeneratorSourceMode,
+    state: StemGeneratorSourceStates[StemGeneratorSourceMode],
+  ) {
+    setSourceStates((current) => ({ ...current, [mode]: state }));
+  }
+
+  return (
+    <StemGeneratorView
+      initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
+      sourceStates={sourceStates}
+      onLoadYouTube={() => {
+        setSourceState("youtube", {
+          status: "loading",
+          progress: { bytesReceived: 19_200_000, totalBytes: 38_400_000 },
+        });
+        loadingTimeoutRef.current = window.setTimeout(() => {
+          setSourceState("youtube", {
+            status: "ready",
+            source: {
+              name: "Example YouTube track",
+              detail: "Example channel / 4:32 / 38.4 MB",
+            },
+          });
+        }, 1_000);
+      }}
+      onChooseLocalFile={(file) =>
+        setSourceState("local", {
+          status: "ready",
+          source: {
+            name: file.name,
+            detail: `${(file.size / 1_000_000).toFixed(1)} MB`,
+          },
+        })
+      }
+      onRemoveSource={(mode) => setSourceState(mode, { status: "empty" })}
+      onSaveSource={() => undefined}
+    />
+  );
+}

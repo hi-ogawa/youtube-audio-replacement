@@ -26,14 +26,19 @@ jobs:
       - run: pnpm lint-check
       - run: pnpm exec playwright install --with-deps --no-shell chromium
       - run: pnpm test-ui
-      - if: always()
+      - id: upload-ui-report
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           path: .vitest/index.html
           archive: false
+      - if: always()
+        run: echo "::notice title=UI report artifact::${{ steps.upload-ui-report.outputs.artifact-url }}"
       - run: pnpm build
       - run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v7
+      - id: upload-extension
+        uses: actions/upload-artifact@v7
         with:
           name: youtube-audio-replacement-${{ github.event.pull_request.number && format('pr{0}-{1}', github.event.pull_request.number, env.SHORT_SHA) || env.SHORT_SHA }}
           path: dist/extension
+      - run: echo "::notice title=Extension artifact::${{ steps.upload-extension.outputs.artifact-url }}"

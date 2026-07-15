@@ -8,10 +8,12 @@ export function StoredPanel({
   videoId,
   getVideo,
   onError,
+  onGenerate,
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
+  onGenerate(): void;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
@@ -41,6 +43,7 @@ export function StoredPanel({
       initialSelectedAudio={storedAudioQuery.data}
       onSelectAudio={storeAudioMutation.mutate}
       onError={onError}
+      onGenerate={onGenerate}
     />
   );
 }
@@ -51,12 +54,14 @@ export function Panel({
   initialSelectedAudio,
   onSelectAudio,
   onError,
+  onGenerate,
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio: StoredAudio | null;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;
+  onGenerate(): void;
 }) {
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
@@ -173,7 +178,21 @@ export function Panel({
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
         <div className="font-semibold">Audio replacement</div>
-        <Toggle checked={enabled} disabled={!selectedAudio} onChange={toggle} />
+        {!selectedAudio ? (
+          <button
+            className="h-5 cursor-pointer rounded-full bg-accent px-2.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
+            type="button"
+            onClick={onGenerate}
+          >
+            Prepare stems
+          </button>
+        ) : (
+          <Toggle
+            checked={enabled}
+            disabled={!selectedAudio}
+            onChange={toggle}
+          />
+        )}
       </div>
       <AudioDrop
         audio={selectedAudio}
