@@ -37,9 +37,9 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import {
-  type StemsGeneratorSourceState,
-  StemsGeneratorView,
-} from "./ui/stems-generator.tsx";
+  type StemGeneratorSourceState,
+  StemGeneratorView,
+} from "./ui/stem-generator.tsx";
 import "./styles.css";
 
 const initEmbedContentRpc = once(() =>
@@ -52,7 +52,7 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
+  const [sourceState, setSourceState] = useState<StemGeneratorSourceState>({
     status: "empty",
   });
   const sourceFileRef = useRef<File>(null);
@@ -266,7 +266,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
         : modelSelectionError;
 
   return (
-    <StemsGeneratorView
+    <StemGeneratorView
       initialInput={initialInput}
       sourceState={sourceState}
       sourceError={

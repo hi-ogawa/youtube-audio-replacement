@@ -1,12 +1,12 @@
 import { useState } from "react";
 import type { SeparationConfiguration } from "../lib/demucs/models.ts";
 import {
-  type StemsGeneratorSourceState,
-  StemsGeneratorView,
-} from "./stems-generator.tsx";
+  type StemGeneratorSourceState,
+  StemGeneratorView,
+} from "./stem-generator.tsx";
 
-export function StemsGeneratorMockup() {
-  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
+export function StemGeneratorMockup() {
+  const [sourceState, setSourceState] = useState<StemGeneratorSourceState>({
     status: "empty",
   });
   const [configuration, setConfiguration] = useState<SeparationConfiguration>({
@@ -17,7 +17,7 @@ export function StemsGeneratorMockup() {
   });
 
   return (
-    <StemsGeneratorView
+    <StemGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
       sourceState={sourceState}
       onLoadYouTube={() =>

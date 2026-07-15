@@ -5,21 +5,21 @@ import type {
 } from "../lib/demucs/models.ts";
 import type { RunProgress } from "../lib/demucs/progress.ts";
 
-export type StemsGeneratorSource = {
+export type StemGeneratorSource = {
   kind: "YouTube" | "Local file";
   name: string;
   detail: string;
 };
 
-export type StemsGeneratorSourceState =
+export type StemGeneratorSourceState =
   | { status: "empty" }
   | {
       status: "loading";
       progress?: { bytesReceived: number; totalBytes: number };
     }
-  | { status: "ready"; source: StemsGeneratorSource };
+  | { status: "ready"; source: StemGeneratorSource };
 
-export function StemsGeneratorView({
+export function StemGeneratorView({
   initialInput,
   sourceState,
   sourceError,
@@ -40,7 +40,7 @@ export function StemsGeneratorView({
   results,
 }: {
   initialInput: string;
-  sourceState: StemsGeneratorSourceState;
+  sourceState: StemGeneratorSourceState;
   sourceError?: string;
   onLoadYouTube(input: string): void;
   onChooseLocalFile(file: File): void;
@@ -357,7 +357,7 @@ function SelectedSource({
   onRemove,
   disabled,
 }: {
-  source: StemsGeneratorSource;
+  source: StemGeneratorSource;
   onSave(): void;
   onRemove(): void;
   disabled: boolean;
