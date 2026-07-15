@@ -5,40 +5,7 @@ import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import { fromBase64 } from "./lib/utils.ts";
 import { fetchPlayerApi, selectAudioFormat } from "./lib/youtube.ts";
 
-const CHUNK_SIZE = 5_000_000;
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
-
-export type DownloadProgress = {
-  bytesReceived: number;
-  totalBytes: number;
-};
-
-async function proxyFetch(url: string): Promise<Uint8Array> {
-  const { data } = await backgroundRpc.proxyFetch({ url });
-  return fromBase64(data);
-}
-
-async function downloadBytes(
-  url: string,
-  size: number,
-  onProgress?: (progress: DownloadProgress) => void,
-) {
-  const data = new Uint8Array(size);
-  let offset = 0;
-
-  while (offset < size) {
-    const end = Math.min(offset + CHUNK_SIZE, size);
-    const separator = url.includes("?") ? "&" : "?";
-    const chunk = await proxyFetch(
-      `${url}${separator}range=${offset}-${end - 1}`,
-    );
-    data.set(chunk, offset);
-    offset += chunk.length;
-    onProgress?.({ bytesReceived: offset, totalBytes: size });
-  }
-
-  return data;
-}
 
 export class EmbedContentRpcHandlers {
   async download({
@@ -73,6 +40,40 @@ export class EmbedContentRpcHandlers {
       video: result.video,
     };
   }
+}
+
+const CHUNK_SIZE = 5_000_000;
+
+export type DownloadProgress = {
+  bytesReceived: number;
+  totalBytes: number;
+};
+
+async function proxyFetch(url: string): Promise<Uint8Array> {
+  const { data } = await backgroundRpc.proxyFetch({ url });
+  return fromBase64(data);
+}
+
+async function downloadBytes(
+  url: string,
+  size: number,
+  onProgress?: (progress: DownloadProgress) => void,
+) {
+  const data = new Uint8Array(size);
+  let offset = 0;
+
+  while (offset < size) {
+    const end = Math.min(offset + CHUNK_SIZE, size);
+    const separator = url.includes("?") ? "&" : "?";
+    const chunk = await proxyFetch(
+      `${url}${separator}range=${offset}-${end - 1}`,
+    );
+    data.set(chunk, offset);
+    offset += chunk.length;
+    onProgress?.({ bytesReceived: offset, totalBytes: size });
+  }
+
+  return data;
 }
 
 function main() {
