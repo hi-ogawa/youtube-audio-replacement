@@ -145,7 +145,7 @@ export function StemGeneratorView({
                       />
                     </label>
                     <button
-                      className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60"
+                      className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60 sm:w-44"
                       type="submit"
                       disabled={youtubeLoading}
                     >

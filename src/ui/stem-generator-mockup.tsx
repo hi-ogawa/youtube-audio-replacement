@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
@@ -6,10 +6,13 @@ import {
 } from "./stem-generator.tsx";
 
 export function StemGeneratorMockup() {
+  const loadingTimeoutRef = useRef<number>(undefined);
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
   });
+
+  useEffect(() => () => window.clearTimeout(loadingTimeoutRef.current), []);
 
   function setSourceState(
     mode: StemGeneratorSourceMode,
@@ -22,15 +25,21 @@ export function StemGeneratorMockup() {
     <StemGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
       sourceStates={sourceStates}
-      onLoadYouTube={() =>
+      onLoadYouTube={() => {
         setSourceState("youtube", {
-          status: "ready",
-          source: {
-            name: "Example YouTube track",
-            detail: "Example channel / 4:32 / 38.4 MB",
-          },
-        })
-      }
+          status: "loading",
+          progress: { bytesReceived: 19_200_000, totalBytes: 38_400_000 },
+        });
+        loadingTimeoutRef.current = window.setTimeout(() => {
+          setSourceState("youtube", {
+            status: "ready",
+            source: {
+              name: "Example YouTube track",
+              detail: "Example channel / 4:32 / 38.4 MB",
+            },
+          });
+        }, 1_000);
+      }}
       onChooseLocalFile={(file) =>
         setSourceState("local", {
           status: "ready",
