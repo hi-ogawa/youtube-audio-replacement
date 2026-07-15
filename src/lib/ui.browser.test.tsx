@@ -6,7 +6,7 @@ import { page, userEvent } from "vitest/browser";
 import { FakeVideo } from "./ui-preview.tsx";
 import { Panel } from "./ui.tsx";
 
-test("selects, enables, adjusts, and replaces audio", async () => {
+test("basic", async () => {
   const video = new FakeVideo();
   const onSelectAudio = vi.fn();
   const screen = await render(
