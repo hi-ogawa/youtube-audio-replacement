@@ -7,7 +7,7 @@ import type {
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
-import { parseVideoId, selectAudioFormat } from "./lib/youtube.ts";
+import { parseVideoId } from "./lib/youtube.ts";
 import {
   type StemsGeneratorSourceState,
   StemsGeneratorView,
@@ -43,20 +43,11 @@ function ExtensionPage() {
     setSourceState({ status: "loading" });
     try {
       const rpc = await initEmbedContentRpc();
-      const metadata = await rpc.getStreamingFormats({ videoId });
-      const format = selectAudioFormat(metadata.streamingFormats);
-      if (!format) {
-        throw new Error(
-          "No complete audio-only format is available for this video.",
-        );
-      }
-
       const onProgress = (progress: DownloadProgress) => {
         setSourceState({ status: "loading", progress });
       };
-      const result = await rpc.downloadFormat({
+      const result = await rpc.download({
         videoId,
-        itag: format.itag,
         onProgress,
       });
       const file = new File([result.data], result.filename, {
@@ -67,8 +58,8 @@ function ExtensionPage() {
         status: "ready",
         source: {
           kind: "YouTube",
-          name: metadata.video.title,
-          detail: `${metadata.video.channelName} / ${formatDuration(metadata.video.duration)} / ${formatBytes(file.size)}`,
+          name: result.video.title,
+          detail: `${result.video.channelName} / ${formatDuration(result.video.duration)} / ${formatBytes(file.size)}`,
         },
       });
     } catch (error) {

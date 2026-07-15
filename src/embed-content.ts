@@ -3,8 +3,7 @@ import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import { fromBase64 } from "./lib/utils.ts";
-import type { YouTubeStreamingFormat } from "./lib/youtube.ts";
-import { fetchPlayerApi } from "./lib/youtube.ts";
+import { fetchPlayerApi, selectAudioFormat } from "./lib/youtube.ts";
 
 const CHUNK_SIZE = 5_000_000;
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
@@ -17,17 +16,6 @@ export type DownloadProgress = {
 async function proxyFetch(url: string): Promise<Uint8Array> {
   const { data } = await backgroundRpc.proxyFetch({ url });
   return fromBase64(data);
-}
-
-async function resolveFormatUrl(videoId: string, itag: number) {
-  const result = await fetchPlayerApi(videoId);
-  const format = result.streamingFormats.find(
-    (candidate: YouTubeStreamingFormat) => candidate.itag === itag,
-  );
-  if (!format) {
-    throw new Error(`Format itag ${itag} not found`);
-  }
-  return { result, format };
 }
 
 async function downloadBytes(
@@ -53,20 +41,20 @@ async function downloadBytes(
 }
 
 export class EmbedContentRpcHandlers {
-  async getStreamingFormats({ videoId }: { videoId: string }) {
-    return await fetchPlayerApi(videoId);
-  }
-
-  async downloadFormat({
+  async download({
     videoId,
-    itag,
     onProgress,
   }: {
     videoId: string;
-    itag: number;
     onProgress?: (progress: DownloadProgress) => void;
   }) {
-    const { result, format } = await resolveFormatUrl(videoId, itag);
+    const result = await fetchPlayerApi(videoId);
+    const format = selectAudioFormat(result.streamingFormats);
+    if (!format) {
+      throw new Error(
+        "No complete audio-only format is available for this video.",
+      );
+    }
     if (!format.contentLength) {
       throw new Error("Unknown file size");
     }
@@ -82,6 +70,7 @@ export class EmbedContentRpcHandlers {
       data: data.buffer as ArrayBuffer,
       filename: `${title}.${extension}`,
       mimeType,
+      video: result.video,
     };
   }
 }
