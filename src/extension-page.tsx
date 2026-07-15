@@ -5,7 +5,7 @@ import type {
   embedContentRpcHandlers,
 } from "./embed-content.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
-import { once } from "./lib/utils.tsx";
+import { once } from "./lib/utils.ts";
 import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
 import "./styles.css";
 
