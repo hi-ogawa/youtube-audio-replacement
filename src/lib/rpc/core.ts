@@ -1,27 +1,6 @@
 // Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/rpc.ts
-export interface RpcRequest {
-  type: "audio-replacement-window-rpc-request";
-  id: string;
-  method: string;
-  params: unknown;
-}
-
-export interface RpcResponse {
-  type: "audio-replacement-window-rpc-response";
-  id: string;
-  result?: unknown;
-  error?: string;
-}
-
 interface RpcCallbackStub {
   __rpcCallback: string;
-}
-
-export interface RpcCallbackInvoke {
-  type: "audio-replacement-window-rpc-callback";
-  requestId: string;
-  callbackId: string;
-  args: unknown[];
 }
 
 type AnyFn = (...args: any[]) => void;

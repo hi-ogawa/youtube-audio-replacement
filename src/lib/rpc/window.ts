@@ -1,10 +1,11 @@
-import type {
-  RpcCallbackInvoke,
-  RpcClient,
-  RpcRequest,
-  RpcResponse,
-} from "./core.ts";
+import type { RpcClient } from "./core.ts";
 import { createRpcProxy, deserializeParams, serializeParams } from "./core.ts";
+import type { RpcCallbackInvoke, RpcRequest, RpcResponse } from "./shared.ts";
+import {
+  WINDOW_RPC_CALLBACK,
+  WINDOW_RPC_REQUEST,
+  WINDOW_RPC_RESPONSE,
+} from "./shared.ts";
 
 export function createWindowRpc<Handlers>({
   targetWindow,
@@ -39,14 +40,15 @@ export function createWindowRpc<Handlers>({
             return;
           }
           const message = event.data;
-          if (message.type === "audio-replacement-window-rpc-callback") {
+          if (message.type === WINDOW_RPC_CALLBACK && "requestId" in message) {
             if (message.requestId === id) {
               callbacks.get(message.callbackId)?.(...message.args);
             }
             return;
           }
           if (
-            message.type === "audio-replacement-window-rpc-response" &&
+            message.type === WINDOW_RPC_RESPONSE &&
+            "id" in message &&
             message.id === id
           ) {
             abortController.abort();
@@ -62,7 +64,7 @@ export function createWindowRpc<Handlers>({
 
       targetWindow.postMessage(
         {
-          type: "audio-replacement-window-rpc-request",
+          type: WINDOW_RPC_REQUEST,
           id,
           method,
           params: serializedParams,
@@ -90,7 +92,7 @@ export function registerWindowRpcHandlers(
     async (event: MessageEvent<RpcRequest>) => {
       if (
         event.source !== sourceWindow ||
-        event.data?.type !== "audio-replacement-window-rpc-request"
+        event.data?.type !== WINDOW_RPC_REQUEST
       ) {
         return;
       }
@@ -100,7 +102,7 @@ export function registerWindowRpcHandlers(
       if (!handler) {
         targetWindow.postMessage(
           {
-            type: "audio-replacement-window-rpc-response",
+            type: WINDOW_RPC_RESPONSE,
             id,
             error: `Unknown method: ${method}`,
           } satisfies RpcResponse,
@@ -114,7 +116,7 @@ export function registerWindowRpcHandlers(
         (callbackId, args) => {
           targetWindow.postMessage(
             {
-              type: "audio-replacement-window-rpc-callback",
+              type: WINDOW_RPC_CALLBACK,
               requestId: id,
               callbackId,
               args,
@@ -128,7 +130,7 @@ export function registerWindowRpcHandlers(
         const result = await handler(deserializedParams as never);
         targetWindow.postMessage(
           {
-            type: "audio-replacement-window-rpc-response",
+            type: WINDOW_RPC_RESPONSE,
             id,
             result,
           } satisfies RpcResponse,
@@ -138,7 +140,7 @@ export function registerWindowRpcHandlers(
       } catch (error) {
         targetWindow.postMessage(
           {
-            type: "audio-replacement-window-rpc-response",
+            type: WINDOW_RPC_RESPONSE,
             id,
             error: error instanceof Error ? error.message : String(error),
           } satisfies RpcResponse,
