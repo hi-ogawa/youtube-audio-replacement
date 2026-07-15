@@ -241,8 +241,7 @@
       }
       .summary-grid,
       .flow-grid,
-      .boundary-grid,
-      .file-grid {
+      .boundary-grid {
         display: grid;
         gap: 14px;
       }
@@ -254,9 +253,6 @@
       }
       .boundary-grid {
         grid-template-columns: repeat(3, 1fr);
-      }
-      .file-grid {
-        grid-template-columns: repeat(2, 1fr);
       }
       .info {
         padding: 18px;
@@ -363,17 +359,6 @@
         color: var(--muted);
         font-size: 0.88rem;
       }
-      .file {
-        padding: 16px;
-      }
-      .file a {
-        font-weight: 700;
-      }
-      .file p {
-        margin: 7px 0 0;
-        color: var(--muted);
-        font-size: 0.86rem;
-      }
       .invariant {
         border-left: 5px solid var(--data);
         padding: 16px 18px;
@@ -400,8 +385,7 @@
       @media (max-width: 820px) {
         .summary-grid,
         .flow-grid,
-        .boundary-grid,
-        .file-grid {
+        .boundary-grid {
           grid-template-columns: 1fr;
         }
         .toc {
@@ -416,20 +400,21 @@
         <p class="eyebrow">Architecture breakdown</p>
         <h1>YouTube Audio Replacement</h1>
         <p class="lede">
-          One Manifest V3 extension, two user workflows, and three browser trust
-          boundaries. YouTube remains the playback surface while the stem
-          generator downloads the full source audio.
+          One Manifest V3 extension, two user workflows, and four execution
+          contexts. YouTube remains the playback surface for audio replacement,
+          while a separate extension page acquires audio for the future stem
+          separation workflow.
         </p>
         <div class="provenance">
           <a href="https://github.com/hi-ogawa/youtube-audio-replacement"
             >Repository</a
           >
           <a href="https://github.com/hi-ogawa/youtube-audio-replacement/pull/6"
-            >Source audio PR #6</a
+            >Stem generator PR #6</a
           >
           <a
-            href="https://github.com/hi-ogawa/youtube-audio-replacement/tree/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a"
-            >Pinned source snapshot</a
+            href="https://github.com/hi-ogawa/youtube-audio-replacement/tree/6833d8453c6429554218b8644115864b31e08e80"
+            >Reviewed implementation snapshot</a
           >
         </div>
       </div>
@@ -455,8 +440,6 @@
           <a href="#runtime-map">Runtime map</a>
           <a href="#flows">Request flows</a>
           <a href="#boundaries">Trust boundaries</a>
-          <a href="#files">Code map</a>
-          <a href="#build">Build topology</a>
         </nav>
       </details>
       <section id="mental-model">
@@ -464,12 +447,13 @@
         <p class="section-intro">
           The extension is intentionally split by browser capability. MAIN-world
           scripts can touch YouTube internals. ISOLATED-world scripts can call
-          Chrome extension APIs. The stem generator coordinates the source audio
-          download but never embeds a visible player.
+          Chrome extension APIs. The extension page accepts independent YouTube
+          and local-file sources, but never embeds a visible player.
         </p>
         <div class="invariant card">
           YouTube is the transport clock for replacement playback. The hidden
-          embed is used only to find and download the source audio.
+          embed exists only to acquire YouTube source audio; local files never
+          cross an RPC boundary.
         </div>
         <div class="summary-grid" style="margin-top: 14px">
           <article class="card info">
@@ -484,16 +468,16 @@
             <span class="tag extension">Extension page</span>
             <h3>Stem generator</h3>
             <p>
-              Read the video ID, request metadata, select audio, show progress,
-              and hold the resulting File.
+              Preserve independent YouTube and local-file selections, show
+              download progress, and hold both Files in page memory.
             </p>
           </article>
           <article class="card info">
             <span class="tag worker">Service worker</span>
             <h3>Privileged operations</h3>
             <p>
-              Open extension tabs and fetch allow-listed Googlevideo URLs
-              outside page CORS restrictions.
+              Validate requests, open extension tabs, and fetch allow-listed
+              HTTPS Googlevideo URLs outside page CORS restrictions.
             </p>
           </article>
         </div>
@@ -643,7 +627,7 @@
               fill="#fff4df"
               stroke="#996515"
             />
-            <text x="297" y="104" class="title">content RPC bridge</text>
+            <text x="297" y="104" class="title">rpc-relay.js</text>
             <text x="297" y="128" class="sub">ISOLATED world</text>
             <text x="297" y="148" class="sub">Chrome API access</text>
             <rect
@@ -691,7 +675,9 @@
             <text x="62" y="419" class="sub">
               chrome-extension://.../index.html
             </text>
-            <text x="62" y="441" class="sub">metadata + progress + File</text>
+            <text x="62" y="441" class="sub">
+              source modes + progress + Files
+            </text>
             <rect
               class="box"
               x="295"
@@ -715,7 +701,7 @@
               fill="#fff4df"
               stroke="#996515"
             />
-            <text x="557" y="395" class="title">embed RPC bridge</text>
+            <text x="557" y="395" class="title">rpc-relay.js</text>
             <text x="557" y="419" class="sub">YouTube iframe, ISOLATED</text>
             <text x="557" y="441" class="sub">Chrome API access</text>
             <path class="data" d="M255 415 H295" />
@@ -767,7 +753,7 @@
             <h3>Open the stem generator</h3>
             <ol class="steps">
               <li>
-                <strong>User selects Generate stems</strong>
+                <strong>User selects Prepare stems</strong>
                 <p>
                   The MAIN-world panel calls the typed background client with
                   the current video ID.
@@ -789,16 +775,22 @@
                 </p>
               </li>
             </ol>
+            <p style="margin: 16px 0 0; color: var(--muted); font-size: 0.9rem">
+              The toolbar action is a shorter variant: the service worker parses
+              the active tab URL and opens the same extension page directly.
+            </p>
           </article>
           <article class="card flow-card">
             <span class="tag extension">Flow B</span>
             <h3>Download the source audio</h3>
             <ol class="steps">
               <li>
-                <strong>Extension page creates a hidden embed</strong>
+                <strong>Extension page eagerly creates a hidden embed</strong>
                 <p>
-                  The client waits for the embed MAIN-world handler to announce
-                  readiness.
+                  Page startup begins loading
+                  <code>youtube.com/embed/</code> and caches the RPC promise.
+                  The client verifies the frame and origin before accepting its
+                  readiness message.
                 </p>
               </li>
               <li>
@@ -809,10 +801,11 @@
                 </p>
               </li>
               <li>
-                <strong>Embed extracts and chooses bytes</strong>
+                <strong>Embed resolves and selects the format</strong>
                 <p>
-                  The player API yields audio-only formats. The selected format
-                  is downloaded in 5 MB ranges.
+                  The YouTube player API yields complete audio-only formats. The
+                  handler prefers Opus and then chooses the largest available
+                  format before downloading it in 5 MB ranges.
                 </p>
               </li>
               <li>
@@ -820,10 +813,11 @@
                 <p>Only HTTPS Googlevideo hosts pass the allow-list.</p>
               </li>
               <li>
-                <strong>Result returns as a File</strong>
+                <strong>Result returns as a page-owned File</strong>
                 <p>
                   The final ArrayBuffer is transferred to the page and wrapped
-                  for preview or download.
+                  in a File. The YouTube and local-file modes retain their own
+                  selection, and YouTube source audio can be saved directly.
                 </p>
               </li>
             </ol>
@@ -842,6 +836,11 @@
             through <code>chrome.runtime.sendMessage</code>.
           </p>
         </details>
+        <div class="invariant card" style="margin-top: 14px">
+          Current milestone: YouTube acquisition and local-file selection are
+          real. Model configuration, model setup, separation, stem playback, and
+          stem downloads are presentation-only UI pending Demucs integration.
+        </div>
       </section>
 
       <section id="boundaries">
@@ -869,8 +868,9 @@
           <article class="card boundary extension">
             <h3>Extension page</h3>
             <p>
-              Shows source audio download progress and holds the resulting File
-              in memory. It embeds no visible YouTube player.
+              Eagerly creates one hidden YouTube iframe, tracks independent
+              YouTube and local source state, and holds selected Files in
+              memory. It embeds no visible YouTube player.
             </p>
           </article>
           <article class="card boundary worker">
@@ -884,7 +884,9 @@
             <h3>YouTube embed</h3>
             <p>
               Provides the YouTube origin needed for <code>ytcfg</code>, player
-              API extraction, and format URL resolution.
+              API extraction, and format URL resolution. Its MAIN-world handler
+              assembles ranges, while its ISOLATED-world relay alone can reach
+              <code>chrome.runtime</code>.
             </p>
           </article>
           <article class="card boundary external">
@@ -896,202 +898,13 @@
           </article>
         </div>
       </section>
-
-      <section id="files">
-        <h2><a href="#files">Code map</a></h2>
-        <p class="section-intro">
-          Pinned links point to the exact source snapshot represented by this
-          artifact.
-        </p>
-        <div class="file-grid">
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/public/manifest.json#L10-L37"
-              >public/manifest.json:10-37</a
-            >
-            <p>
-              Declares the service worker and the paired MAIN/ISOLATED content
-              scripts.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/content.tsx#L11-L13"
-              >src/content.tsx:11-13</a
-            >
-            <p>
-              Creates the typed service-worker client used by watch-page product
-              code.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/content.tsx#L151-L175"
-              >src/content.tsx:151-175</a
-            >
-            <p>
-              Opens the extension page and renders the replacement controls.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/embed-content.ts#L50-L123"
-              >src/embed-content.ts:50-123</a
-            >
-            <p>
-              Downloads ranges, emits progress, supports cancellation, and
-              returns the complete buffer.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/lib/embed-content-rpc-client.ts#L8-L57"
-              >src/lib/embed-content-rpc-client.ts:8-57</a
-            >
-            <p>
-              Creates the hidden iframe and exposes its typed handler map to the
-              extension page.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/background.ts#L4-L36"
-              >src/background.ts:4-36</a
-            >
-            <p>
-              Implements tab opening and the allow-listed Googlevideo proxy.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/lib/extension-rpc.ts#L25-L124"
-              >src/lib/extension-rpc.ts:25-124</a
-            >
-            <p>
-              Implements frame-local MAIN/ISOLATED relay RPC and service-worker
-              handler registration.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/lib/window-rpc.ts#L9-L180"
-              >src/lib/window-rpc.ts:9-180</a
-            >
-            <p>
-              Implements parent/iframe calls, callbacks, errors, and
-              transferable discovery.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/lib/player-sync.ts#L17-L124"
-              >src/lib/player-sync.ts:17-124</a
-            >
-            <p>
-              Keeps replacement audio aligned to YouTube play, pause, seek,
-              rate, mute, and volume state.
-            </p>
-          </article>
-          <article class="card file">
-            <a
-              href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/src/lib/storage.ts#L17-L70"
-              >src/lib/storage.ts:17-70</a
-            >
-            <p>
-              Separates small UI state in localStorage from audio blobs in
-              IndexedDB.
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section id="build">
-        <h2><a href="#build">Build topology</a></h2>
-        <p class="section-intro">
-          Each execution world is emitted as its own entry so Chrome can inject
-          it with the correct world and frame scope.
-        </p>
-        <div class="card diagram">
-          <svg
-            viewBox="0 0 1030 280"
-            role="img"
-            aria-label="Vite build entries"
-          >
-            <defs>
-              <marker
-                id="build-arrow"
-                markerWidth="8"
-                markerHeight="8"
-                refX="7"
-                refY="4"
-                orient="auto"
-              >
-                <path d="M0,0 L8,4 L0,8 Z" fill="#3759a6" />
-              </marker>
-            </defs>
-            <style>
-              .b {
-                fill: #fff;
-                stroke: #d9dfeb;
-                stroke-width: 2;
-              }
-              .t {
-                font:
-                  700 14px ui-sans-serif,
-                  system-ui;
-              }
-              .s {
-                font:
-                  11px ui-monospace,
-                  monospace;
-                fill: #657086;
-              }
-              .a {
-                stroke: #3759a6;
-                stroke-width: 2.5;
-                fill: none;
-                marker-end: url(#build-arrow);
-              }
-            </style>
-            <rect class="b" x="25" y="35" width="250" height="210" rx="12" />
-            <text class="t" x="45" y="65">Source entries</text>
-            <text class="s" x="45" y="95">index.html + extension-page.tsx</text>
-            <text class="s" x="45" y="122">content.tsx</text>
-            <text class="s" x="45" y="149">content-rpc-bridge.ts</text>
-            <text class="s" x="45" y="176">embed-content.ts</text>
-            <text class="s" x="45" y="203">embed-content-rpc-bridge.ts</text>
-            <text class="s" x="45" y="230">background.ts</text>
-            <rect class="b" x="390" y="80" width="230" height="120" rx="12" />
-            <text class="t" x="410" y="112">Vite environments</text>
-            <text class="s" x="410" y="142">sequential independent builds</text>
-            <text class="s" x="410" y="169">IIFE for injected scripts</text>
-            <rect class="b" x="735" y="35" width="270" height="210" rx="12" />
-            <text class="t" x="755" y="65">dist/extension</text>
-            <text class="s" x="755" y="95">index.html + hashed assets</text>
-            <text class="s" x="755" y="122">content.js</text>
-            <text class="s" x="755" y="149">content-rpc-bridge.js</text>
-            <text class="s" x="755" y="176">embed-content.js</text>
-            <text class="s" x="755" y="203">embed-content-rpc-bridge.js</text>
-            <text class="s" x="755" y="230">background.js + manifest.json</text>
-            <path class="a" d="M275 140 H390" />
-            <path class="a" d="M620 140 H735" />
-          </svg>
-        </div>
-        <p style="margin-top: 14px">
-          <a
-            href="https://github.com/hi-ogawa/youtube-audio-replacement/blob/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a/vite.ext.config.ts#L29-L83"
-            >vite.ext.config.ts:29-83</a
-          >
-          is the source of truth for this output graph.
-        </p>
-      </section>
     </main>
 
     <footer>
       <div class="shell">
-        Architecture snapshot for commit <code>3b233f1</code>. This document
-        describes the source audio download milestone before Demucs processing
-        is integrated.
+        Reviewed against implementation commit <code>6833d84</code>. YouTube
+        acquisition and local-file selection are implemented, while Demucs model
+        loading, separation, and generated stem outputs are not yet integrated.
       </div>
     </footer>
   </body>
