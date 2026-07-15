@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { SeparationConfiguration } from "../lib/demucs/models.ts";
 import {
   type StemsGeneratorSourceState,
   StemsGeneratorView,
@@ -7,6 +8,12 @@ import {
 export function StemsGeneratorMockup() {
   const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
     status: "empty",
+  });
+  const [configuration, setConfiguration] = useState<SeparationConfiguration>({
+    model: "htdemucs_ft",
+    twoStems: "bass",
+    method: "minus",
+    shifts: 1,
   });
 
   return (
@@ -35,6 +42,24 @@ export function StemsGeneratorMockup() {
       }
       onRemoveSource={() => setSourceState({ status: "empty" })}
       onSaveSource={() => undefined}
+      configuration={configuration}
+      onConfigurationChange={setConfiguration}
+      modelFiles={[
+        {
+          name: "dft.bin",
+          ready: true,
+          downloadUrl: "#",
+        },
+        {
+          name: "htdemucs_ft_bass.onnx",
+          ready: true,
+          downloadUrl: "#",
+        },
+      ]}
+      onChooseModelFiles={() => undefined}
+      separationPending={false}
+      onSeparate={() => undefined}
+      canSeparate={sourceState.status === "ready"}
     />
   );
 }

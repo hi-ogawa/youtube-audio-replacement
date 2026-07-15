@@ -15,8 +15,10 @@
     "test-e2e": "playwright test"
   },
   "dependencies": {
+    "@hiogawa/demucs-onnx-wasm": "https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63",
     "@tanstack/react-query": "^5.101.2",
     "jszip": "^3.10.1",
+    "onnxruntime-web": "^1.27.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

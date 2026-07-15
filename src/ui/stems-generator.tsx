@@ -1,4 +1,9 @@
 import { useState } from "react";
+import type {
+  ModelFilename,
+  SeparationConfiguration,
+} from "../lib/demucs/models.ts";
+import type { RunProgress } from "../lib/demucs/progress.ts";
 
 export type StemsGeneratorSource = {
   kind: "YouTube" | "Local file";
@@ -22,6 +27,17 @@ export function StemsGeneratorView({
   onChooseLocalFile,
   onRemoveSource,
   onSaveSource,
+  configuration,
+  onConfigurationChange,
+  modelFiles,
+  modelStorageError,
+  onChooseModelFiles,
+  separationPending,
+  separationProgress,
+  separationError,
+  onSeparate,
+  canSeparate,
+  results,
 }: {
   initialInput: string;
   sourceState: StemsGeneratorSourceState;
@@ -30,9 +46,27 @@ export function StemsGeneratorView({
   onChooseLocalFile(file: File): void;
   onRemoveSource(): void;
   onSaveSource(): void;
+  configuration: SeparationConfiguration;
+  onConfigurationChange(configuration: SeparationConfiguration): void;
+  modelFiles: {
+    name: ModelFilename;
+    ready: boolean;
+    error?: string;
+    downloadUrl: string;
+  }[];
+  modelStorageError?: string;
+  onChooseModelFiles(files: File[], expected?: ModelFilename): void;
+  separationPending: boolean;
+  separationProgress?: RunProgress;
+  separationError?: string;
+  onSeparate(): void;
+  canSeparate: boolean;
+  results?: {
+    outputs: { name: string; url: string }[];
+    archive: { name: string; url: string };
+  };
 }) {
   const [input, setInput] = useState(initialInput);
-  const [complete, setComplete] = useState(false);
   const source =
     sourceState.status === "ready" ? sourceState.source : undefined;
   const loading = sourceState.status === "loading";
@@ -68,10 +102,8 @@ export function StemsGeneratorView({
               <SelectedSource
                 source={source}
                 onSave={onSaveSource}
-                onRemove={() => {
-                  setComplete(false);
-                  onRemoveSource();
-                }}
+                onRemove={onRemoveSource}
+                disabled={separationPending}
               />
             ) : (
               <>
@@ -79,7 +111,6 @@ export function StemsGeneratorView({
                   className="flex flex-col gap-2 sm:flex-row"
                   onSubmit={(event) => {
                     event.preventDefault();
-                    setComplete(false);
                     onLoadYouTube(input);
                   }}
                 >
@@ -122,7 +153,6 @@ export function StemsGeneratorView({
                     if (!file) {
                       return;
                     }
-                    setComplete(false);
                     onChooseLocalFile(file);
                   }}
                 />
@@ -138,9 +168,20 @@ export function StemsGeneratorView({
           <Section number="2" title="Configure">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Model">
-                <select className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm">
-                  <option>htdemucs_ft</option>
-                  <option>htdemucs</option>
+                <select
+                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                  value={configuration.model}
+                  disabled={separationPending}
+                  onChange={(event) =>
+                    onConfigurationChange({
+                      ...configuration,
+                      model: event.target
+                        .value as SeparationConfiguration["model"],
+                    })
+                  }
+                >
+                  <option value="htdemucs_ft">htdemucs_ft</option>
+                  <option value="htdemucs">htdemucs</option>
                 </select>
               </Field>
               <Field label="Shifts">
@@ -149,28 +190,67 @@ export function StemsGeneratorView({
                   type="number"
                   min="1"
                   max="4"
-                  defaultValue="1"
+                  value={configuration.shifts}
+                  disabled={separationPending}
+                  onChange={(event) =>
+                    onConfigurationChange({
+                      ...configuration,
+                      shifts: Number(event.target.value),
+                    })
+                  }
                 />
               </Field>
               <Field label="Two stems">
-                <select className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm">
-                  <option>bass</option>
+                <select
+                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                  value={configuration.twoStems ?? ""}
+                  disabled={separationPending}
+                  onChange={(event) =>
+                    onConfigurationChange({
+                      ...configuration,
+                      twoStems: (event.target.value ||
+                        null) as SeparationConfiguration["twoStems"],
+                    })
+                  }
+                >
+                  <option value="">off</option>
+                  <option value="bass">bass</option>
                   <option>vocals</option>
                   <option>drums</option>
                   <option>other</option>
-                  <option>off</option>
                 </select>
               </Field>
               <Field label="Method">
-                <select className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm">
-                  <option>minus</option>
-                  <option>add</option>
+                <select
+                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
+                  value={configuration.method}
+                  disabled={!configuration.twoStems || separationPending}
+                  onChange={(event) =>
+                    onConfigurationChange({
+                      ...configuration,
+                      method: event.target
+                        .value as SeparationConfiguration["method"],
+                    })
+                  }
+                >
+                  <option value="minus">minus</option>
+                  <option value="add">add</option>
                 </select>
               </Field>
             </div>
             <p className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm text-muted-foreground">
-              Creates <strong className="text-foreground">bass.wav</strong> and{" "}
-              <strong className="text-foreground">backing.wav</strong>.
+              {configuration.twoStems ? (
+                <>
+                  Creates{" "}
+                  <strong className="text-foreground">backing.wav</strong> and{" "}
+                  <strong className="text-foreground">
+                    {configuration.twoStems}.wav
+                  </strong>
+                  .
+                </>
+              ) : (
+                <>Creates vocals, drums, bass, and other stems.</>
+              )}
             </p>
           </Section>
 
@@ -180,28 +260,63 @@ export function StemsGeneratorView({
             description="Model files are stored in this browser after the first setup."
           >
             <div className="grid gap-2.5">
-              <ModelRow name="dft.bin" />
-              <ModelRow name="htdemucs_ft_bass.onnx" />
+              {modelFiles.map((modelFile) => (
+                <ModelRow
+                  key={modelFile.name}
+                  {...modelFile}
+                  disabled={separationPending}
+                  onChoose={(files) =>
+                    onChooseModelFiles(files, modelFile.name)
+                  }
+                />
+              ))}
             </div>
+            <label className="mt-4 inline-block cursor-pointer text-sm font-semibold text-accent hover:underline">
+              Choose multiple model files
+              <input
+                className="sr-only"
+                type="file"
+                accept=".bin,.onnx"
+                multiple
+                disabled={separationPending}
+                onChange={(event) => {
+                  onChooseModelFiles([...(event.target.files ?? [])]);
+                  event.target.value = "";
+                }}
+              />
+            </label>
+            {modelStorageError && (
+              <p className="mt-3 text-sm text-error" role="alert">
+                {modelStorageError}
+              </p>
+            )}
           </Section>
 
           <Section number="4" title="Separate">
             <button
               className="h-13 w-full cursor-pointer rounded-md bg-accent text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-40"
               type="button"
-              disabled={!source}
-              onClick={() => setComplete(true)}
+              disabled={!canSeparate || separationPending}
+              onClick={onSeparate}
             >
-              Separate track
+              {separationPending ? "Separating..." : "Separate track"}
             </button>
-            {!source && (
+            {!canSeparate && !separationPending && (
               <p className="mt-3 text-sm text-muted-foreground">
-                Choose audio before starting separation.
+                Choose audio and add all required models before starting.
+              </p>
+            )}
+            {separationProgress && (
+              <SeparationProgress progress={separationProgress} />
+            )}
+            {separationError && (
+              <p className="mt-3 text-sm text-error" role="alert">
+                {separationError}
               </p>
             )}
           </Section>
 
-          {complete && (
+          {results && (
             <section className="rounded-xl border border-border bg-panel p-5 shadow-lg sm:p-7">
               <div className="mb-5 flex items-end justify-between gap-4">
                 <div>
@@ -210,16 +325,23 @@ export function StemsGeneratorView({
                   </p>
                   <h2 className="mt-1 text-2xl font-semibold">Your stems</h2>
                 </div>
-                <button
+                <a
                   className="cursor-pointer text-sm font-semibold text-accent hover:underline"
-                  type="button"
+                  href={results.archive.url}
+                  download={results.archive.name}
                 >
                   Download ZIP
-                </button>
+                </a>
               </div>
               <div className="grid gap-3">
-                <StemRow name="Backing track" detail="without bass" />
-                <StemRow name="Bass" detail="isolated stem" />
+                {results.outputs.map((output) => (
+                  <StemRow
+                    key={output.name}
+                    name={output.name}
+                    url={output.url}
+                    source={configuration.twoStems}
+                  />
+                ))}
               </div>
             </section>
           )}
@@ -233,10 +355,12 @@ function SelectedSource({
   source,
   onSave,
   onRemove,
+  disabled,
 }: {
   source: StemsGeneratorSource;
   onSave(): void;
   onRemove(): void;
+  disabled: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
@@ -275,6 +399,7 @@ function SelectedSource({
           type="button"
           aria-label="Remove source"
           title="Remove source"
+          disabled={disabled}
           onClick={onRemove}
         >
           <svg
@@ -339,46 +464,124 @@ function Field({
   );
 }
 
-function ModelRow({ name }: { name: string }) {
+function ModelRow({
+  name,
+  ready,
+  error,
+  downloadUrl,
+  disabled,
+  onChoose,
+}: {
+  name: ModelFilename;
+  ready: boolean;
+  error?: string;
+  downloadUrl: string;
+  disabled: boolean;
+  onChoose(files: File[]): void;
+}) {
   return (
-    <div className="flex min-h-13 items-center gap-3 rounded-md border border-button-border bg-button px-4 py-3">
-      <span
-        className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-bold text-white"
-        aria-hidden="true"
-      >
-        <svg
-          className="size-3.5"
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+    <div>
+      <div className="flex min-h-13 items-center gap-3 rounded-md border border-button-border bg-button px-4 py-3">
+        <span
+          className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold ${ready ? "bg-accent text-white" : "border border-button-border text-muted-foreground"}`}
           aria-hidden="true"
         >
-          <path d="m3 8 3 3 7-7" />
-        </svg>
-      </span>
-      <code className="min-w-0 flex-1 truncate text-sm font-semibold">
-        {name}
-      </code>
-      <span className="text-sm font-semibold text-accent">Ready</span>
+          {ready ? "✓" : "+"}
+        </span>
+        <code className="min-w-0 flex-1 truncate text-sm font-semibold">
+          {name}
+        </code>
+        <a
+          className="text-sm font-semibold text-accent hover:underline"
+          href={downloadUrl}
+        >
+          Download
+        </a>
+        <label className="cursor-pointer text-sm font-semibold text-accent hover:underline">
+          {ready ? "Ready" : "Choose"}
+          <input
+            className="sr-only"
+            type="file"
+            accept={name.endsWith(".onnx") ? ".onnx" : ".bin"}
+            disabled={disabled}
+            onChange={(event) => {
+              onChoose([...(event.target.files ?? [])]);
+              event.target.value = "";
+            }}
+          />
+        </label>
+      </div>
+      {error && <p className="mt-1.5 text-sm text-error">{error}</p>}
     </div>
   );
 }
 
-function StemRow({ name, detail }: { name: string; detail: string }) {
+function StemRow({
+  name,
+  url,
+  source,
+}: {
+  name: string;
+  url: string;
+  source: string | null;
+}) {
+  const label =
+    name === "backing" && source ? `Backing track without ${source}` : name;
   return (
     <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-md border border-border bg-button p-4">
       <div>
-        <h3 className="font-semibold">{name}</h3>
-        <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
+        <h3 className="font-semibold capitalize">{label}</h3>
       </div>
-      <button
+      <a
         className="cursor-pointer text-sm font-semibold text-accent hover:underline"
-        type="button"
+        href={url}
+        download={`${name}.wav`}
       >
         Download WAV
-      </button>
-      <div className="col-span-full h-8 rounded-full border border-button-border bg-panel" />
+      </a>
+      <audio className="col-span-full w-full" controls src={url} />
+    </div>
+  );
+}
+
+function SeparationProgress({ progress }: { progress: RunProgress }) {
+  const percent =
+    progress.total > 0 ? Math.round((100 * progress.done) / progress.total) : 0;
+  const title =
+    progress.phase === "loading"
+      ? "Loading model"
+      : progress.phase === "separating"
+        ? "Separating track"
+        : progress.phase === "finalizing"
+          ? "Finalizing stems"
+          : "Preparing browser runtime";
+  return (
+    <div className="mt-5 grid gap-2 border-t border-border pt-5">
+      <div className="flex justify-between gap-4 text-sm font-semibold">
+        <span>{title}</span>
+        <span>{percent}%</span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-border"
+        role="progressbar"
+        aria-label="Overall separation progress"
+        aria-valuemin={0}
+        aria-valuemax={Math.max(progress.total, 1)}
+        aria-valuenow={progress.done}
+      >
+        <div
+          className="h-full rounded-full bg-accent transition-[width]"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {progress.currentModel && (
+        <p className="text-xs text-muted-foreground">
+          {progress.currentModel.modelTotal > 1 &&
+            `Model ${progress.currentModel.index}/${progress.currentModel.modelTotal} / `}
+          {progress.currentModel.file} / {progress.currentModel.done}/
+          {progress.currentModel.total} chunks
+        </p>
+      )}
     </div>
   );
 }
