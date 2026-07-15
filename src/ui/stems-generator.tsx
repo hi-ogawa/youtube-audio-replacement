@@ -1,21 +1,21 @@
 import { useState } from "react";
-import { formatBytes } from "./utils.ts";
+import { formatBytes } from "../lib/utils.ts";
 
-export type GeneratorSource = {
+export type StemsGeneratorSource = {
   kind: "YouTube" | "Local file";
   name: string;
   detail: string;
 };
 
-export type GeneratorSourceState =
+export type StemsGeneratorSourceState =
   | { status: "empty" }
   | {
       status: "loading";
       progress?: { bytesReceived: number; totalBytes: number };
     }
-  | { status: "ready"; source: GeneratorSource };
+  | { status: "ready"; source: StemsGeneratorSource };
 
-export function GeneratorView({
+export function StemsGeneratorView({
   initialInput,
   sourceState,
   sourceError,
@@ -26,7 +26,7 @@ export function GeneratorView({
   onSaveSource,
 }: {
   initialInput: string;
-  sourceState: GeneratorSourceState;
+  sourceState: StemsGeneratorSourceState;
   sourceError?: string;
   onLoadYouTube(input: string): void;
   onChooseLocalFile(file: File): void;

@@ -4,14 +4,14 @@ import type {
   DownloadProgress,
   EmbedContentRpcHandlers,
 } from "./embed-content.ts";
-import {
-  type GeneratorSourceState,
-  GeneratorView,
-} from "./lib/generator-ui.tsx";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId, selectAudioFormat } from "./lib/youtube.ts";
+import {
+  type StemsGeneratorSourceState,
+  StemsGeneratorView,
+} from "./ui/stems-generator.tsx";
 import "./styles.css";
 
 const initEmbedContentRpc = once(() =>
@@ -25,7 +25,7 @@ const initEmbedContentRpc = once(() =>
 
 function ExtensionPage() {
   const initialInput = new URL(location.href).searchParams.get("videoId") ?? "";
-  const [sourceState, setSourceState] = useState<GeneratorSourceState>({
+  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
     status: "empty",
   });
   const [sourceError, setSourceError] = useState<string>();
@@ -147,7 +147,7 @@ function ExtensionPage() {
   }
 
   return (
-    <GeneratorView
+    <StemsGeneratorView
       initialInput={initialInput}
       sourceState={sourceState}
       sourceError={sourceError}

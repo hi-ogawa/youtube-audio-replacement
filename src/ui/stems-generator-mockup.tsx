@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { type GeneratorSourceState, GeneratorView } from "./generator-ui.tsx";
+import {
+  type StemsGeneratorSourceState,
+  StemsGeneratorView,
+} from "./stems-generator.tsx";
 
-export function UiMockup() {
-  const [sourceState, setSourceState] = useState<GeneratorSourceState>({
+export function StemsGeneratorMockup() {
+  const [sourceState, setSourceState] = useState<StemsGeneratorSourceState>({
     status: "empty",
   });
 
   return (
-    <GeneratorView
+    <StemsGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
       sourceState={sourceState}
       onLoadYouTube={() =>
