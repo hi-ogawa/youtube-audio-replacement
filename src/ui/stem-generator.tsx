@@ -1,27 +1,26 @@
 import { useState } from "react";
 
-// TODO: Rename StemsGenerator* and these files to the singular StemGenerator*.
-export type StemsGeneratorSource = {
+export type StemGeneratorSource = {
   name: string;
   detail: string;
 };
 
-export type StemsGeneratorSourceState =
+export type StemGeneratorSourceState =
   | { status: "empty" }
   | {
       status: "loading";
       progress?: { bytesReceived: number; totalBytes: number };
     }
-  | { status: "ready"; source: StemsGeneratorSource };
+  | { status: "ready"; source: StemGeneratorSource };
 
-export type StemsGeneratorSourceMode = "youtube" | "local";
+export type StemGeneratorSourceMode = "youtube" | "local";
 
-export type StemsGeneratorSourceStates = Record<
-  StemsGeneratorSourceMode,
-  StemsGeneratorSourceState
+export type StemGeneratorSourceStates = Record<
+  StemGeneratorSourceMode,
+  StemGeneratorSourceState
 >;
 
-export function StemsGeneratorView({
+export function StemGeneratorView({
   initialInput,
   sourceStates,
   sourceError,
@@ -31,16 +30,16 @@ export function StemsGeneratorView({
   onSaveSource,
 }: {
   initialInput: string;
-  sourceStates: StemsGeneratorSourceStates;
+  sourceStates: StemGeneratorSourceStates;
   sourceError?: string;
   onLoadYouTube(input: string): void;
   onChooseLocalFile(file: File): void;
-  onRemoveSource(mode: StemsGeneratorSourceMode): void;
+  onRemoveSource(mode: StemGeneratorSourceMode): void;
   onSaveSource(): void;
 }) {
   const [input, setInput] = useState(initialInput);
   const [sourceMode, setSourceMode] =
-    useState<StemsGeneratorSourceMode>("youtube");
+    useState<StemGeneratorSourceMode>("youtube");
   const [complete, setComplete] = useState(false);
   const sourceState = sourceStates[sourceMode];
   const source =
@@ -282,8 +281,8 @@ function SelectedSource({
   onSave,
   onRemove,
 }: {
-  mode: StemsGeneratorSourceMode;
-  source: StemsGeneratorSource;
+  mode: StemGeneratorSourceMode;
+  source: StemGeneratorSource;
   onSave(): void;
   onRemove(): void;
 }) {

@@ -14,10 +14,10 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import {
-  type StemsGeneratorSourceMode,
-  type StemsGeneratorSourceStates,
-  StemsGeneratorView,
-} from "./ui/stems-generator.tsx";
+  type StemGeneratorSourceMode,
+  type StemGeneratorSourceStates,
+  StemGeneratorView,
+} from "./ui/stem-generator.tsx";
 import "./styles.css";
 
 const initEmbedContentRpc = once(() =>
@@ -30,17 +30,17 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const [sourceStates, setSourceStates] = useState<StemsGeneratorSourceStates>({
+  const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
   });
-  const sourceFilesRef = useRef<
-    Partial<Record<StemsGeneratorSourceMode, File>>
-  >({});
+  const sourceFilesRef = useRef<Partial<Record<StemGeneratorSourceMode, File>>>(
+    {},
+  );
 
   function setSourceState(
-    mode: StemsGeneratorSourceMode,
-    state: StemsGeneratorSourceStates[StemsGeneratorSourceMode],
+    mode: StemGeneratorSourceMode,
+    state: StemGeneratorSourceStates[StemGeneratorSourceMode],
   ) {
     setSourceStates((current) => ({ ...current, [mode]: state }));
   }
@@ -94,7 +94,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     });
   }
 
-  function removeSource(mode: StemsGeneratorSourceMode) {
+  function removeSource(mode: StemGeneratorSourceMode) {
     if (mode === "youtube") {
       loadYouTubeAudioMutation.reset();
     }
@@ -116,7 +116,7 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   }
 
   return (
-    <StemsGeneratorView
+    <StemGeneratorView
       initialInput={initialInput}
       sourceStates={sourceStates}
       sourceError={

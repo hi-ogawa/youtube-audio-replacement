@@ -1,25 +1,25 @@
 import { useState } from "react";
 import {
-  type StemsGeneratorSourceMode,
-  type StemsGeneratorSourceStates,
-  StemsGeneratorView,
-} from "./stems-generator.tsx";
+  type StemGeneratorSourceMode,
+  type StemGeneratorSourceStates,
+  StemGeneratorView,
+} from "./stem-generator.tsx";
 
-export function StemsGeneratorMockup() {
-  const [sourceStates, setSourceStates] = useState<StemsGeneratorSourceStates>({
+export function StemGeneratorMockup() {
+  const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
   });
 
   function setSourceState(
-    mode: StemsGeneratorSourceMode,
-    state: StemsGeneratorSourceStates[StemsGeneratorSourceMode],
+    mode: StemGeneratorSourceMode,
+    state: StemGeneratorSourceStates[StemGeneratorSourceMode],
   ) {
     setSourceStates((current) => ({ ...current, [mode]: state }));
   }
 
   return (
-    <StemsGeneratorView
+    <StemGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
       sourceStates={sourceStates}
       onLoadYouTube={() =>

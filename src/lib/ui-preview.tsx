@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { StemsGeneratorMockup } from "../ui/stems-generator-mockup.tsx";
+import { StemGeneratorMockup } from "../ui/stem-generator-mockup.tsx";
 import type { VideoSyncSource } from "./player-sync.ts";
 import type { StoredAudio } from "./storage.ts";
 import { ErrorPanel, Fab, Panel } from "./ui.tsx";
@@ -52,7 +52,7 @@ export function UiPreview() {
   if (mockup) {
     return (
       <>
-        <StemsGeneratorMockup />
+        <StemGeneratorMockup />
         <button
           className="fixed top-3 right-3 z-20 cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs text-foreground shadow-lg hover:bg-button-hover"
           type="button"
