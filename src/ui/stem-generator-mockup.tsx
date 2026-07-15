@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { Preferences } from "../lib/demucs/preferences.ts";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
@@ -7,9 +8,17 @@ import {
 
 export function StemGeneratorMockup() {
   const loadingTimeoutRef = useRef<number>(undefined);
+  const [sourceMode, setSourceMode] =
+    useState<StemGeneratorSourceMode>("youtube");
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
     youtube: { status: "empty" },
     local: { status: "empty" },
+  });
+  const [configuration, setConfiguration] = useState<Preferences>({
+    model: "htdemucs",
+    twoStems: null,
+    method: "add",
+    shifts: 1,
   });
 
   useEffect(() => () => window.clearTimeout(loadingTimeoutRef.current), []);
@@ -24,6 +33,7 @@ export function StemGeneratorMockup() {
   return (
     <StemGeneratorView
       initialInput="https://www.youtube.com/watch?v=YsmSk0cZa6w"
+      sourceMode={sourceMode}
       sourceStates={sourceStates}
       onLoadYouTube={() => {
         setSourceState("youtube", {
@@ -49,8 +59,23 @@ export function StemGeneratorMockup() {
           },
         })
       }
+      onSourceModeChange={setSourceMode}
       onRemoveSource={(mode) => setSourceState(mode, { status: "empty" })}
       onSaveSource={() => undefined}
+      configuration={configuration}
+      onConfigurationChange={setConfiguration}
+      modelFiles={[
+        { name: "dft.bin", ready: true },
+        {
+          name: "htdemucs.onnx",
+          ready: true,
+        },
+      ]}
+      unsupportedModelFiles={[]}
+      onChooseModelFiles={() => undefined}
+      separationPending={false}
+      onSeparate={() => undefined}
+      canSeparate
     />
   );
 }

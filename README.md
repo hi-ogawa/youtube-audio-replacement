@@ -1,29 +1,30 @@
 # YouTube Audio Replacement
 
-A Chrome extension that replaces a YouTube video's audio with a local audio file. YouTube remains the source of truth for play, pause, seeking, and playback rate.
+A Chrome extension for preparing and playing replacement audio on YouTube. It can generate Demucs stems from a public YouTube video or local audio file entirely in the browser, then synchronize the selected replacement track with YouTube playback, seeking, and playback rate.
 
 ## Features
 
-- Drop or browse for a replacement audio file or stem ZIP. ZIP input selects its first audio entry.
-- Remember the selected file for each video.
-- Turn audio replacement on or off from the watch page.
-- Follow YouTube playback, seeking, and playback-rate changes.
-- Handle navigation between videos without reloading the page.
+- Generate stems from a public YouTube video or local audio file.
+- Run two-stem or four-stem Demucs separation in a browser worker.
+- Preview and download individual WAV stems or an ordered stem ZIP.
+- Turn audio replacement on from the watch page.
 
-## Build and load
+## Model files
+
+The stem generator page links to the required model files from the [demucs-onnx releases](https://github.com/hi-ogawa/demucs-onnx/releases). Model files are not bundled with this extension.
+
+## Development
 
 ```sh
 pnpm install
 pnpm build
 ```
 
-After building, `pnpm test-e2e` loads the extension in Chromium against a real YouTube watch page.
-
 Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository's `dist/extension` directory. The packaged extension is available at `dist/extension.zip`.
 
-On a YouTube watch page, open the control in the bottom-right corner, choose a local audio file, and turn on **Audio replacement**. YouTube's existing controls and keyboard shortcuts continue to control playback.
+## Development
 
-## UI development
+See [the extension architecture](docs/extension-architecture.html) for the execution contexts and acquisition RPC flow.
 
 Run the standalone panel preview with:
 
@@ -32,3 +33,5 @@ pnpm ui-preview
 ```
 
 Then open `http://localhost:5173/src/ui/preview.html`. The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
+
+The YouTube acquisition path is adapted from [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext). Demucs inference, model management, progress reporting, and stem export are adapted from [demucs-onnx](https://github.com/hi-ogawa/demucs-onnx).

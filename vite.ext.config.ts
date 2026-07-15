@@ -1,6 +1,7 @@
 // Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/vite.ext.config.ts
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -29,6 +30,17 @@ function patchCiManifest() {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), patchCiManifest()],
+  resolve: {
+    alias: {
+      "onnxruntime-web/wasm": resolve(
+        import.meta.dirname,
+        "node_modules/onnxruntime-web/dist/ort.wasm.min.mjs",
+      ),
+    },
+  },
+  optimizeDeps: {
+    exclude: ["onnxruntime-web"],
+  },
   environments: {
     extensionPage: {
       consumer: "client",
