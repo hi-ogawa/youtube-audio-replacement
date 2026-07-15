@@ -15,6 +15,7 @@ export function createHiddenIframeRpc<Handlers>({
 }): Promise<RpcClient<Handlers>> {
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
+    iframe.setAttribute("credentialless", "");
     iframe.src = src;
     iframe.hidden = true;
 
