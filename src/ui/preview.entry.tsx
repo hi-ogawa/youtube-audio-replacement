@@ -2,7 +2,7 @@ import "./styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { UiPreview } from "./lib/ui-preview.tsx";
+import { PreviewApp } from "./preview.tsx";
 
 function main() {
   const root = document.getElementById("root");
@@ -14,7 +14,7 @@ function main() {
   createRoot(root).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <UiPreview />
+        <PreviewApp />
       </QueryClientProvider>
     </StrictMode>,
   );

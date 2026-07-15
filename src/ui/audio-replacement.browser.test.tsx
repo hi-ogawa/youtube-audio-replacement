@@ -1,10 +1,10 @@
-import "../styles.css";
+import "./styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
-import { FakeVideo } from "./ui-preview.tsx";
-import { Panel } from "./ui.tsx";
+import { Panel } from "./audio-replacement.tsx";
+import { FakeVideo } from "./preview.tsx";
 
 test("basic", async () => {
   const video = new FakeVideo();

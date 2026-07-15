@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { StemGeneratorMockup } from "../ui/stem-generator-mockup.tsx";
-import type { VideoSyncSource } from "./player-sync.ts";
-import type { StoredAudio } from "./storage.ts";
-import { ErrorPanel, Fab, Panel } from "./ui.tsx";
+import type { VideoSyncSource } from "../lib/player-sync.ts";
+import type { StoredAudio } from "../lib/storage.ts";
+import { ErrorPanel, Fab, Panel } from "./audio-replacement.tsx";
+import { StemGeneratorMockup } from "./stem-generator-mockup.tsx";
 
 export class FakeVideo extends EventTarget implements VideoSyncSource {
   currentTime = 0;
@@ -20,7 +20,7 @@ const previewAudio: StoredAudio = {
   name: "preview-audio.wav",
 };
 
-export function UiPreview() {
+export function PreviewApp() {
   const [mockup, setMockup] = useState(isMockupRoute);
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);

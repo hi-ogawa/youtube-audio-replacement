@@ -31,4 +31,4 @@ Run the standalone panel preview with:
 pnpm ui-preview
 ```
 
-The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
+Then open `http://localhost:5173/src/ui/preview.html`. The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
