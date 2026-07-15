@@ -25,7 +25,9 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
   await host
     .getByRole("button", { name: "Show audio replacement controls" })
     .click();
-  await expect(host.getByText("Audio replacement", { exact: true })).toBeVisible();
+  await expect(
+    host.getByText("Audio replacement", { exact: true }),
+  ).toBeVisible();
 
   await host
     .locator('input[type="file"]')

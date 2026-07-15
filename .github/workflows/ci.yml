@@ -23,7 +23,7 @@ jobs:
           node-version: "lts/*"
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
+      - run: pnpm lint-check
       - run: pnpm exec playwright install --with-deps --no-shell chromium
       - run: pnpm test-ui
       - if: always()

@@ -7,10 +7,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     include: ["src/**/*.browser.test.tsx"],
-    reporters: [
-      ["html", { singleFile: true }],
-      ...configDefaults.reporters,
-    ],
+    reporters: [["html", { singleFile: true }], ...configDefaults.reporters],
     browser: {
       enabled: true,
       provider: playwright({

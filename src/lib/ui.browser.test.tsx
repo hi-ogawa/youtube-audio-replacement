@@ -46,9 +46,8 @@ test("selects, enables, adjusts, and replaces audio", async () => {
   await expect.element(toggle).toBeDisabled();
   await page.mark("empty panel");
 
-  const fileInput = container.querySelector<HTMLInputElement>(
-    'input[type="file"]',
-  );
+  const fileInput =
+    container.querySelector<HTMLInputElement>('input[type="file"]');
   expect(fileInput).not.toBeNull();
   await userEvent.upload(fileInput!, "./fixtures/sine-2s.wav");
 
