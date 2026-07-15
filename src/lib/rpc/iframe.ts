@@ -1,5 +1,5 @@
-import type { RpcClient } from "./rpc.ts";
-import { createWindowRpc } from "./window-rpc.ts";
+import type { RpcClient } from "./core.ts";
+import { createWindowRpc } from "./window.ts";
 
 export function createHiddenIframeRpc<Handlers>({
   src,
@@ -24,12 +24,16 @@ export function createHiddenIframeRpc<Handlers>({
       reject(new Error(`Timed out while connecting to ${origin}`));
     }, timeoutMs);
 
-    iframe.addEventListener("error", () => {
-      window.clearTimeout(timeout);
-      abortController.abort();
-      iframe.remove();
-      reject(new Error(`Could not load the hidden frame from ${origin}`));
-    });
+    iframe.addEventListener(
+      "error",
+      () => {
+        window.clearTimeout(timeout);
+        abortController.abort();
+        iframe.remove();
+        reject(new Error(`Could not load the hidden frame from ${origin}`));
+      },
+      { signal: abortController.signal },
+    );
 
     window.addEventListener(
       "message",

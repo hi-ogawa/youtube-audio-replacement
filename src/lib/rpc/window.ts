@@ -3,8 +3,8 @@ import type {
   RpcClient,
   RpcRequest,
   RpcResponse,
-} from "./rpc.ts";
-import { createRpcProxy, deserializeParams, serializeParams } from "./rpc.ts";
+} from "./core.ts";
+import { createRpcProxy, deserializeParams, serializeParams } from "./core.ts";
 
 export function createWindowRpc<Handlers>({
   targetWindow,

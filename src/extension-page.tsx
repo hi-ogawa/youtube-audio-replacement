@@ -4,8 +4,8 @@ import type {
   DownloadProgress,
   embedContentRpcHandlers,
 } from "./embed-content.ts";
-import { createHiddenIframeRpc } from "./lib/iframe-rpc.ts";
-import { once } from "./lib/rpc.ts";
+import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
+import { once } from "./lib/utils.tsx";
 import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
 import "./styles.css";
 

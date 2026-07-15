@@ -1,5 +1,5 @@
 // Typed MAIN-world -> isolated-world -> background service worker RPC.
-import { createRpcProxy, type RpcClient } from "./rpc.ts";
+import { createRpcProxy, type RpcClient } from "./core.ts";
 
 type RuntimeRequest = {
   type: "audio-replacement-runtime-rpc";

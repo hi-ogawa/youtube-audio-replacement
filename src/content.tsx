@@ -3,8 +3,8 @@ import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { backgroundRpcHandlers } from "./background.ts";
 import contentCss from "./content.css?inline";
-import { createRuntimeRelayRpc } from "./lib/extension-rpc.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
+import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { videoStorage } from "./lib/storage.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./lib/ui.tsx";
 

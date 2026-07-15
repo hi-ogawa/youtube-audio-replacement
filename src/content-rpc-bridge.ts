@@ -1,3 +1,3 @@
-import { setupRuntimeRelay } from "./lib/extension-rpc.ts";
+import { setupRuntimeRelay } from "./lib/rpc/runtime.ts";
 
 setupRuntimeRelay();

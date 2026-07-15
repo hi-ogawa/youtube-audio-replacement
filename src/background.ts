@@ -1,5 +1,5 @@
 import { toBase64 } from "./lib/base64.ts";
-import { registerRuntimeHandlers } from "./lib/extension-rpc.ts";
+import { registerRuntimeHandlers } from "./lib/rpc/runtime.ts";
 
 export const backgroundRpcHandlers = {
   async openGenerator({ videoId }: { videoId: string }) {

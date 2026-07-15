@@ -1,7 +1,7 @@
 import type { backgroundRpcHandlers } from "./background.ts";
 import { fromBase64 } from "./lib/base64.ts";
-import { createRuntimeRelayRpc } from "./lib/extension-rpc.ts";
-import { registerWindowRpcHandlers } from "./lib/window-rpc.ts";
+import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
+import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import type { YouTubeStreamingFormat } from "./lib/youtube.ts";
 import { fetchPlayerApi } from "./lib/youtube.ts";
 
