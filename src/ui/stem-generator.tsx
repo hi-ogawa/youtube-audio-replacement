@@ -28,6 +28,17 @@ export type StemGeneratorSourceStates = Record<
   StemGeneratorSourceState
 >;
 
+type ModelFileState = {
+  name: ModelFilename;
+  ready: boolean;
+  error?: string;
+};
+
+type GeneratedFile = {
+  name: string;
+  url: string;
+};
+
 export function StemGeneratorView({
   initialInput,
   sourceStates,
@@ -61,11 +72,7 @@ export function StemGeneratorView({
   onSaveSource(): void;
   configuration: Preferences;
   onConfigurationChange(configuration: Preferences): void;
-  modelFiles: {
-    name: ModelFilename;
-    ready: boolean;
-    error?: string;
-  }[];
+  modelFiles: ModelFileState[];
   unsupportedModelFiles: string[];
   modelStorageError?: string;
   onChooseModelFiles(files: File[], expected?: ModelFilename): void;
@@ -76,8 +83,8 @@ export function StemGeneratorView({
   onSeparate(mode: StemGeneratorSourceMode): void;
   canSeparate: boolean;
   results?: {
-    outputs: { name: string; url: string }[];
-    archive: { name: string; url: string };
+    outputs: GeneratedFile[];
+    archive: GeneratedFile;
   };
 }) {
   const [input, setInput] = useState(initialInput);
