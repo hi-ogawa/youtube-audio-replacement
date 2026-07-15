@@ -26,12 +26,12 @@ Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and
 
 See [the extension architecture](docs/extension-architecture.html) for the execution contexts and acquisition RPC flow.
 
-Run the standalone panel preview with:
+To develop the extension UI as a regular web app, run:
 
 ```sh
 pnpm ui-preview
 ```
 
-Then open `http://localhost:5173/src/ui/preview.html`. The preview uses a fake paused synchronization source so the extension UI can be styled without loading YouTube.
+Then open `http://localhost:5173/src/ui/preview.html`.
 
 The YouTube acquisition path is adapted from [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext). Demucs inference, model management, progress reporting, and stem export are adapted from [demucs-onnx](https://github.com/hi-ogawa/demucs-onnx).
