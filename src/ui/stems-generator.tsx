@@ -59,62 +59,14 @@ export function StemsGeneratorView({
             {sourceState.status === "loading" ? (
               <LoadingSource progress={sourceState.progress} />
             ) : source ? (
-              <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
-                <span
-                  className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-white"
-                  aria-hidden="true"
-                >
-                  <svg
-                    className="size-4"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="m3 8 3 3 7-7" />
-                  </svg>
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{source.name}</p>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    {source.kind} / {source.detail}
-                  </p>
-                </div>
-                <div className="ml-12 flex w-full items-center gap-3 sm:ml-0 sm:w-auto">
-                  {source.kind === "YouTube" && (
-                    <button
-                      className="cursor-pointer text-sm font-medium text-accent hover:underline"
-                      type="button"
-                      onClick={onSaveSource}
-                    >
-                      Save source audio
-                    </button>
-                  )}
-                  <button
-                    className="grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-button-hover hover:text-foreground"
-                    type="button"
-                    aria-label="Remove source"
-                    title="Remove source"
-                    onClick={() => {
-                      setComplete(false);
-                      onRemoveSource();
-                    }}
-                  >
-                    <svg
-                      className="size-4"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M3.5 4.5h9M6 4.5V3h4v1.5M5 6.5v5M8 6.5v5M11 6.5v5M4.5 4.5l.5 9h6l.5-9" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <SelectedSource
+                source={source}
+                onSave={onSaveSource}
+                onRemove={() => {
+                  setComplete(false);
+                  onRemoveSource();
+                }}
+              />
             ) : (
               <>
                 <form
@@ -261,6 +213,72 @@ export function StemsGeneratorView({
         </div>
       </div>
     </main>
+  );
+}
+
+function SelectedSource({
+  source,
+  onSave,
+  onRemove,
+}: {
+  source: StemsGeneratorSource;
+  onSave(): void;
+  onRemove(): void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
+      <span
+        className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-white"
+        aria-hidden="true"
+      >
+        <svg
+          className="size-4"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="m3 8 3 3 7-7" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold">{source.name}</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {source.kind} / {source.detail}
+        </p>
+      </div>
+      <div className="ml-12 flex w-full items-center gap-3 sm:ml-0 sm:w-auto">
+        {source.kind === "YouTube" && (
+          <button
+            className="cursor-pointer text-sm font-medium text-accent hover:underline"
+            type="button"
+            onClick={onSave}
+          >
+            Save source audio
+          </button>
+        )}
+        <button
+          className="grid size-8 cursor-pointer place-items-center rounded-md text-muted-foreground hover:bg-button-hover hover:text-foreground"
+          type="button"
+          aria-label="Remove source"
+          title="Remove source"
+          onClick={onRemove}
+        >
+          <svg
+            className="size-4"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M3.5 4.5h9M6 4.5V3h4v1.5M5 6.5v5M8 6.5v5M11 6.5v5M4.5 4.5l.5 9h6l.5-9" />
+          </svg>
+        </button>
+      </div>
+    </div>
   );
 }
 
