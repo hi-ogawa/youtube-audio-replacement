@@ -19,25 +19,8 @@ async function proxyFetch(url: string): Promise<Uint8Array> {
   return fromBase64(data);
 }
 
-async function fetchPlayerApiWhenReady(videoId: string) {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await fetchPlayerApi(videoId);
-    } catch (error) {
-      if (
-        attempt >= 100 ||
-        !(error instanceof Error) ||
-        error.message !== "Could not extract visitorData from ytcfg"
-      ) {
-        throw error;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
-}
-
 async function resolveFormatUrl(videoId: string, itag: number) {
-  const result = await fetchPlayerApiWhenReady(videoId);
+  const result = await fetchPlayerApi(videoId);
   const format = result.streamingFormats.find(
     (candidate: YouTubeStreamingFormat) => candidate.itag === itag,
   );
@@ -71,7 +54,7 @@ async function downloadBytes(
 
 export class EmbedContentRpcHandlers {
   async getStreamingFormats({ videoId }: { videoId: string }) {
-    return await fetchPlayerApiWhenReady(videoId);
+    return await fetchPlayerApi(videoId);
   }
 
   async downloadFormat({
