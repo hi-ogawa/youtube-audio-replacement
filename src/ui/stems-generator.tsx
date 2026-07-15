@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { formatBytes } from "../lib/utils.ts";
 
 export type StemsGeneratorSource = {
   kind: "YouTube" | "Local file";
@@ -36,6 +35,15 @@ export function StemsGeneratorView({
   const [complete, setComplete] = useState(false);
   const source =
     sourceState.status === "ready" ? sourceState.source : undefined;
+  const loading = sourceState.status === "loading";
+  const loadingPercent =
+    loading && sourceState.progress?.totalBytes
+      ? Math.round(
+          (sourceState.progress.bytesReceived /
+            sourceState.progress.totalBytes) *
+            100,
+        )
+      : undefined;
 
   return (
     <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
@@ -56,9 +64,7 @@ export function StemsGeneratorView({
             title="Choose audio"
             description="Use a YouTube video or an audio file from your computer."
           >
-            {sourceState.status === "loading" ? (
-              <LoadingSource progress={sourceState.progress} />
-            ) : source ? (
+            {source ? (
               <SelectedSource
                 source={source}
                 onSave={onSaveSource}
@@ -83,14 +89,20 @@ export function StemsGeneratorView({
                       className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
                       value={input}
                       placeholder="YouTube video ID or URL"
+                      disabled={loading}
                       onChange={(event) => setInput(event.target.value)}
                     />
                   </label>
                   <button
-                    className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90"
+                    className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60"
                     type="submit"
+                    disabled={loading}
                   >
-                    Load from YouTube
+                    {loading
+                      ? loadingPercent === undefined
+                        ? "Loading..."
+                        : `Loading ${loadingPercent}%`
+                      : "Load from YouTube"}
                   </button>
                 </form>
 
@@ -104,6 +116,7 @@ export function StemsGeneratorView({
                   className="w-full cursor-pointer rounded-md border border-dashed border-button-border bg-button p-2.5 text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
                   type="file"
                   accept="audio/*"
+                  disabled={loading}
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (!file) {
@@ -278,33 +291,6 @@ function SelectedSource({
           </svg>
         </button>
       </div>
-    </div>
-  );
-}
-
-function LoadingSource({
-  progress,
-}: {
-  progress?: { bytesReceived: number; totalBytes: number };
-}) {
-  const percent = progress?.totalBytes
-    ? Math.round((progress.bytesReceived / progress.totalBytes) * 100)
-    : 0;
-  return (
-    <div className="rounded-md border border-button-border bg-button p-4">
-      <p className="font-semibold">Loading audio from YouTube...</p>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-button-border">
-        <div
-          className="h-full bg-accent transition-[width]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      {progress && (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {formatBytes(progress.bytesReceived)} /{" "}
-          {formatBytes(progress.totalBytes)}
-        </p>
-      )}
     </div>
   );
 }
