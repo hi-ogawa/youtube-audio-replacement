@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { SeparationConfiguration } from "../lib/demucs/models.ts";
+import type { Preferences } from "../lib/demucs/preferences.ts";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
@@ -12,7 +12,7 @@ export function StemGeneratorMockup() {
     youtube: { status: "empty" },
     local: { status: "empty" },
   });
-  const [configuration, setConfiguration] = useState<SeparationConfiguration>({
+  const [configuration, setConfiguration] = useState<Preferences>({
     model: "htdemucs_ft",
     twoStems: "bass",
     method: "minus",
@@ -62,13 +62,13 @@ export function StemGeneratorMockup() {
       configuration={configuration}
       onConfigurationChange={setConfiguration}
       modelFiles={[
-        { name: "dft.bin", ready: true, downloadUrl: "#" },
+        { name: "dft.bin", ready: true },
         {
           name: "htdemucs_ft_bass.onnx",
           ready: true,
-          downloadUrl: "#",
         },
       ]}
+      unsupportedModelFiles={[]}
       onChooseModelFiles={() => undefined}
       separationPending={false}
       onSeparate={() => undefined}

@@ -1,9 +1,12 @@
+import { Check, CircleHelp, Plus } from "lucide-react";
 import { useState } from "react";
-import type {
-  ModelFilename,
-  SeparationConfiguration,
-} from "../lib/demucs/models.ts";
-import type { RunProgress } from "../lib/demucs/progress.ts";
+import {
+  type ModelFilename,
+  modelAssetUrl,
+} from "../lib/demucs/audio/models.ts";
+import type { Preferences } from "../lib/demucs/preferences.ts";
+import type { RunProgress } from "../lib/demucs/progress/model.ts";
+import { RunProgressPanel } from "../lib/demucs/progress/panel.tsx";
 
 export type StemGeneratorSource = {
   name: string;
@@ -37,10 +40,12 @@ export function StemGeneratorView({
   configuration,
   onConfigurationChange,
   modelFiles,
+  unsupportedModelFiles,
   modelStorageError,
   onChooseModelFiles,
   separationPending,
   separationProgress,
+  separationStatus,
   separationError,
   onSeparate,
   canSeparate,
@@ -54,18 +59,19 @@ export function StemGeneratorView({
   onSourceModeChange(mode: StemGeneratorSourceMode): void;
   onRemoveSource(mode: StemGeneratorSourceMode): void;
   onSaveSource(): void;
-  configuration: SeparationConfiguration;
-  onConfigurationChange(configuration: SeparationConfiguration): void;
+  configuration: Preferences;
+  onConfigurationChange(configuration: Preferences): void;
   modelFiles: {
     name: ModelFilename;
     ready: boolean;
     error?: string;
-    downloadUrl: string;
   }[];
+  unsupportedModelFiles: string[];
   modelStorageError?: string;
   onChooseModelFiles(files: File[], expected?: ModelFilename): void;
   separationPending: boolean;
-  separationProgress?: RunProgress;
+  separationProgress?: RunProgress | null;
+  separationStatus?: string;
   separationError?: string;
   onSeparate(mode: StemGeneratorSourceMode): void;
   canSeparate: boolean;
@@ -110,7 +116,8 @@ export function StemGeneratorView({
           </div>
           <p className="mt-4 mb-2 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             Load a YouTube video or choose a local audio file, then separate it
-            into stems in your browser.
+            into stems in your browser. Your audio and model files stay on this
+            device.
           </p>
         </header>
 
@@ -118,7 +125,7 @@ export function StemGeneratorView({
           <Section
             number="1"
             title="Choose audio"
-            description="Use a YouTube video or an audio file from your computer."
+            description="Select the track you want to separate."
           >
             <div
               className="grid grid-cols-2 gap-1 rounded-lg bg-button p-1"
@@ -222,27 +229,36 @@ export function StemGeneratorView({
 
           <Section number="2" title="Configure">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Model">
+              <Field
+                label="Model"
+                htmlFor="model"
+                help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
+              >
                 <select
                   className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                  id="model"
                   value={configuration.model}
                   disabled={separationPending}
                   onChange={(event) =>
                     onConfigurationChange({
                       ...configuration,
-                      model: event.target
-                        .value as SeparationConfiguration["model"],
+                      model: event.target.value as Preferences["model"],
                     })
                   }
                 >
-                  <option value="htdemucs_ft">htdemucs_ft</option>
                   <option value="htdemucs">htdemucs</option>
+                  <option value="htdemucs_ft">htdemucs_ft</option>
                 </select>
               </Field>
-              <Field label="Shifts">
+              <Field
+                label="Shifts"
+                htmlFor="shifts"
+                help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
+              >
                 <input
                   className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
                   type="number"
+                  id="shifts"
                   min="1"
                   max="4"
                   value={configuration.shifts}
@@ -255,56 +271,73 @@ export function StemGeneratorView({
                   }
                 />
               </Field>
-              <Field label="Two stems">
+              <Field
+                label="Two-stems"
+                htmlFor="twoStems"
+                help="Output the selected source and a mix without it. Other contains instruments not classified as vocals, drums, or bass."
+              >
                 <select
                   className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                  id="twoStems"
                   value={configuration.twoStems ?? ""}
                   disabled={separationPending}
                   onChange={(event) =>
                     onConfigurationChange({
                       ...configuration,
                       twoStems: (event.target.value ||
-                        null) as SeparationConfiguration["twoStems"],
+                        null) as Preferences["twoStems"],
                     })
                   }
                 >
                   <option value="">off</option>
-                  <option value="bass">bass</option>
                   <option>vocals</option>
                   <option>drums</option>
+                  <option>bass</option>
                   <option>other</option>
                 </select>
               </Field>
-              <Field label="Method">
+              <Field
+                label="Method"
+                htmlFor="method"
+                help="Add combines the other separated stems. Minus subtracts the source from the original and, with htdemucs_ft, runs about four times faster. Results vary by track."
+              >
                 <select
                   className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
+                  id="method"
                   value={configuration.method}
                   disabled={!configuration.twoStems || separationPending}
                   onChange={(event) =>
                     onConfigurationChange({
                       ...configuration,
-                      method: event.target
-                        .value as SeparationConfiguration["method"],
+                      method: event.target.value as Preferences["method"],
                     })
                   }
                 >
-                  <option value="minus">minus</option>
                   <option value="add">add</option>
+                  <option value="minus">minus</option>
                 </select>
               </Field>
             </div>
-            <p className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm text-muted-foreground">
+            <p
+              className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm leading-relaxed text-muted-foreground"
+              id="outputSummary"
+            >
               {configuration.twoStems ? (
                 <>
                   Creates{" "}
-                  <strong className="text-foreground">backing.wav</strong> and{" "}
                   <strong className="text-foreground">
                     {configuration.twoStems}.wav
-                  </strong>
-                  .
+                  </strong>{" "}
+                  and <strong className="text-foreground">backing.wav</strong>.
                 </>
               ) : (
-                <>Creates vocals, drums, bass, and other stems.</>
+                <>
+                  Creates{" "}
+                  <strong className="text-foreground">vocals.wav</strong>,{" "}
+                  <strong className="text-foreground">drums.wav</strong>,{" "}
+                  <strong className="text-foreground">bass.wav</strong>, and{" "}
+                  <strong className="text-foreground">other.wav</strong>.
+                </>
               )}
             </p>
           </Section>
@@ -312,13 +345,15 @@ export function StemGeneratorView({
           <Section
             number="3"
             title="Add models"
-            description="Model files are stored in this browser after the first setup."
+            description="Download each required model, then drop or select the downloaded file."
           >
             <div className="grid gap-2.5">
               {modelFiles.map((modelFile) => (
-                <ModelRow
+                <ModelFileSlot
                   key={modelFile.name}
-                  {...modelFile}
+                  filename={modelFile.name}
+                  ready={modelFile.ready}
+                  error={modelFile.error}
                   disabled={separationPending}
                   onChoose={(files) =>
                     onChooseModelFiles(files, modelFile.name)
@@ -326,22 +361,31 @@ export function StemGeneratorView({
                 />
               ))}
             </div>
-            <label className="mt-4 inline-block cursor-pointer text-sm font-semibold text-accent hover:underline">
-              Choose multiple model files
-              <input
-                className="sr-only"
-                type="file"
-                accept=".bin,.onnx"
-                multiple
-                disabled={separationPending}
-                onChange={(event) => {
-                  onChooseModelFiles([...(event.target.files ?? [])]);
-                  event.target.value = "";
-                }}
-              />
-            </label>
+            <p className="mt-4 text-sm text-muted-foreground">
+              Alternatively,{" "}
+              <label className="cursor-pointer font-semibold text-accent underline underline-offset-3 hover:opacity-80">
+                choose multiple files at once
+                <input
+                  className="sr-only"
+                  type="file"
+                  id="modelFiles"
+                  accept=".bin,.onnx"
+                  multiple
+                  disabled={separationPending}
+                  onChange={(event) =>
+                    onChooseModelFiles([...(event.target.files ?? [])])
+                  }
+                />
+              </label>
+              .
+            </p>
+            {unsupportedModelFiles.length > 0 && (
+              <p className="mt-2 text-sm text-error">
+                Unsupported files: {unsupportedModelFiles.join(", ")}.
+              </p>
+            )}
             {modelStorageError && (
-              <p className="mt-3 text-sm text-error" role="alert">
+              <p className="mt-2 text-sm text-error" role="alert">
                 {modelStorageError}
               </p>
             )}
@@ -362,7 +406,15 @@ export function StemGeneratorView({
               </p>
             )}
             {separationProgress && (
-              <SeparationProgress progress={separationProgress} />
+              <RunProgressPanel progress={separationProgress} />
+            )}
+            {separationStatus && (
+              <p
+                className="mt-3.5 text-sm leading-normal whitespace-pre-line text-muted-foreground"
+                id="status"
+              >
+                {separationStatus}
+              </p>
             )}
             {separationError && (
               <p className="mt-3 text-sm text-error" role="alert">
@@ -506,60 +558,98 @@ function Section({
 
 function Field({
   label,
+  htmlFor,
+  help,
   children,
 }: {
   label: string;
+  htmlFor: string;
+  help: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-        {label}
-      </span>
+    <div className="grid gap-1.5">
+      <div className="flex items-center justify-between text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+        <label htmlFor={htmlFor}>{label}</label>
+        <FieldHelp>{help}</FieldHelp>
+      </div>
       {children}
-    </label>
+    </div>
   );
 }
 
-function ModelRow({
-  name,
+function ModelFileSlot({
+  filename,
   ready,
   error,
-  downloadUrl,
   disabled,
   onChoose,
 }: {
-  name: ModelFilename;
+  filename: ModelFilename;
   ready: boolean;
   error?: string;
-  downloadUrl: string;
   disabled: boolean;
   onChoose(files: File[]): void;
 }) {
+  const [dragging, setDragging] = useState(false);
+
   return (
-    <div>
-      <div className="flex min-h-13 items-center gap-3 rounded-md border border-button-border bg-button px-4 py-3">
+    <div data-testid="model-file-slot">
+      <div
+        className={`flex min-h-13 items-center gap-3 rounded-md border px-4 py-3 transition-colors ${
+          dragging
+            ? "border-accent-border bg-button-hover"
+            : ready
+              ? "border-accent-border bg-button hover:bg-button-hover"
+              : "border-button-border bg-button hover:border-accent-border hover:bg-button-hover border-dashed"
+        }`}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          if (!disabled) {
+            setDragging(true);
+          }
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDragLeave={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+            setDragging(false);
+          }
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          setDragging(false);
+          const file = event.dataTransfer.files[0];
+          if (file && !disabled) {
+            onChoose([file]);
+          }
+        }}
+      >
         <span
-          className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-bold ${ready ? "bg-accent text-white" : "border border-button-border text-muted-foreground"}`}
+          className={`flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+            ready
+              ? "bg-accent text-white"
+              : "border border-button-border text-muted-foreground"
+          }`}
           aria-hidden="true"
         >
-          {ready ? "✓" : "+"}
+          {ready ? <Check className="size-4" /> : <Plus className="size-4" />}
         </span>
         <code className="min-w-0 flex-1 truncate text-sm font-semibold">
-          {name}
+          {filename}
         </code>
         <a
-          className="text-sm font-semibold text-accent hover:underline"
-          href={downloadUrl}
+          className="shrink-0 text-sm font-semibold text-accent underline underline-offset-3 hover:opacity-80"
+          href={modelAssetUrl(filename)}
         >
           Download
         </a>
-        <label className="cursor-pointer text-sm font-semibold text-accent hover:underline">
-          {ready ? "Ready" : "Choose"}
+        <label className="shrink-0 cursor-pointer text-sm font-bold text-accent">
+          {ready ? "Ready" : "Choose file"}
           <input
             className="sr-only"
             type="file"
-            accept={name.endsWith(".onnx") ? ".onnx" : ".bin"}
+            aria-label={`Select ${filename}`}
+            accept={filename.endsWith(".onnx") ? ".onnx" : ".bin"}
             disabled={disabled}
             onChange={(event) => {
               onChoose([...(event.target.files ?? [])]);
@@ -573,6 +663,22 @@ function ModelRow({
   );
 }
 
+function FieldHelp({ children }: { children: React.ReactNode }) {
+  return (
+    <details className="relative normal-case">
+      <summary
+        className="flex size-5 cursor-pointer list-none items-center justify-center text-muted-foreground hover:text-accent [&::-webkit-details-marker]:hidden"
+        aria-label="More information"
+      >
+        <CircleHelp aria-hidden="true" className="size-5" />
+      </summary>
+      <div className="absolute top-7 right-0 z-10 w-56 rounded-md border border-border bg-panel p-3 text-sm leading-relaxed font-normal tracking-normal text-foreground shadow-lg sm:w-64">
+        {children}
+      </div>
+    </details>
+  );
+}
+
 function StemRow({
   name,
   url,
@@ -582,13 +688,11 @@ function StemRow({
   url: string;
   source: string | null;
 }) {
-  const label =
-    name === "backing" && source ? `Backing track without ${source}` : name;
+  const label = stemLabel(name, source);
   return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-3 rounded-md border border-border bg-button p-4">
-      <div>
-        <h3 className="font-semibold capitalize">{label}</h3>
-      </div>
+    <div className="grid min-w-0 grid-cols-[1fr_auto] items-center gap-3.5 rounded-md border border-border bg-button p-4">
+      <b className="text-xl font-semibold capitalize">{label}</b>
+      <audio className="col-span-full w-full" controls src={url} />
       <a
         className="cursor-pointer text-sm font-semibold text-accent hover:underline"
         href={url}
@@ -596,49 +700,13 @@ function StemRow({
       >
         Download WAV
       </a>
-      <audio className="col-span-full w-full" controls src={url} />
     </div>
   );
 }
 
-function SeparationProgress({ progress }: { progress: RunProgress }) {
-  const percent =
-    progress.total > 0 ? Math.round((100 * progress.done) / progress.total) : 0;
-  const title =
-    progress.phase === "loading"
-      ? "Loading model"
-      : progress.phase === "separating"
-        ? "Separating track"
-        : progress.phase === "finalizing"
-          ? "Finalizing stems"
-          : "Preparing browser runtime";
-  return (
-    <div className="mt-5 grid gap-2 border-t border-border pt-5">
-      <div className="flex justify-between gap-4 text-sm font-semibold">
-        <span>{title}</span>
-        <span>{percent}%</span>
-      </div>
-      <div
-        className="h-2 overflow-hidden rounded-full bg-border"
-        role="progressbar"
-        aria-label="Overall separation progress"
-        aria-valuemin={0}
-        aria-valuemax={Math.max(progress.total, 1)}
-        aria-valuenow={progress.done}
-      >
-        <div
-          className="h-full rounded-full bg-accent transition-[width]"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      {progress.currentModel && (
-        <p className="text-xs text-muted-foreground">
-          {progress.currentModel.modelTotal > 1 &&
-            `Model ${progress.currentModel.index}/${progress.currentModel.modelTotal} / `}
-          {progress.currentModel.file} / {progress.currentModel.done}/
-          {progress.currentModel.total} chunks
-        </p>
-      )}
-    </div>
-  );
+function stemLabel(name: string, source: string | null): string {
+  if (name === "backing" && source) {
+    return `Backing track (without ${source})`;
+  }
+  return name;
 }

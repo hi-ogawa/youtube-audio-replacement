@@ -10,28 +10,29 @@ import type {
   DownloadProgress,
   EmbedContentRpcHandlers,
 } from "./embed-content.ts";
-import { modelArtifactManager } from "./lib/demucs/artifact-store.ts";
-import {
-  createStemArchive,
-  decodeAudioFile,
-  downloadBlob,
-  encodeWavF32,
-  toStemArchiveFilename,
-} from "./lib/demucs/audio.ts";
+import { modelArtifactManager } from "./lib/demucs/audio/artifact-store.ts";
+import { AUDIO_SAMPLE_RATE } from "./lib/demucs/audio/constants.ts";
+import { decodeAudioFile } from "./lib/demucs/audio/decode.ts";
 import {
   isModelFilename,
   type ModelArtifact,
   type ModelFilename,
-  modelAssetUrl,
+  type ModelSource,
   requiredModelFiles,
-  type SeparationConfiguration,
-} from "./lib/demucs/models.ts";
+} from "./lib/demucs/audio/models.ts";
+import type { SeparateRequest } from "./lib/demucs/audio/separate.ts";
 import {
-  initialRunProgress,
+  createStemArchive,
+  downloadBlob,
+  toStemArchiveFilename,
+} from "./lib/demucs/audio/stem-archive.ts";
+import { encodeWavF32 } from "./lib/demucs/audio/wav.ts";
+import { separateInWorker } from "./lib/demucs/audio/worker-client.ts";
+import { loadPreferences, savePreferences } from "./lib/demucs/preferences.ts";
+import {
   type RunProgress,
   updateRunProgress,
-} from "./lib/demucs/progress.ts";
-import { separateInWorker } from "./lib/demucs/worker-client.ts";
+} from "./lib/demucs/progress/model.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
@@ -61,42 +62,48 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     {},
   );
   const outputCleanupRef = useRef<(() => void)[]>([]);
-  const [configuration, setConfiguration] = useState<SeparationConfiguration>({
-    model: "htdemucs_ft",
-    twoStems: "bass",
-    method: "minus",
-    shifts: 1,
-  });
+  // synchronize preferences with localStorage
+  const [preferences, setPreferences] = useState(loadPreferences);
+  useEffect(() => savePreferences(preferences), [preferences]);
+
   const [selectedModelFiles, setSelectedModelFiles] = useState<
     Partial<Record<ModelFilename, ModelArtifact>>
   >({});
+  const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
+    [],
+  );
   const [modelFileErrors, setModelFileErrors] = useState<
     Partial<Record<ModelFilename, string>>
   >({});
-  const [modelSelectionError, setModelSelectionError] = useState<string>();
-  const [runProgress, setRunProgress] = useState<RunProgress>();
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+
+  const { model, method, shifts, twoStems } = preferences;
 
   const loadStoredModelsQuery = useQuery({
-    queryKey: ["demucs-models"],
+    queryKey: ["stored-models"],
     queryFn: modelArtifactManager.load,
   });
   const storeModelsMutation = useMutation({
     mutationFn: modelArtifactManager.store,
   });
-  const modelFiles = new Map<ModelFilename, ModelArtifact>();
-  for (const artifact of loadStoredModelsQuery.data ?? []) {
-    modelFiles.set(artifact.name, artifact);
-  }
-  for (const artifact of Object.values(selectedModelFiles)) {
-    if (artifact) {
-      modelFiles.set(artifact.name, artifact);
-    }
-  }
-  const requiredFiles = requiredModelFiles(configuration);
-  const modelSource = requiredFiles.every((filename) =>
-    modelFiles.has(filename),
+  const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
+    ...Object.fromEntries(
+      (loadStoredModelsQuery.data ?? []).map((artifact) => [
+        artifact.name,
+        artifact,
+      ]),
+    ),
+    ...selectedModelFiles,
+  };
+  const requiredFiles = requiredModelFiles(
+    model,
+    twoStems || undefined,
+    twoStems ? method : undefined,
+  );
+  const modelSource: ModelSource | null = requiredFiles.every(
+    (filename) => modelFiles[filename],
   )
-    ? { artifacts: [...modelFiles.values()] }
+    ? { artifacts: Object.values(modelFiles) }
     : null;
 
   function clearOutputUrls() {
@@ -115,42 +122,62 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
         throw new Error("Audio and model files are required.");
       }
       clearOutputUrls();
+      const started = performance.now();
       const decoded = await decodeAudioFile(sourceFile);
-      const separated = await separateInWorker(
-        {
-          ...configuration,
-          left: decoded.left,
-          right: decoded.right,
-          modelSource,
-        },
-        (event, at) =>
+      const request: SeparateRequest = {
+        left: decoded.left.slice(),
+        right: decoded.right.slice(),
+        model,
+        twoStems: twoStems ? { source: twoStems, method } : undefined,
+        shifts,
+        modelSource,
+      };
+      const separated = await separateInWorker(request, {
+        onProgress: (event, at) =>
           setRunProgress((current) =>
             current ? updateRunProgress(current, event, at) : current,
           ),
-      );
-      const outputs = separated.map((output) => {
-        const blob = encodeWavF32([output.left, output.right]);
-        const url = URL.createObjectURL(blob);
-        outputCleanupRef.current.push(() => URL.revokeObjectURL(url));
-        return { name: output.name, blob, url };
       });
+      const outputs = separated.map((output) => {
+        const blob = encodeWavF32(
+          [output.left, output.right],
+          AUDIO_SAMPLE_RATE,
+        );
+        return { ...output, blob, url: URL.createObjectURL(blob) };
+      });
+      outputCleanupRef.current = outputs.map(
+        (output) => () => URL.revokeObjectURL(output.url),
+      );
+      const durationMs = performance.now() - started;
       const archiveBlob = await createStemArchive(outputs);
       const archive = {
         name: toStemArchiveFilename(decoded.name),
         url: URL.createObjectURL(archiveBlob),
       };
       outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
-      return { outputs, archive };
+      return { outputs, archive, durationMs };
     },
-    onMutate: () => setRunProgress(initialRunProgress()),
+    onMutate: () =>
+      setRunProgress({
+        phase: "preparing",
+        startedAt: Date.now(),
+        done: 0,
+        total: 0,
+        models: [],
+        finalizeMs: 0,
+      }),
     onSuccess: ({ archive }) => downloadBlob(archive.url, archive.name),
-    onError: () => setRunProgress(undefined),
+    onSettled: (_data, error) => {
+      if (error) {
+        setRunProgress(null);
+      }
+    },
   });
 
   function resetSeparation() {
     clearOutputUrls();
     runSeparationMutation.reset();
-    setRunProgress(undefined);
+    setRunProgress(null);
   }
 
   function setSourceState(
@@ -238,11 +265,12 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       (file) =>
         isModelFilename(file.name) && (!expected || file.name === expected),
     );
-    const unsupported = files.filter((file) => !isModelFilename(file.name));
-    setModelSelectionError(
-      unsupported.length > 0
-        ? `Unsupported model files: ${unsupported.map((file) => file.name).join(", ")}.`
-        : undefined,
+    setUnsupportedModelFiles(
+      expected
+        ? []
+        : files
+            .filter((file) => !isModelFilename(file.name))
+            .map((file) => file.name),
     );
     if (expected) {
       const rejected = files.find((file) => file.name !== expected);
@@ -253,27 +281,30 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
           : undefined,
       }));
     }
-    if (accepted.length === 0) {
-      return;
-    }
-    resetSeparation();
     setSelectedModelFiles((current) => ({
       ...current,
       ...Object.fromEntries(
         accepted.map((file) => [file.name, { name: file.name, blob: file }]),
       ),
     }));
-    storeModelsMutation.mutate(accepted);
+    if (accepted.length > 0) {
+      resetSeparation();
+      storeModelsMutation.mutate(accepted);
+    }
   }
 
   const modelStorageError = loadStoredModelsQuery.error
-    ? "Browser model storage is unavailable; selected files still work for this session."
+    ? "Browser storage is unavailable; uploads still work."
     : storeModelsMutation.error instanceof DOMException &&
         storeModelsMutation.error.name === "QuotaExceededError"
-      ? "Browser model storage is full; selected files still work for this session."
+      ? "Browser storage is full; files are available for this session only."
       : storeModelsMutation.error
-        ? "Model files could not be stored and are available for this session only."
-        : modelSelectionError;
+        ? "Files are available for this session but could not be stored."
+        : "";
+
+  const separationStatusText = runSeparationMutation.data
+    ? `Done in ${(runSeparationMutation.data.durationMs / 1000).toFixed(1)}s`
+    : "";
 
   return (
     <StemGeneratorView
@@ -289,21 +320,22 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       onSourceModeChange={resetSeparation}
       onRemoveSource={removeSource}
       onSaveSource={saveSource}
-      configuration={configuration}
+      configuration={preferences}
       onConfigurationChange={(next) => {
         resetSeparation();
-        setConfiguration(next);
+        setPreferences(next);
       }}
       modelFiles={requiredFiles.map((name) => ({
         name,
-        ready: modelFiles.has(name),
+        ready: Boolean(modelFiles[name]),
         error: modelFileErrors[name],
-        downloadUrl: modelAssetUrl(name),
       }))}
+      unsupportedModelFiles={unsupportedModelFiles}
       modelStorageError={modelStorageError}
       onChooseModelFiles={addModelFiles}
       separationPending={runSeparationMutation.isPending}
       separationProgress={runProgress}
+      separationStatus={separationStatusText}
       separationError={
         runSeparationMutation.error instanceof Error
           ? runSeparationMutation.error.message

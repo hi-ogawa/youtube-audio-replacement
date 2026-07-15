@@ -4,23 +4,35 @@ import init, {
 } from "@hiogawa/demucs-onnx-wasm";
 import ortWasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
 import ortWasmUrl from "onnxruntime-web/ort-wasm-simd-threaded.wasm?url";
+// Browser capabilities plugged into the Rust/WASM separation driver. The worker owns
+// messaging; this module owns fetch and onnxruntime-web only.
 import * as ort from "onnxruntime-web/wasm";
-import type { SeparationConfiguration } from "./models.ts";
+import {
+  MODEL_INPUT_LENGTH,
+  MODEL_OUTPUT_LENGTH,
+  MODEL_SEGMENT,
+} from "./constants.ts";
 import {
   readModelFile,
   type ModelFilename,
   type ModelSource,
 } from "./models.ts";
 
-const MODEL_SEGMENT = 343_980;
-const MODEL_INPUT_LENGTH = 2 * MODEL_SEGMENT;
-const MODEL_OUTPUT_LENGTH = 4 * 2 * MODEL_SEGMENT;
-
+// Keep Emscripten's pthread entry point separate from this application worker.
+// https://onnxruntime.ai/docs/tutorials/web/env-flags-and-session-options.html#envwasmwasmpaths
 ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: ortWasmUrl };
 
-export interface SeparateRequest extends SeparationConfiguration {
+export interface TwoStems {
+  source: string;
+  method: "add" | "minus";
+}
+
+export interface SeparateRequest {
   left: Float32Array;
   right: Float32Array;
+  model: string;
+  twoStems?: TwoStems;
+  shifts: number;
   modelSource: ModelSource;
 }
 
@@ -50,20 +62,25 @@ export type ProgressEvent =
       shifts: number;
     };
 
+export interface SeparateCallbacks {
+  onProgress?: (event: ProgressEvent) => void;
+}
+
 export async function separate(
-  request: SeparateRequest,
-  onProgress?: (event: ProgressEvent) => void,
+  req: SeparateRequest,
+  cb: SeparateCallbacks = {},
 ): Promise<SeparatedStem[]> {
   const wasm = await init();
   let dft: Uint8Array | undefined;
+
   const host: Host = {
     event(...event) {
       switch (event[0]) {
         case "started":
-          onProgress?.({ type: event[0], total: event[1] });
+          cb.onProgress?.({ type: event[0], total: event[1] });
           break;
         case "model-loading":
-          onProgress?.({
+          cb.onProgress?.({
             type: event[0],
             index: event[1],
             total: event[2],
@@ -72,7 +89,7 @@ export async function separate(
           });
           break;
         case "inference":
-          onProgress?.({
+          cb.onProgress?.({
             type: event[0],
             done: event[1],
             total: event[2],
@@ -83,58 +100,64 @@ export async function separate(
           });
           break;
         default:
-          onProgress?.({ type: event[0] });
+          cb.onProgress?.({ type: event[0] });
       }
     },
+
     async initialize() {
-      dft = await readModelFile(request.modelSource, "dft.bin");
+      dft = await readModelFile(req.modelSource, "dft.bin");
     },
+
     async loadModel(model, source) {
       if (!dft) {
-        throw new Error("Demucs host is not initialized");
+        throw new Error("host not initialized");
       }
-      const filename = (
+      const file = (
         source ? `${model}_${source}.onnx` : `${model}.onnx`
       ) as ModelFilename;
-      const bytes = await readModelFile(request.modelSource, filename);
+      const bytes = await readModelFile(req.modelSource, file);
       return ort.InferenceSession.create(bytes, {
         executionProviders: ["wasm"],
         externalData: [{ data: dft, path: "dft.bin" }],
       });
     },
-    async runModel(session, inputPointer, outputPointer) {
+
+    async runModel(session, inputPtr, outputPtr) {
       const input = new Float32Array(
         wasm.memory.buffer,
-        inputPointer,
+        inputPtr,
         MODEL_INPUT_LENGTH,
       );
-      const result = await (session as ort.InferenceSession).run({
+      const feeds = {
         input: new ort.Tensor("float32", input, [1, 2, MODEL_SEGMENT]),
-      });
-      new Float32Array(
+      };
+      const result = await (session as ort.InferenceSession).run(feeds);
+      const output = new Float32Array(
         wasm.memory.buffer,
-        outputPointer,
+        outputPtr,
         MODEL_OUTPUT_LENGTH,
-      ).set(result.output.data as Float32Array);
+      );
+      output.set(result.output.data as Float32Array);
     },
+
     async releaseModel(session) {
       await (session as ort.InferenceSession).release();
     },
   };
 
   const tracks = await separateWasm(
-    request.model,
-    request.twoStems ?? undefined,
-    request.twoStems ? request.method : undefined,
-    request.shifts,
-    request.left,
-    request.right,
+    req.model,
+    req.twoStems?.source,
+    req.twoStems?.method,
+    req.shifts,
+    req.left,
+    req.right,
     host,
   );
-  const stemOrder = request.twoStems
+  const stemOrder: { name: string; index: number }[] = req.twoStems
     ? [
         { name: "backing", index: 1 },
-        { name: request.twoStems, index: 0 },
+        { name: req.twoStems.source, index: 0 },
       ]
     : [
         { name: "vocals", index: 3 },

@@ -9,14 +9,19 @@ export type WorkerResponse =
   | { type: "done"; outputs: SeparatedStem[] }
   | { type: "error"; message: string };
 
+export interface SeparateInWorkerOptions {
+  onProgress: (event: ProgressEvent, at: number) => void;
+}
+
 export function separateInWorker(
   request: SeparateRequest,
-  onProgress: (event: ProgressEvent, at: number) => void,
+  options: SeparateInWorkerOptions,
 ): Promise<SeparatedStem[]> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./worker.ts", import.meta.url), {
       type: "module",
     });
+
     worker.onerror = (event) => {
       worker.terminate();
       reject(new Error(`Worker failed: ${event.message}`));
@@ -24,9 +29,10 @@ export function separateInWorker(
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
       const message = event.data;
       if (message.type === "progress") {
-        onProgress(message.event, message.at);
+        options.onProgress(message.event, message.at);
         return;
       }
+
       worker.terminate();
       if (message.type === "done") {
         resolve(message.outputs);
@@ -34,6 +40,7 @@ export function separateInWorker(
         reject(new Error(message.message));
       }
     };
+
     worker.postMessage(request, [request.left.buffer, request.right.buffer]);
   });
 }
