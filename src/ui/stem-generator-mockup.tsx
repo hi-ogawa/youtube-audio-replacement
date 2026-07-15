@@ -15,9 +15,9 @@ export function StemGeneratorMockup() {
     local: { status: "empty" },
   });
   const [configuration, setConfiguration] = useState<Preferences>({
-    model: "htdemucs_ft",
-    twoStems: "bass",
-    method: "minus",
+    model: "htdemucs",
+    twoStems: null,
+    method: "add",
     shifts: 1,
   });
 
@@ -67,7 +67,7 @@ export function StemGeneratorMockup() {
       modelFiles={[
         { name: "dft.bin", ready: true },
         {
-          name: "htdemucs_ft_bass.onnx",
+          name: "htdemucs.onnx",
           ready: true,
         },
       ]}

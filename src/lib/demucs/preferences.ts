@@ -12,9 +12,9 @@ const preferencesSchema = z.object({
 export type Preferences = z.infer<typeof preferencesSchema>;
 
 const DEFAULT_PREFERENCES: Preferences = {
-  model: "htdemucs_ft",
-  twoStems: "bass",
-  method: "minus",
+  model: "htdemucs",
+  twoStems: null,
+  method: "add",
   shifts: 1,
 };
 
