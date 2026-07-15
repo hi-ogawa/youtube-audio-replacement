@@ -1,4 +1,4 @@
-// Typed MAIN-world -> isolated-world -> background service worker RPC.
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/lib/extension-rpc.ts
 import { createRpcProxy, type RpcClient } from "./core.ts";
 import type { RelayRequest, RelayResponse, RuntimeRequest } from "./shared.ts";
 import {

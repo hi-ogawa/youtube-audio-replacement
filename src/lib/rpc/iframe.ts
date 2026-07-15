@@ -1,3 +1,4 @@
+// Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/content-rpc.ts
 import type { RpcClient } from "./core.ts";
 import { createWindowRpc } from "./window.ts";
 
