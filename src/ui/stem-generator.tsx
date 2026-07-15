@@ -93,8 +93,8 @@ export function StemGeneratorView({
   const sourceState = sourceStates[sourceMode];
   const source =
     sourceState.status === "ready" ? sourceState.source : undefined;
-  const youtubeLoading = sourceStates.youtube.status === "loading";
-  const loadingPercent =
+  const youtubeSourceLoading = sourceStates.youtube.status === "loading";
+  const youtubeSourceLoadingPercent =
     sourceStates.youtube.status === "loading" &&
     sourceStates.youtube.progress?.totalBytes
       ? Math.round(
@@ -191,19 +191,19 @@ export function StemGeneratorView({
                         className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
                         value={input}
                         placeholder="YouTube video ID or URL"
-                        disabled={youtubeLoading}
+                        disabled={youtubeSourceLoading}
                         onChange={(event) => setInput(event.target.value)}
                       />
                     </label>
                     <button
                       className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60 sm:w-44"
                       type="submit"
-                      disabled={youtubeLoading}
+                      disabled={youtubeSourceLoading}
                     >
-                      {youtubeLoading
-                        ? loadingPercent === undefined
+                      {youtubeSourceLoading
+                        ? youtubeSourceLoadingPercent === undefined
                           ? "Loading..."
-                          : `Loading ${loadingPercent}%`
+                          : `Loading ${youtubeSourceLoadingPercent}%`
                         : "Load from YouTube"}
                     </button>
                   </form>
