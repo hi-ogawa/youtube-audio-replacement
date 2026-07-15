@@ -42,24 +42,16 @@ export default defineConfig({
       },
     },
     content: scriptBuild("content", "./src/content.tsx"),
-    contentRpcBridge: scriptBuild(
-      "content-rpc-bridge",
-      "./src/content-rpc-bridge.ts",
-    ),
+    rpcRelay: scriptBuild("rpc-relay", "./src/lib/rpc/entry.relay.ts"),
     embedContent: scriptBuild("embed-content", "./src/embed-content.ts"),
-    embedContentRpcBridge: scriptBuild(
-      "embed-content-rpc-bridge",
-      "./src/embed-content-rpc-bridge.ts",
-    ),
     background: scriptBuild("background", "./src/background.ts"),
   },
   builder: {
     async buildApp(builder) {
       await builder.build(builder.environments.extensionPage);
       await builder.build(builder.environments.content);
-      await builder.build(builder.environments.contentRpcBridge);
+      await builder.build(builder.environments.rpcRelay);
       await builder.build(builder.environments.embedContent);
-      await builder.build(builder.environments.embedContentRpcBridge);
       await builder.build(builder.environments.background);
     },
   },
