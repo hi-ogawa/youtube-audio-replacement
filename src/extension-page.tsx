@@ -1,11 +1,24 @@
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { DownloadProgress } from "./embed-content.ts";
-import { initEmbedContentRpc } from "./lib/embed-content-rpc-client.ts";
+import type {
+  DownloadProgress,
+  embedContentRpcHandlers,
+} from "./embed-content.ts";
+import { createHiddenIframeRpc } from "./lib/iframe-rpc.ts";
+import { once } from "./lib/rpc.ts";
 import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
 import "./styles.css";
 
 type Phase = "connecting" | "ready" | "downloading" | "cancelled" | "error";
+
+const initEmbedContentRpc = once(() =>
+  createHiddenIframeRpc<typeof embedContentRpcHandlers>({
+    src: "https://www.youtube.com/embed/",
+    origin: "https://www.youtube.com",
+    readyMessage: "audio-replacement-embed-ready",
+    timeoutMs: 15_000,
+  }),
+);
 
 function selectAudioFormat(formats: YouTubeStreamingFormat[]) {
   const audioFormats = formats.filter(
