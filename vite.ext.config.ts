@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync, renameSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
@@ -36,7 +36,7 @@ export default defineConfig({
         minify: false,
         rolldownOptions: {
           input: {
-            "extension-page": "./extension-page.html",
+            "extension-page": "./index.html",
           },
         },
       },
@@ -56,10 +56,6 @@ export default defineConfig({
   builder: {
     async buildApp(builder) {
       await builder.build(builder.environments.extensionPage);
-      renameSync(
-        "dist/extension/extension-page.html",
-        "dist/extension/index.html",
-      );
       await builder.build(builder.environments.content);
       await builder.build(builder.environments.contentRpcBridge);
       await builder.build(builder.environments.embedContent);
