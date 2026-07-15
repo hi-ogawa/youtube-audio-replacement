@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@hiogawa/demucs-onnx-wasm':
-        specifier: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63
-        version: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63
+        specifier: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@b45f838e7366f6d93eba63591d87d6c9ef8c4d34
+        version: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@b45f838e7366f6d93eba63591d87d6c9ef8c4d34
       '@tanstack/react-query':
         specifier: ^5.101.2
         version: 5.101.2(react@19.2.7)
@@ -145,8 +145,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@hiogawa/demucs-onnx-wasm@https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63':
-    resolution: {integrity: sha512-Z7Rj9GFFaTGeVbr+CXTjcjMfLpYTudp4zzDHYEcGRCcNukIn4XRrB71qPDXagT4pKTTm4bExcRNP+Yc0pUcTmA==, tarball: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63}
+  '@hiogawa/demucs-onnx-wasm@https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@b45f838e7366f6d93eba63591d87d6c9ef8c4d34':
+    resolution: {integrity: sha512-Z7Rj9GFFaTGeVbr+CXTjcjMfLpYTudp4zzDHYEcGRCcNukIn4XRrB71qPDXagT4pKTTm4bExcRNP+Yc0pUcTmA==, tarball: https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@b45f838e7366f6d93eba63591d87d6c9ef8c4d34}
     version: 0.0.0
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -1630,7 +1630,7 @@ snapshots:
   '@fallow-cli/win32-x64-msvc@3.4.2':
     optional: true
 
-  '@hiogawa/demucs-onnx-wasm@https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@63': {}
+  '@hiogawa/demucs-onnx-wasm@https://pkg.pr.new/hi-ogawa/demucs-onnx/@hiogawa/demucs-onnx-wasm@b45f838e7366f6d93eba63591d87d6c9ef8c4d34': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
