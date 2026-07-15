@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, test, vi } from "vitest";
+import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
-import "vitest-browser-react";
 import "../styles.css";
 import { FakeVideo } from "./ui-preview.tsx";
 import { Panel } from "./ui.tsx";
@@ -9,7 +9,7 @@ import { Panel } from "./ui.tsx";
 test("selects, enables, adjusts, and replaces audio", async () => {
   const video = new FakeVideo();
   const onSelectAudio = vi.fn();
-  const screen = await page.render(
+  const screen = await render(
     <div className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
       <QueryClientProvider client={new QueryClient()}>
         <Panel
