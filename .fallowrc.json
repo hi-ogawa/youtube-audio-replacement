@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "entry": [
-    "src/acquisition.ts",
     "src/background.ts",
+    "src/content-rpc-bridge.ts",
     "src/content.tsx",
-    "src/generator.tsx",
-    "src/opener.ts",
-    "src/relay.ts"
+    "src/embed-content-rpc-bridge.ts",
+    "src/embed-content.ts",
+    "src/extension-page.tsx"
   ]
 }

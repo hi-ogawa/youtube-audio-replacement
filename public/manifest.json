@@ -19,20 +19,20 @@
     },
     {
       "matches": ["https://www.youtube.com/embed/"],
-      "js": ["acquisition.js"],
+      "js": ["embed-content.js"],
       "world": "MAIN",
       "all_frames": true,
       "run_at": "document_start"
     },
     {
       "matches": ["https://www.youtube.com/embed/"],
-      "js": ["relay.js"],
+      "js": ["embed-content-rpc-bridge.js"],
       "all_frames": true,
       "run_at": "document_start"
     },
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["opener.js"],
+      "js": ["content-rpc-bridge.js"],
       "run_at": "document_start"
     }
   ]

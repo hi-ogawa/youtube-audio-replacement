@@ -6,7 +6,7 @@ export const backgroundRpcHandlers = {
     if (!/^[\w-]{11}$/.test(videoId)) {
       throw new Error("Invalid YouTube video ID");
     }
-    const url = new URL(chrome.runtime.getURL("generator.html"));
+    const url = new URL(chrome.runtime.getURL("index.html"));
     url.searchParams.set("videoId", videoId);
     await chrome.tabs.create({ url: url.href });
   },

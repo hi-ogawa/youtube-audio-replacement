@@ -1,13 +1,13 @@
-import type { acquisitionRpcHandlers } from "./acquisition.ts";
-import type { RpcClient } from "./lib/rpc.ts";
-import { once } from "./lib/rpc.ts";
-import { createWindowRpc } from "./lib/window-rpc.ts";
+import type { embedContentRpcHandlers } from "../embed-content.ts";
+import type { RpcClient } from "./rpc.ts";
+import { once } from "./rpc.ts";
+import { createWindowRpc } from "./window-rpc.ts";
 
-type AcquisitionRpc = RpcClient<typeof acquisitionRpcHandlers>;
+type EmbedContentRpc = RpcClient<typeof embedContentRpcHandlers>;
 
-export const initAcquisitionRpc = once(
+export const initEmbedContentRpc = once(
   () =>
-    new Promise<AcquisitionRpc>((resolve, reject) => {
+    new Promise<EmbedContentRpc>((resolve, reject) => {
       const iframe = document.createElement("iframe");
       iframe.src = "https://www.youtube.com/embed/";
       iframe.hidden = true;
@@ -41,7 +41,7 @@ export const initAcquisitionRpc = once(
           window.clearTimeout(timeout);
           abortController.abort();
           resolve(
-            createWindowRpc<typeof acquisitionRpcHandlers>({
+            createWindowRpc<typeof embedContentRpcHandlers>({
               targetWindow: contentWindow,
               targetOrigin: "https://www.youtube.com",
               sourceWindow: contentWindow,

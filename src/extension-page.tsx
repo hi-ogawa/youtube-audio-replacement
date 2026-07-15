@@ -1,7 +1,7 @@
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { initAcquisitionRpc } from "./acquisition-rpc.ts";
-import type { DownloadProgress } from "./acquisition.ts";
+import type { DownloadProgress } from "./embed-content.ts";
+import { initEmbedContentRpc } from "./lib/embed-content-rpc-client.ts";
 import type { PlayerApiResult, YouTubeStreamingFormat } from "./lib/youtube.ts";
 import "./styles.css";
 
@@ -35,7 +35,7 @@ function Generator() {
       return;
     }
     let active = true;
-    void initAcquisitionRpc()
+    void initEmbedContentRpc()
       .then((rpc) => rpc.getStreamingFormats({ videoId }))
       .then((result) => {
         if (active) {
@@ -83,7 +83,7 @@ function Generator() {
     setError(undefined);
     setPhase("downloading");
     try {
-      const rpc = await initAcquisitionRpc();
+      const rpc = await initEmbedContentRpc();
       const result = await rpc.downloadFormat({
         videoId,
         itag: format.itag,
@@ -113,7 +113,7 @@ function Generator() {
     if (!downloadId) {
       return;
     }
-    const rpc = await initAcquisitionRpc();
+    const rpc = await initEmbedContentRpc();
     await rpc.cancelDownload({ downloadId });
   }
 

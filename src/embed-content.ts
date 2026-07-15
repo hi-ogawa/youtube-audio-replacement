@@ -72,7 +72,7 @@ async function downloadBytes(
   return data;
 }
 
-export const acquisitionRpcHandlers = {
+export const embedContentRpcHandlers = {
   async getStreamingFormats({ videoId }: { videoId: string }) {
     return await fetchPlayerApiWhenReady(videoId);
   },
@@ -122,7 +122,7 @@ export const acquisitionRpcHandlers = {
   },
 };
 
-registerWindowRpcHandlers(acquisitionRpcHandlers, {
+registerWindowRpcHandlers(embedContentRpcHandlers, {
   sourceWindow: window.parent,
   targetWindow: window.parent,
   targetOrigin: "*",
