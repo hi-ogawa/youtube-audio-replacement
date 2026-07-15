@@ -417,15 +417,15 @@
         <h1>YouTube Audio Replacement</h1>
         <p class="lede">
           One Manifest V3 extension, two user workflows, and three browser trust
-          boundaries. YouTube remains the playback surface while an extension
-          page owns full-audio acquisition.
+          boundaries. YouTube remains the playback surface while the stem
+          generator downloads the full source audio.
         </p>
         <div class="provenance">
           <a href="https://github.com/hi-ogawa/youtube-audio-replacement"
             >Repository</a
           >
           <a href="https://github.com/hi-ogawa/youtube-audio-replacement/pull/6"
-            >Acquisition PR #6</a
+            >Source audio PR #6</a
           >
           <a
             href="https://github.com/hi-ogawa/youtube-audio-replacement/tree/3b233f12861d45f8a12d86cfa78d77e3af2a9b8a"
@@ -464,12 +464,12 @@
         <p class="section-intro">
           The extension is intentionally split by browser capability. MAIN-world
           scripts can touch YouTube internals. ISOLATED-world scripts can call
-          Chrome extension APIs. The extension page coordinates acquisition but
-          never embeds a visible player.
+          Chrome extension APIs. The stem generator coordinates the source audio
+          download but never embeds a visible player.
         </p>
         <div class="invariant card">
           YouTube is the transport clock for replacement playback. The hidden
-          embed is acquisition infrastructure only.
+          embed is used only to find and download the source audio.
         </div>
         <div class="summary-grid" style="margin-top: 14px">
           <article class="card info">
@@ -482,7 +482,7 @@
           </article>
           <article class="card info">
             <span class="tag extension">Extension page</span>
-            <h3>Acquisition workspace</h3>
+            <h3>Stem generator</h3>
             <p>
               Read the video ID, request metadata, select audio, show progress,
               and hold the resulting File.
@@ -764,7 +764,7 @@
         <div class="flow-grid">
           <article class="card flow-card">
             <span class="tag main">Flow A</span>
-            <h3>Open the acquisition page</h3>
+            <h3>Open the stem generator</h3>
             <ol class="steps">
               <li>
                 <strong>User selects Generate stems</strong>
@@ -792,7 +792,7 @@
           </article>
           <article class="card flow-card">
             <span class="tag extension">Flow B</span>
-            <h3>Acquire complete audio</h3>
+            <h3>Download the source audio</h3>
             <ol class="steps">
               <li>
                 <strong>Extension page creates a hidden embed</strong>
@@ -869,8 +869,8 @@
           <article class="card boundary extension">
             <h3>Extension page</h3>
             <p>
-              Owns acquisition UX and the resulting in-memory source File. It
-              embeds no visible YouTube player.
+              Shows source audio download progress and holds the resulting File
+              in memory. It embeds no visible YouTube player.
             </p>
           </article>
           <article class="card boundary worker">
@@ -1090,8 +1090,8 @@
     <footer>
       <div class="shell">
         Architecture snapshot for commit <code>3b233f1</code>. This document
-        describes the acquisition milestone before Demucs processing is
-        integrated.
+        describes the source audio download milestone before Demucs processing
+        is integrated.
       </div>
     </footer>
   </body>

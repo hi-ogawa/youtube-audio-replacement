@@ -34,7 +34,7 @@ export const initEmbedContentRpc = once(
             !contentWindow ||
             event.source !== contentWindow ||
             event.origin !== "https://www.youtube.com" ||
-            event.data?.type !== "audio-replacement-acquisition-ready"
+            event.data?.type !== "audio-replacement-embed-ready"
           ) {
             return;
           }

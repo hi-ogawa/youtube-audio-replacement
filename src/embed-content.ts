@@ -128,4 +128,4 @@ registerWindowRpcHandlers(embedContentRpcHandlers, {
   targetOrigin: "*",
 });
 
-window.parent.postMessage({ type: "audio-replacement-acquisition-ready" }, "*");
+window.parent.postMessage({ type: "audio-replacement-embed-ready" }, "*");

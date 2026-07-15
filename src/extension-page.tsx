@@ -66,7 +66,7 @@ function Generator() {
     return () => URL.revokeObjectURL(url);
   }, [source]);
 
-  async function acquire() {
+  async function loadYouTubeAudio() {
     if (!videoId || !metadata) {
       return;
     }
@@ -175,9 +175,9 @@ function Generator() {
                     <button
                       className="mt-4 cursor-pointer rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90"
                       type="button"
-                      onClick={() => void acquire()}
+                      onClick={() => void loadYouTubeAudio()}
                     >
-                      Acquire complete audio
+                      Load audio from YouTube
                     </button>
                   )}
                 </div>
@@ -189,7 +189,7 @@ function Generator() {
             <div>
               <h2 className="text-sm font-semibold">Local source</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Use an existing audio file instead of acquiring from YouTube.
+                Use an audio file from your computer instead.
               </p>
             </div>
             <label className="inline-flex cursor-pointer rounded-md border border-button-border bg-button px-4 py-2 text-sm font-medium hover:bg-button-hover">
@@ -213,7 +213,7 @@ function Generator() {
 
           {phase === "cancelled" && (
             <p className="rounded-md border border-border bg-button p-3 text-sm">
-              Acquisition cancelled.
+              Audio download cancelled.
             </p>
           )}
           {error && (
@@ -239,7 +239,7 @@ function Generator() {
                 href={sourceUrl}
                 download={source.name}
               >
-                Download source audio
+                Save source audio
               </a>
             </section>
           )}
