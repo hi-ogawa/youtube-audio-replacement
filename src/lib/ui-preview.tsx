@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { VideoSyncSource } from "./player-sync.ts";
 import type { StoredAudio } from "./storage.ts";
+import { UiMockup } from "./ui-mockup.tsx";
 import { ErrorPanel, Fab, Panel } from "./ui.tsx";
 
 export class FakeVideo extends EventTarget implements VideoSyncSource {
@@ -20,6 +21,9 @@ const previewAudio: StoredAudio = {
 };
 
 export function UiPreview() {
+  const [mockup, setMockup] = useState(
+    () => new URL(location.href).searchParams.get("view") === "mockup",
+  );
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(true);
   const [error, setError] = useState<string>();
@@ -30,10 +34,32 @@ export function UiPreview() {
     return () => document.documentElement.classList.remove("dark");
   }, [dark]);
 
+  if (mockup) {
+    return (
+      <>
+        <UiMockup />
+        <button
+          className="fixed top-3 right-3 z-20 cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs text-foreground shadow-lg hover:bg-button-hover"
+          type="button"
+          onClick={() => setMockup(false)}
+        >
+          Panel preview
+        </button>
+      </>
+    );
+  }
+
   return (
     <main className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
       <div className="flex flex-col items-end gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
+            type="button"
+            onClick={() => setMockup(true)}
+          >
+            App mockup
+          </button>
           <button
             className="cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs hover:bg-button-hover"
             type="button"

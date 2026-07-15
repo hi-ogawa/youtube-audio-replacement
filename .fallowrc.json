@@ -5,6 +5,7 @@
     "src/content.tsx",
     "src/embed-content.ts",
     "src/extension-page.tsx",
-    "src/lib/rpc/entry.relay.ts"
+    "src/lib/rpc/entry.relay.ts",
+    "src/ui-preview.tsx"
   ]
 }
