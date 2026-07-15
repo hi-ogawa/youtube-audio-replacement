@@ -5,6 +5,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: { open: "/ui-preview.html" },
   test: {
     include: ["src/**/*.browser.test.tsx"],
     reporters: [["html", { singleFile: true }], ...configDefaults.reporters],

@@ -1,17 +1,10 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, expect, test, vi } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import "../styles.css";
-import type { VideoSyncSource } from "./player-sync.ts";
+import { FakeVideo } from "./ui-preview.tsx";
 import { Panel } from "./ui.tsx";
-
-class FakeVideo extends EventTarget implements VideoSyncSource {
-  currentTime = 0;
-  muted = false;
-  paused = true;
-  playbackRate = 1;
-  volume = 0.8;
-}
 
 let root: Root | undefined;
 
@@ -30,13 +23,15 @@ test("selects, enables, adjusts, and replaces audio", async () => {
   document.body.append(container);
   root = createRoot(container);
   root.render(
-    <Panel
-      videoId="trace-preview"
-      getVideo={() => video}
-      initialSelectedAudio={null}
-      onSelectAudio={onSelectAudio}
-      onError={vi.fn()}
-    />,
+    <QueryClientProvider client={new QueryClient()}>
+      <Panel
+        videoId="trace-preview"
+        getVideo={() => video}
+        initialSelectedAudio={null}
+        onSelectAudio={onSelectAudio}
+        onError={vi.fn()}
+      />
+    </QueryClientProvider>,
   );
 
   const panel = page.elementLocator(container);
