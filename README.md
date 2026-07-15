@@ -22,8 +22,6 @@ pnpm build
 
 Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select this repository's `dist/extension` directory. The packaged extension is available at `dist/extension.zip`.
 
-## Development
-
 See [the extension architecture](docs/extension-architecture.html) for the execution contexts and acquisition RPC flow.
 
 To develop the extension UI as a regular web app, run:
