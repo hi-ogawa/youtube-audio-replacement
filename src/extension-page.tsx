@@ -30,8 +30,6 @@ function ExtensionPage() {
   });
   const [sourceError, setSourceError] = useState<string>();
   const sourceFileRef = useRef<File>(null);
-  const downloadIdRef = useRef<string>(null);
-  const loadAbortRef = useRef<AbortController>(null);
 
   async function loadYouTubeAudio(input: string) {
     const videoId = parseVideoId(input);
@@ -40,18 +38,12 @@ function ExtensionPage() {
       return;
     }
 
-    const downloadId = crypto.randomUUID();
-    const abortController = new AbortController();
-    downloadIdRef.current = downloadId;
-    loadAbortRef.current = abortController;
     sourceFileRef.current = null;
     setSourceError(undefined);
     setSourceState({ status: "loading" });
     try {
       const rpc = await initEmbedContentRpc();
-      abortController.signal.throwIfAborted();
       const metadata = await rpc.getStreamingFormats({ videoId });
-      abortController.signal.throwIfAborted();
       const format = selectAudioFormat(metadata.streamingFormats);
       if (!format) {
         throw new Error(
@@ -60,23 +52,16 @@ function ExtensionPage() {
       }
 
       const onProgress = (progress: DownloadProgress) => {
-        if (loadAbortRef.current === abortController) {
-          setSourceState({ status: "loading", progress });
-        }
+        setSourceState({ status: "loading", progress });
       };
       const result = await rpc.downloadFormat({
         videoId,
         itag: format.itag,
-        downloadId,
         onProgress,
       });
-      abortController.signal.throwIfAborted();
       const file = new File([result.data], result.filename, {
         type: result.mimeType,
       });
-      if (loadAbortRef.current !== abortController) {
-        return;
-      }
       sourceFileRef.current = file;
       setSourceState({
         status: "ready",
@@ -87,31 +72,10 @@ function ExtensionPage() {
         },
       });
     } catch (error) {
-      if (loadAbortRef.current !== abortController) {
-        return;
-      }
       const message = error instanceof Error ? error.message : String(error);
       setSourceState({ status: "empty" });
-      if (!message.includes("aborted")) {
-        setSourceError(message);
-      }
-    } finally {
-      if (loadAbortRef.current === abortController) {
-        downloadIdRef.current = null;
-        loadAbortRef.current = null;
-      }
+      setSourceError(message);
     }
-  }
-
-  async function cancelLoad() {
-    loadAbortRef.current?.abort();
-    setSourceState({ status: "empty" });
-    const downloadId = downloadIdRef.current;
-    if (!downloadId) {
-      return;
-    }
-    const rpc = await initEmbedContentRpc();
-    await rpc.cancelDownload({ downloadId });
   }
 
   function chooseLocalFile(file: File) {
@@ -153,7 +117,6 @@ function ExtensionPage() {
       sourceError={sourceError}
       onLoadYouTube={(input) => void loadYouTubeAudio(input)}
       onChooseLocalFile={chooseLocalFile}
-      onCancelLoad={() => void cancelLoad()}
       onRemoveSource={removeSource}
       onSaveSource={saveSource}
     />

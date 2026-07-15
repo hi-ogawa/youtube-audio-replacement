@@ -21,7 +21,6 @@ export function StemsGeneratorView({
   sourceError,
   onLoadYouTube,
   onChooseLocalFile,
-  onCancelLoad,
   onRemoveSource,
   onSaveSource,
 }: {
@@ -30,7 +29,6 @@ export function StemsGeneratorView({
   sourceError?: string;
   onLoadYouTube(input: string): void;
   onChooseLocalFile(file: File): void;
-  onCancelLoad(): void;
   onRemoveSource(): void;
   onSaveSource(): void;
 }) {
@@ -59,10 +57,7 @@ export function StemsGeneratorView({
             description="Use a YouTube video or an audio file from your computer."
           >
             {sourceState.status === "loading" ? (
-              <LoadingSource
-                progress={sourceState.progress}
-                onCancel={onCancelLoad}
-              />
+              <LoadingSource progress={sourceState.progress} />
             ) : source ? (
               <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
                 <span
@@ -271,26 +266,15 @@ export function StemsGeneratorView({
 
 function LoadingSource({
   progress,
-  onCancel,
 }: {
   progress?: { bytesReceived: number; totalBytes: number };
-  onCancel(): void;
 }) {
   const percent = progress?.totalBytes
     ? Math.round((progress.bytesReceived / progress.totalBytes) * 100)
     : 0;
   return (
     <div className="rounded-md border border-button-border bg-button p-4">
-      <div className="flex items-center justify-between gap-4">
-        <p className="font-semibold">Loading audio from YouTube...</p>
-        <button
-          className="cursor-pointer text-sm font-medium text-error hover:underline"
-          type="button"
-          onClick={onCancel}
-        >
-          Cancel
-        </button>
-      </div>
+      <p className="font-semibold">Loading audio from YouTube...</p>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-button-border">
         <div
           className="h-full bg-accent transition-[width]"

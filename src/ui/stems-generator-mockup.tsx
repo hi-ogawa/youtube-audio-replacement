@@ -33,7 +33,6 @@ export function StemsGeneratorMockup() {
           },
         })
       }
-      onCancelLoad={() => setSourceState({ status: "empty" })}
       onRemoveSource={() => setSourceState({ status: "empty" })}
       onSaveSource={() => undefined}
     />
