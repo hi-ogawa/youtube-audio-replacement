@@ -63,124 +63,6 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   const sourceFilesRef = useRef<Partial<Record<StemGeneratorSourceMode, File>>>(
     {},
   );
-  const outputCleanupRef = useRef<(() => void)[]>([]);
-  // synchronize preferences with localStorage
-  const [preferences, setPreferences] = useState(loadPreferences);
-  useEffect(() => savePreferences(preferences), [preferences]);
-
-  const [selectedModelFiles, setSelectedModelFiles] = useState<
-    Partial<Record<ModelFilename, ModelArtifact>>
-  >({});
-  const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
-    [],
-  );
-  const [modelFileErrors, setModelFileErrors] = useState<
-    Partial<Record<ModelFilename, string>>
-  >({});
-  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
-
-  const { model, method, shifts, twoStems } = preferences;
-
-  const loadStoredModelsQuery = useQuery({
-    queryKey: ["stored-models"],
-    queryFn: modelArtifactManager.load,
-  });
-  const storeModelsMutation = useMutation({
-    mutationFn: modelArtifactManager.store,
-  });
-  const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
-    ...Object.fromEntries(
-      (loadStoredModelsQuery.data ?? []).map((artifact) => [
-        artifact.name,
-        artifact,
-      ]),
-    ),
-    ...selectedModelFiles,
-  };
-  const requiredFiles = requiredModelFiles(
-    model,
-    twoStems || undefined,
-    twoStems ? method : undefined,
-  );
-  const modelSource: ModelSource | null = requiredFiles.every(
-    (filename) => modelFiles[filename],
-  )
-    ? { artifacts: Object.values(modelFiles) }
-    : null;
-
-  function clearOutputUrls() {
-    for (const cleanup of outputCleanupRef.current) {
-      cleanup();
-    }
-    outputCleanupRef.current = [];
-  }
-
-  useEffect(() => clearOutputUrls, []);
-
-  const runSeparationMutation = useMutation({
-    mutationFn: async () => {
-      const sourceFile = sourceFilesRef.current[sourceMode];
-      if (!sourceFile || !modelSource) {
-        throw new Error("Audio and model files are required.");
-      }
-      clearOutputUrls();
-      const started = performance.now();
-      const decoded = await decodeAudioFile(sourceFile);
-      const request: SeparateRequest = {
-        left: decoded.left.slice(),
-        right: decoded.right.slice(),
-        model,
-        twoStems: twoStems ? { source: twoStems, method } : undefined,
-        shifts,
-        modelSource,
-      };
-      const separated = await separateInWorker(request, {
-        onProgress: (event, at) =>
-          setRunProgress((current) =>
-            current ? updateRunProgress(current, event, at) : current,
-          ),
-      });
-      const outputs = separated.map((output) => {
-        const blob = encodeWavF32(
-          [output.left, output.right],
-          AUDIO_SAMPLE_RATE,
-        );
-        return { ...output, blob, url: URL.createObjectURL(blob) };
-      });
-      outputCleanupRef.current = outputs.map(
-        (output) => () => URL.revokeObjectURL(output.url),
-      );
-      const durationMs = performance.now() - started;
-      const archiveBlob = await createStemArchive(outputs);
-      const archive = {
-        name: toStemArchiveFilename(decoded.name),
-        url: URL.createObjectURL(archiveBlob),
-      };
-      outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
-      return { outputs, archive, durationMs };
-    },
-    onMutate: () =>
-      setRunProgress({
-        phase: "preparing",
-        startedAt: Date.now(),
-        done: 0,
-        total: 0,
-        models: [],
-        finalizeMs: 0,
-      }),
-    onSuccess: ({ archive }) => downloadBlob(archive.url, archive.name),
-    onSettled: (_data, error) => {
-      if (error) {
-        setRunProgress(null);
-      }
-    },
-  });
-
-  function resetSeparation() {
-    clearOutputUrls();
-    runSeparationMutation.reset();
-    setRunProgress(null);
-  }
 
   function setSourceState(
     mode: StemGeneratorSourceMode,
@@ -267,6 +149,49 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     setTimeout(() => URL.revokeObjectURL(url));
   }
 
+  // synchronize preferences with localStorage
+  const [preferences, setPreferences] = useState(loadPreferences);
+  useEffect(() => savePreferences(preferences), [preferences]);
+
+  const [selectedModelFiles, setSelectedModelFiles] = useState<
+    Partial<Record<ModelFilename, ModelArtifact>>
+  >({});
+  const [unsupportedModelFiles, setUnsupportedModelFiles] = useState<string[]>(
+    [],
+  );
+  const [modelFileErrors, setModelFileErrors] = useState<
+    Partial<Record<ModelFilename, string>>
+  >({});
+
+  const { model, method, shifts, twoStems } = preferences;
+
+  const loadStoredModelsQuery = useQuery({
+    queryKey: ["stored-models"],
+    queryFn: modelArtifactManager.load,
+  });
+  const storeModelsMutation = useMutation({
+    mutationFn: modelArtifactManager.store,
+  });
+  const modelFiles: Partial<Record<ModelFilename, ModelArtifact>> = {
+    ...Object.fromEntries(
+      (loadStoredModelsQuery.data ?? []).map((artifact) => [
+        artifact.name,
+        artifact,
+      ]),
+    ),
+    ...selectedModelFiles,
+  };
+  const requiredFiles = requiredModelFiles(
+    model,
+    twoStems || undefined,
+    twoStems ? method : undefined,
+  );
+  const modelSource: ModelSource | null = requiredFiles.every(
+    (filename) => modelFiles[filename],
+  )
+    ? { artifacts: Object.values(modelFiles) }
+    : null;
+
   function addModelFiles(files: File[], expected?: ModelFilename) {
     const accepted = files.filter(
       (file) =>
@@ -298,6 +223,85 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       resetSeparation();
       storeModelsMutation.mutate(accepted);
     }
+  }
+
+  const outputCleanupRef = useRef<(() => void)[]>([]);
+  const [runProgress, setRunProgress] = useState<RunProgress | null>(null);
+
+  function clearOutputUrls() {
+    for (const cleanup of outputCleanupRef.current) {
+      cleanup();
+    }
+    outputCleanupRef.current = [];
+  }
+
+  useEffect(() => clearOutputUrls, []);
+
+  const runSeparationMutation = useMutation({
+    mutationFn: async () => {
+      const sourceFile = sourceFilesRef.current[sourceMode];
+      if (!sourceFile || !modelSource) {
+        throw new Error("Audio and model files are required.");
+      }
+      clearOutputUrls();
+      const started = performance.now();
+      const decoded = await decodeAudioFile(sourceFile);
+      const request: SeparateRequest = {
+        left: decoded.left.slice(),
+        right: decoded.right.slice(),
+        model,
+        twoStems: twoStems ? { source: twoStems, method } : undefined,
+        shifts,
+        modelSource,
+      };
+      const separated = await separateInWorker(request, {
+        onProgress: (event, at) =>
+          setRunProgress((current) =>
+            current ? updateRunProgress(current, event, at) : current,
+          ),
+      });
+      const outputs = separated.map((output) => {
+        const blob = encodeWavF32(
+          [output.left, output.right],
+          AUDIO_SAMPLE_RATE,
+        );
+        return { ...output, blob, url: URL.createObjectURL(blob) };
+      });
+      outputCleanupRef.current = outputs.map(
+        (output) => () => URL.revokeObjectURL(output.url),
+      );
+      const durationMs = performance.now() - started;
+      const archiveBlob = await createStemArchive(outputs);
+      const archive = {
+        name: toStemArchiveFilename(decoded.name),
+        url: URL.createObjectURL(archiveBlob),
+      };
+      outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
+      return { outputs, archive, durationMs };
+    },
+    onMutate: () =>
+      setRunProgress({
+        phase: "preparing",
+        startedAt: Date.now(),
+        done: 0,
+        total: 0,
+        models: [],
+        finalizeMs: 0,
+      }),
+    onSuccess: ({ archive }) => {
+      downloadBlob(archive.url, archive.name);
+    },
+    onSettled: (_data, error) => {
+      if (error) {
+        setRunProgress(null);
+      }
+    },
+  });
+
+  function resetSeparation() {
+    clearOutputUrls();
+    runSeparationMutation.reset();
+    setRunProgress(null);
   }
 
   const modelStorageError = loadStoredModelsQuery.error
