@@ -16,8 +16,29 @@ const fakeVideo = new FakeVideo();
 
 const previewAudio: StoredAudio = {
   videoId: "preview-video",
-  blob: new Blob(),
-  name: "preview-audio.wav",
+  name: "example.stems.zip",
+  tracks: [
+    {
+      id: "vocals.wav",
+      name: "Vocals",
+      blob: new Blob(),
+    },
+    {
+      id: "drums.wav",
+      name: "Drums",
+      blob: new Blob(),
+    },
+    {
+      id: "bass.wav",
+      name: "Bass",
+      blob: new Blob(),
+    },
+    {
+      id: "other.wav",
+      name: "Other",
+      blob: new Blob(),
+    },
+  ],
 };
 
 export function PreviewApp() {

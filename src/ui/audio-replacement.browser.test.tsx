@@ -1,8 +1,10 @@
 import "./styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import JSZip from "jszip";
 import { expect, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
+import { videoStorage } from "../lib/storage.ts";
 import { Panel } from "./audio-replacement.tsx";
 import { FakeVideo } from "./preview.tsx";
 
@@ -60,4 +62,73 @@ test("basic", async () => {
   expect(video.muted).toBe(false);
   expect(onSelectAudio).toHaveBeenCalledTimes(2);
   await page.mark("audio replaced and disabled");
+});
+
+test("imports and mixes every audio file in a ZIP", async () => {
+  const video = new FakeVideo();
+  const onSelectAudio = vi.fn();
+  const screen = await render(
+    <div className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
+      <QueryClientProvider client={new QueryClient()}>
+        <Panel
+          videoId="zip-preview"
+          getVideo={() => video}
+          initialSelectedAudio={null}
+          onSelectAudio={onSelectAudio}
+          onGenerate={vi.fn()}
+          onError={vi.fn()}
+        />
+      </QueryClientProvider>
+    </div>,
+  );
+
+  const zip = new JSZip();
+  zip.file("stems/vocals.wav", "vocals");
+  zip.file("stems/drums.wav", "drums");
+  zip.file("stems/bass.wav", "bass");
+  zip.file("stems/other.wav", "other");
+  const file = new File(
+    [await zip.generateAsync({ type: "blob" })],
+    "song.stems.zip",
+    {
+      type: "application/zip",
+    },
+  );
+  await userEvent.upload(screen.getByLabelText("Replacement audio file"), file);
+
+  await expect.element(screen.getByText("song.stems.zip")).toBeVisible();
+  expect(document.body.textContent).not.toContain("4 tracks");
+  await expect.element(screen.getByLabelText("Vocals volume")).toBeVisible();
+  await expect.element(screen.getByLabelText("Drums volume")).toBeVisible();
+  await expect.element(screen.getByLabelText("Bass volume")).toBeVisible();
+  await expect.element(screen.getByLabelText("Other volume")).toBeVisible();
+
+  const muteVocals = screen.getByRole("button", { name: "Mute Vocals" });
+  await muteVocals.click();
+  await expect.element(muteVocals).toHaveAttribute("aria-pressed", "true");
+
+  const soloBass = screen.getByRole("button", { name: "Solo Bass" });
+  const soloDrums = screen.getByRole("button", { name: "Solo Drums" });
+  await soloBass.click();
+  await soloDrums.click();
+  await expect.element(soloBass).toHaveAttribute("aria-pressed", "true");
+  await expect.element(soloDrums).toHaveAttribute("aria-pressed", "true");
+  expect(videoStorage.getState("zip-preview").mixer).toMatchObject({
+    "stems/vocals.wav": { muted: true },
+    "stems/drums.wav": { soloed: true },
+    "stems/bass.wav": { soloed: true },
+  });
+
+  expect(onSelectAudio).toHaveBeenCalledWith(
+    expect.objectContaining({
+      name: "song.stems.zip",
+      tracks: [
+        expect.objectContaining({ id: "stems/vocals.wav", name: "Vocals" }),
+        expect.objectContaining({ id: "stems/drums.wav", name: "Drums" }),
+        expect.objectContaining({ id: "stems/bass.wav", name: "Bass" }),
+        expect.objectContaining({ id: "stems/other.wav", name: "Other" }),
+      ],
+    }),
+  );
+  await page.mark("stem mixer");
 });

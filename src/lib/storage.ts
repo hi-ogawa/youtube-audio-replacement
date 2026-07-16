@@ -1,13 +1,32 @@
 import { IdbStore } from "./idb.ts";
 
+export interface StoredAudioTrack {
+  id: string;
+  name: string;
+  blob: Blob;
+}
+
 export interface StoredAudio {
+  videoId: string;
+  name: string;
+  tracks: StoredAudioTrack[];
+}
+
+interface LegacyStoredAudio {
   videoId: string;
   blob: Blob;
   name: string;
 }
 
+export interface MixerTrackState {
+  volume: number;
+  muted: boolean;
+  soloed: boolean;
+}
+
 interface VideoState {
   panelOpen: boolean;
+  mixer: Record<string, MixerTrackState>;
 }
 
 interface StoredVideoStates {
@@ -17,9 +36,10 @@ interface StoredVideoStates {
 const VIDEO_STATE_KEY = "youtube-audio-replacement:video-state:v1";
 const DEFAULT_VIDEO_STATE: VideoState = {
   panelOpen: false,
+  mixer: {},
 };
 
-const audioStore = new IdbStore<StoredAudio>({
+const audioStore = new IdbStore<StoredAudio | LegacyStoredAudio>({
   databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
@@ -65,6 +85,22 @@ export const videoStorage = {
     return state;
   },
 
-  loadAudio: (videoId: string) => audioStore.get(videoId),
+  async loadAudio(videoId: string): Promise<StoredAudio | null> {
+    const stored = await audioStore.get(videoId);
+    if (!stored || "tracks" in stored) {
+      return stored;
+    }
+    return {
+      videoId: stored.videoId,
+      name: stored.name,
+      tracks: [
+        {
+          id: stored.name,
+          name: stored.name,
+          blob: stored.blob,
+        },
+      ],
+    };
+  },
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
 };

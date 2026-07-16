@@ -12,9 +12,23 @@ const AUDIO_MIME_TYPES: Record<string, string> = {
   webm: "audio/webm",
 };
 
-export async function resolveAudioFile(file: File): Promise<File> {
+export interface ResolvedAudioTrack {
+  id: string;
+  name: string;
+  file: File;
+}
+
+export interface ResolvedAudioSet {
+  name: string;
+  tracks: ResolvedAudioTrack[];
+}
+
+export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
   if (!file.name.toLowerCase().endsWith(".zip")) {
-    return file;
+    return {
+      name: file.name,
+      tracks: [{ id: file.name, name: toTrackName(file.name), file }],
+    };
   }
 
   let zip: JSZip;
@@ -24,6 +38,7 @@ export async function resolveAudioFile(file: File): Promise<File> {
     throw new Error("Could not read ZIP file.");
   }
 
+  const tracks: ResolvedAudioTrack[] = [];
   for (const entry of Object.values(zip.files)) {
     if (entry.dir) {
       continue;
@@ -32,8 +47,23 @@ export async function resolveAudioFile(file: File): Promise<File> {
     const extension = name.split(".").at(-1)?.toLowerCase() ?? "";
     const type = AUDIO_MIME_TYPES[extension];
     if (name && type) {
-      return new File([await entry.async("blob")], name, { type });
+      tracks.push({
+        id: entry.name,
+        name: toTrackName(name),
+        file: new File([await entry.async("blob")], name, { type }),
+      });
     }
   }
-  throw new Error("ZIP does not contain a supported audio file.");
+  if (tracks.length === 0) {
+    throw new Error("ZIP does not contain a supported audio file.");
+  }
+  return { name: file.name, tracks };
+}
+
+function toTrackName(filename: string): string {
+  const basename = filename.split("/").at(-1) ?? filename;
+  const extensionIndex = basename.lastIndexOf(".");
+  const name =
+    extensionIndex > 0 ? basename.slice(0, extensionIndex) : basename;
+  return name ? name[0].toUpperCase() + name.slice(1) : basename;
 }

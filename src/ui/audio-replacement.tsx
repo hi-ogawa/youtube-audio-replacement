@@ -1,8 +1,13 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { resolveAudioFile } from "../lib/audio-file.ts";
+import { resolveAudioFiles } from "../lib/audio-file.ts";
+import { AudioGroup } from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
-import { type StoredAudio, videoStorage } from "../lib/storage.ts";
+import {
+  type MixerTrackState,
+  type StoredAudio,
+  videoStorage,
+} from "../lib/storage.ts";
 
 export function StoredPanel({
   videoId,
@@ -66,69 +71,75 @@ export function Panel({
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
   );
-  const [volume, setVolume] = useState(100);
+  const [mixer, setMixer] = useState(() =>
+    createMixer(initialSelectedAudio, videoStorage.getState(videoId).mixer),
+  );
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioGroup] = useState(() => new AudioGroup());
   const syncRef = useRef<PlayerSync>(null);
 
-  // The detached player and its event wiring live for the panel's lifetime, so
-  // this effect owns both setup and teardown as one external resource.
   useEffect(() => {
-    const audio = document.createElement("audio");
-    audio.preload = "auto";
-    audio.volume = volume / 100;
-    audioRef.current = audio;
+    return () => {
+      syncRef.current?.destroy();
+      audioGroup.clear();
+    };
+  }, [audioGroup]);
+
+  // The first track supplies display metadata. AudioGroup owns all player and
+  // object URL cleanup, including when this source is replaced.
+  useEffect(() => {
+    if (!selectedAudio) {
+      audioGroup.clear();
+      return;
+    }
+
+    audioGroup.setTracks(selectedAudio.tracks);
+    const audio = audioGroup.primary;
+    if (!audio) {
+      return;
+    }
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => {
       setDuration(Number.isFinite(audio.duration) ? audio.duration : undefined);
     };
-    const updateVolume = () => setVolume(Math.round(audio.volume * 100));
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
     audio.addEventListener("durationchange", updateDuration);
-    audio.addEventListener("volumechange", updateVolume);
+    setCurrentTime(0);
+    setDuration(undefined);
 
     return () => {
-      syncRef.current?.destroy();
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
       audio.removeEventListener("durationchange", updateDuration);
-      audio.removeEventListener("volumechange", updateVolume);
-      audio.removeAttribute("src");
-      audio.load();
     };
-  }, []);
+  }, [audioGroup, selectedAudio]);
 
-  // The source can come from initial storage or a later upload. Synchronizing
-  // it here keeps Blob URL replacement and cleanup in one lifecycle owner.
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !selectedAudio) {
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(selectedAudio.blob);
-    audio.src = objectUrl;
-    audio.load();
-    setCurrentTime(0);
-    setDuration(undefined);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [selectedAudio?.blob]);
+    audioGroup.setMixer(mixer);
+  }, [audioGroup, mixer]);
 
   const chooseFileMutation = useMutation({
     mutationFn: async (file: File) => {
-      const audioFile = await resolveAudioFile(file);
+      const resolved = await resolveAudioFiles(file);
       syncRef.current?.destroy();
       syncRef.current = null;
       const nextAudio = {
         videoId,
-        blob: audioFile,
-        name: audioFile.name,
+        name: resolved.name,
+        tracks: resolved.tracks.map((track) => ({
+          id: track.id,
+          name: track.name,
+          blob: track.file,
+        })),
       };
+      const nextMixer = createMixer(nextAudio, {});
       setSelectedAudio(nextAudio);
+      setMixer(nextMixer);
+      videoStorage.updateState(videoId, { mixer: nextMixer });
       onSelectAudio(nextAudio);
       setEnabled(false);
     },
@@ -150,13 +161,12 @@ export function Panel({
     }
 
     const video = getVideo();
-    const audio = audioRef.current;
-    if (!video || !audio) {
+    if (!video || !audioGroup.primary) {
       onError("YouTube video player not found.");
       return;
     }
 
-    const nextSync = new PlayerSync(video, audio, {
+    const nextSync = new PlayerSync(video, audioGroup, {
       onError(error) {
         console.error(error);
         onError("Replacement audio playback failed.");
@@ -167,11 +177,15 @@ export function Panel({
     setEnabled(true);
   }
 
-  function changeVolume(nextVolume: number) {
-    setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume / 100;
-    }
+  function updateMixerTrack(trackId: string, update: Partial<MixerTrackState>) {
+    setMixer((current) => {
+      const next = {
+        ...current,
+        [trackId]: { ...current[trackId], ...update },
+      };
+      videoStorage.updateState(videoId, { mixer: next });
+      return next;
+    });
   }
 
   return (
@@ -200,22 +214,171 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Volume</span>
-        <input
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={volume}
-          disabled={!selectedAudio}
-          aria-label="Replacement audio volume"
-          onChange={(event) => changeVolume(Number(event.target.value))}
+      {selectedAudio && selectedAudio.tracks.length > 1 ? (
+        <TrackMixer
+          tracks={selectedAudio.tracks}
+          mixer={mixer}
+          onChange={updateMixerTrack}
         />
-        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
-      </label>
+      ) : (
+        <SingleTrackVolume
+          trackId={selectedAudio?.tracks[0]?.id}
+          volume={
+            selectedAudio
+              ? (mixer[selectedAudio.tracks[0].id]?.volume ?? 100)
+              : 100
+          }
+          onChange={(trackId, volume) => updateMixerTrack(trackId, { volume })}
+        />
+      )}
     </div>
+  );
+}
+
+function SingleTrackVolume({
+  trackId,
+  volume,
+  onChange,
+}: {
+  trackId: string | undefined;
+  volume: number;
+  onChange(trackId: string, volume: number): void;
+}) {
+  return (
+    <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
+      <span>Volume</span>
+      <input
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={volume}
+        disabled={!trackId}
+        aria-label="Replacement audio volume"
+        onChange={(event) => {
+          if (trackId) {
+            onChange(trackId, Number(event.target.value));
+          }
+        }}
+      />
+      <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
+    </label>
+  );
+}
+
+function TrackMixer({
+  tracks,
+  mixer,
+  onChange,
+}: {
+  tracks: StoredAudio["tracks"];
+  mixer: Record<string, MixerTrackState>;
+  onChange(trackId: string, update: Partial<MixerTrackState>): void;
+}) {
+  const anySoloed = Object.values(mixer).some((track) => track.soloed);
+
+  return (
+    <div className="mt-2.5">
+      {tracks.map((track) => {
+        const state = mixer[track.id] ?? DEFAULT_MIXER_TRACK;
+        const effectivelyMuted = state.muted || (anySoloed && !state.soloed);
+        return (
+          <div
+            className={`flex items-center gap-1.5 border-t border-border py-2 ${effectivelyMuted ? "text-muted-foreground" : ""}`}
+            key={track.id}
+          >
+            <span
+              className="w-12 shrink-0 truncate text-xs font-semibold"
+              title={track.id}
+            >
+              {track.name}
+            </span>
+            <input
+              className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={state.volume}
+              aria-label={`${track.name} volume`}
+              onChange={(event) =>
+                onChange(track.id, { volume: Number(event.target.value) })
+              }
+            />
+            <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+              {state.volume}%
+            </span>
+            <MixerButton
+              label={`Mute ${track.name}`}
+              pressed={state.muted}
+              onClick={() => onChange(track.id, { muted: !state.muted })}
+            >
+              M
+            </MixerButton>
+            <MixerButton
+              label={`Solo ${track.name}`}
+              pressed={state.soloed}
+              accent
+              onClick={() => onChange(track.id, { soloed: !state.soloed })}
+            >
+              S
+            </MixerButton>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MixerButton({
+  label,
+  pressed,
+  accent = false,
+  children,
+  onClick,
+}: {
+  label: string;
+  pressed: boolean;
+  accent?: boolean;
+  children: string;
+  onClick(): void;
+}) {
+  return (
+    <button
+      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold ${
+        pressed
+          ? accent
+            ? "border-accent bg-accent text-white"
+            : "border-foreground bg-foreground text-panel"
+          : "border-button-border bg-button text-foreground hover:bg-button-hover"
+      }`}
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+const DEFAULT_MIXER_TRACK: MixerTrackState = {
+  volume: 100,
+  muted: false,
+  soloed: false,
+};
+
+function createMixer(
+  audio: StoredAudio | null | undefined,
+  stored: Record<string, MixerTrackState>,
+): Record<string, MixerTrackState> {
+  return Object.fromEntries(
+    (audio?.tracks ?? []).map((track) => [
+      track.id,
+      { ...DEFAULT_MIXER_TRACK, ...stored[track.id] },
+    ]),
   );
 }
 
