@@ -33,7 +33,7 @@ Stem Mixer for YouTube
 
 ### Version
 
-Read the release version from `public/manifest.json`. The initial candidate is `0.0.1`.
+Initial submission version: `0.0.1`. This matches `public/manifest.json`.
 
 ### Summary
 
@@ -69,6 +69,16 @@ The project is open source: https://github.com/hi-ogawa/youtube-audio-replacemen
 - Category: Productivity
 - Language: English
 
+### Distribution
+
+- Visibility: Public
+- Regions: All regions
+- Pricing: Free
+- Mature content: No
+- Initial rollout: 100% after approval
+
+🙋 Confirm that the developer contact email shown in the dashboard is current and verified. This account-level value is not stored in the repository.
+
 ### URLs
 
 - Support URL: `https://github.com/hi-ogawa/youtube-audio-replacement/issues`
@@ -80,9 +90,11 @@ The privacy URL will work after `PRIVACY.md` is merged into the default branch.
 
 Use screenshots at 1280x800 with 1x pixel density. Avoid personal account information, copyrighted artwork that is not needed to demonstrate the feature, and development-only browser UI.
 
+🙋 Capture and upload the screenshots. They cannot be prepared from repository data alone because they require choosing suitable YouTube content and checking the captured account information.
+
 Capture these scenes:
 
-1. A YouTube watch page with the audio replacement panel open and a replacement file selected.
+1. A YouTube watch page with the Stem mixer panel open and a replacement file selected.
 2. The stem generator with a YouTube source loaded and the separation settings visible.
 3. Completed stem generation with individual preview/download controls and the ZIP download.
 
@@ -130,6 +142,29 @@ The corresponding dashboard disclosures must remain consistent with `PRIVACY.md`
 - Local audio and imported model files are not uploaded.
 - There is no developer-operated server, account system, analytics, advertising, sale of data, or cloud synchronization.
 
+### Dashboard data categories
+
+🙋 Confirm the three conservative `Yes` selections below before submission. Chrome defines handled user data broadly, so these selections treat reading or transmitting an existing identifier, URL, or page metadata as handling that category even though the extension does not send it to the developer.
+
+- Personally identifiable information: Yes. The extension reads the YouTube visitor identifier and returns it to YouTube's player API.
+- Health information: No.
+- Financial and payment information: No.
+- Authentication information: No. The extension does not read passwords, credentials, or authentication tokens.
+- Personal communications: No.
+- Location: No.
+- Web history: Yes. The extension reads the active YouTube URL/video ID and associates locally stored replacement audio with that video ID.
+- User activity: No. The extension does not monitor clicks, keystrokes, scrolling, or browsing behavior for analytics or profiling.
+- Website content: Yes. The extension reads YouTube video metadata and the selected audio stream to provide its stated functionality.
+
+### Data-use certifications
+
+Select all applicable certification checkboxes:
+
+- Data is not sold to third parties.
+- Data is not used or transferred for purposes unrelated to the extension's single purpose.
+- Data is not used or transferred to determine creditworthiness or for lending purposes.
+- Data is not used for personalized advertising, analytics, or profiling.
+
 ## Reviewer instructions
 
 No account, credentials, or special test environment is required.
@@ -152,16 +187,18 @@ Model files are not bundled because of their size. Local audio replacement is av
 
 ## Submission checklist
 
-- [ ] Choose and set the release version in `public/manifest.json`.
-- [ ] Confirm the manifest description and store summary are current.
-- [ ] Confirm permissions are minimal and all justifications are current.
-- [ ] Confirm `PRIVACY.md` matches actual storage and network behavior.
+- [x] Set the initial release version to `0.0.1` in `public/manifest.json`.
+- [x] Confirm the manifest description and store summary are current.
+- [x] Confirm permissions are minimal and all justifications are current.
+- [x] Confirm `PRIVACY.md` matches actual storage and network behavior.
+- [ ] 🙋 Confirm the dashboard developer contact email.
+- [ ] 🙋 Confirm the conservative privacy category selections above.
 - [ ] Confirm the support and privacy URLs are publicly accessible.
-- [ ] Capture current 1280x800 screenshots.
-- [ ] Run lint, UI tests, and end-to-end tests.
-- [ ] Build locally with `CI` unset.
-- [ ] Inspect the packaged manifest and ZIP contents.
-- [ ] Smoke-test the exact unpacked release package.
-- [ ] Upload `dist/extension.zip` and complete the privacy form.
-- [ ] Submit for review.
-- [ ] Verify the approved listing and installation flow.
+- [ ] 🙋 Capture and upload the current 1280x800 screenshots.
+- [x] Run lint, UI tests, and end-to-end tests.
+- [x] Build locally with `CI` unset.
+- [x] Inspect the packaged manifest and ZIP contents.
+- [ ] 🙋 Smoke-test the exact unpacked release package in Chrome.
+- [ ] 🙋 Upload `dist/extension.zip` and complete the privacy form.
+- [ ] 🙋 Submit for review.
+- [ ] 🙋 Verify the approved listing and installation flow.
