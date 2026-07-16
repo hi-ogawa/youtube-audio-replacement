@@ -22,12 +22,8 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
 
   const host = page.locator("#youtube-audio-replacement-host");
   await expect(host).toBeAttached({ timeout: 15_000 });
-  await host
-    .getByRole("button", { name: "Show audio replacement controls" })
-    .click();
-  await expect(
-    host.getByText("Audio replacement", { exact: true }),
-  ).toBeVisible();
+  await host.getByRole("button", { name: "Show stem mixer controls" }).click();
+  await expect(host.getByText("Stem mixer", { exact: true })).toBeVisible();
 
   await host
     .locator('input[type="file"]')
@@ -41,6 +37,6 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
   });
   await expect(host).toBeAttached();
   await expect(
-    host.getByRole("button", { name: "Show audio replacement controls" }),
+    host.getByRole("button", { name: "Show stem mixer controls" }),
   ).toBeVisible();
 });

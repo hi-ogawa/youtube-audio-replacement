@@ -177,7 +177,7 @@ export function Panel({
   return (
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
-        <div className="font-semibold">Audio replacement</div>
+        <div className="font-semibold">Stem mixer</div>
         {!selectedAudio ? (
           <button
             className="h-5 cursor-pointer rounded-full bg-accent px-2.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
@@ -351,9 +351,7 @@ export function Fab({
   shifted?: boolean;
   onClick(): void;
 }) {
-  const label = open
-    ? "Hide audio replacement controls"
-    : "Show audio replacement controls";
+  const label = open ? "Hide stem mixer controls" : "Show stem mixer controls";
 
   return (
     <button
@@ -365,17 +363,15 @@ export function Fab({
     >
       <svg
         aria-hidden="true"
-        className="size-7"
-        viewBox="0 0 24 24"
+        className="size-8"
+        viewBox="0 0 128 128"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="9"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-        <path d="M15 9.5a4 4 0 0 1 0 5" />
-        <path d="M18 7a7 7 0 0 1 0 10" />
+        <path d="M24 67h10l6-20 10 39 10-58 10 72 10-53 8 29 6-18h10" />
       </svg>
     </button>
   );
