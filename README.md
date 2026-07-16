@@ -1,4 +1,4 @@
-# YouTube Audio Replacement
+# Stem Mixer for YouTube
 
 A Chrome extension for preparing and playing replacement audio on YouTube. It can generate Demucs stems from a public YouTube video or local audio file entirely in the browser, then synchronize the selected replacement track with YouTube playback, seeking, and playback rate.
 

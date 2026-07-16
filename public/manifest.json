@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Audio Replacement",
+  "name": "Stem Mixer for YouTube",
   "version": "0.0.1",
   "description": "Replace YouTube audio with a synchronized local track, or separate YouTube and local audio into Demucs stems.",
   "icons": {

@@ -1,8 +1,8 @@
-# Privacy Policy for YouTube Audio Replacement
+# Privacy Policy for Stem Mixer for YouTube
 
 Last updated: July 16, 2026
 
-YouTube Audio Replacement processes audio in your browser. The extension does not operate a project server, require an account, collect analytics, or sell or share user data.
+Stem Mixer for YouTube processes audio in your browser. The extension does not operate a project server, require an account, collect analytics, or sell or share user data.
 
 ## Information stored on your device
 

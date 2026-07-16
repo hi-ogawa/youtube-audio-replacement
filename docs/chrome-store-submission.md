@@ -1,6 +1,6 @@
 # Chrome Web Store Submission
 
-Canonical listing details and release checklist for YouTube Audio Replacement. Review this document against the current code before every submission.
+Canonical listing details and release checklist for Stem Mixer for YouTube. Review this document against the current code before every submission.
 
 ## Release workflow
 
@@ -28,7 +28,7 @@ CI artifacts are intended for development testing. CI adds a revision suffix to 
 ### Name
 
 ```text
-YouTube Audio Replacement
+Stem Mixer for YouTube
 ```
 
 ### Version
@@ -46,7 +46,7 @@ Replace YouTube audio with a synchronized local track, or separate YouTube and l
 ### Description
 
 ```text
-YouTube Audio Replacement lets you listen to a YouTube video with a synchronized replacement audio track. You can choose an existing local audio file or prepare new audio with the built-in stem generator.
+Stem Mixer for YouTube lets you listen to a YouTube video with a synchronized replacement audio track. You can choose an existing local audio file or prepare new audio with the built-in stem generator.
 
 Features:
 - Replace a YouTube video's audio with a local audio file.
