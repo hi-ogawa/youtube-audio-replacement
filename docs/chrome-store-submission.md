@@ -2,18 +2,6 @@
 
 Canonical listing details and release checklist for Stem Mixer for YouTube. Review this document against the current code before every submission.
 
-## Release workflow
-
-1. Merge the release changes into `main`.
-2. Open GitHub Actions, select **release extension**, and choose **Run workflow**.
-3. Enter a new Chrome Web Store version. Chrome does not allow reusing a previously uploaded version.
-4. Download `extension.zip` from the completed workflow's `stem-mixer-for-youtube-<version>` artifact.
-5. Extract the ZIP, load it through `chrome://extensions`, and complete the manual tests below.
-6. Upload the same `extension.zip` to the Chrome Web Store Developer Dashboard.
-7. Recheck all dashboard fields, submit for review, and verify the approved listing and installation flow.
-
-The manual workflow validates and applies the entered version only in its runner, runs static checks, verifies the packaged name and version, tests the ZIP, and uploads the ZIP directly. It does not commit a version bump. The normal CI workflow sets `PATCH_MANIFEST=true` to give development artifacts a revision-suffixed name; the store workflow does not set it.
-
 ## Listing
 
 ### Name
