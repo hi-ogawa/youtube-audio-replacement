@@ -177,7 +177,7 @@ export function Panel({
   return (
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
-        <div className="font-semibold">Audio replacement</div>
+        <div className="font-semibold">Stem mixer</div>
         {!selectedAudio ? (
           <button
             className="h-5 cursor-pointer rounded-full bg-accent px-2.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
@@ -351,9 +351,7 @@ export function Fab({
   shifted?: boolean;
   onClick(): void;
 }) {
-  const label = open
-    ? "Hide audio replacement controls"
-    : "Show audio replacement controls";
+  const label = open ? "Hide stem mixer controls" : "Show stem mixer controls";
 
   return (
     <button
