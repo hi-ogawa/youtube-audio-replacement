@@ -144,17 +144,17 @@ The corresponding dashboard disclosures must remain consistent with `PRIVACY.md`
 
 ### Dashboard data categories
 
-🙋 Confirm the three conservative `Yes` selections below before submission. Chrome defines handled user data broadly, so these selections treat reading or transmitting an existing identifier, URL, or page metadata as handling that category even though the extension does not send it to the developer.
+Use the same disclosure interpretation as Zamak (`ytsub-v5`): requests sent back to YouTube to provide the user-requested feature, and data processed only in local browser storage, are described in the privacy policy but are not declared as data collected by the extension developer.
 
-- Personally identifiable information: Yes. The extension reads the YouTube visitor identifier and returns it to YouTube's player API.
+- Personally identifiable information: No. The extension does not collect identity information. It returns the YouTube visitor identifier already present on the page only to YouTube's player API.
 - Health information: No.
 - Financial and payment information: No.
 - Authentication information: No. The extension does not read passwords, credentials, or authentication tokens.
 - Personal communications: No.
 - Location: No.
-- Web history: Yes. The extension reads the active YouTube URL/video ID and associates locally stored replacement audio with that video ID.
+- Web history: No. The extension does not collect or transmit browsing history. It uses the active YouTube video ID locally to provide the requested feature.
 - User activity: No. The extension does not monitor clicks, keystrokes, scrolling, or browsing behavior for analytics or profiling.
-- Website content: Yes. The extension reads YouTube video metadata and the selected audio stream to provide its stated functionality.
+- Website content: No. YouTube video metadata and the selected audio stream are processed only to provide the requested feature and are not collected by the extension developer.
 
 ### Data-use certifications
 
@@ -192,7 +192,7 @@ Model files are not bundled because of their size. Local audio replacement is av
 - [x] Confirm permissions are minimal and all justifications are current.
 - [x] Confirm `PRIVACY.md` matches actual storage and network behavior.
 - [ ] 🙋 Confirm the dashboard developer contact email.
-- [ ] 🙋 Confirm the conservative privacy category selections above.
+- [x] Set the dashboard data categories using the established Zamak interpretation.
 - [ ] Confirm the support and privacy URLs are publicly accessible.
 - [ ] 🙋 Capture and upload the current 1280x800 screenshots.
 - [x] Run lint, UI tests, and end-to-end tests.
