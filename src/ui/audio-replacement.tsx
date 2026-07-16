@@ -363,7 +363,7 @@ export function Fab({
     >
       <svg
         aria-hidden="true"
-        className="size-7"
+        className="size-8"
         viewBox="0 0 128 128"
         fill="none"
         stroke="currentColor"
