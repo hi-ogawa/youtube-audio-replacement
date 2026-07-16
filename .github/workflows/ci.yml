@@ -35,6 +35,8 @@ jobs:
       - if: always()
         run: echo "::notice title=UI report artifact::${{ steps.upload-ui-report.outputs.artifact-url }}"
       - run: pnpm build
+        env:
+          PATCH_MANIFEST: "true"
       - run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
       - id: upload-extension
         uses: actions/upload-artifact@v7

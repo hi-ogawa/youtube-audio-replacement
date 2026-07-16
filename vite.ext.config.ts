@@ -6,30 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-function patchCiManifest() {
-  return {
-    name: "patch-ci-manifest",
-    closeBundle() {
-      if (!process.env.CI) {
-        return;
-      }
-
-      const revision = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-        encoding: "utf8",
-      }).trim();
-      const prMatch = process.env.GITHUB_REF?.match(/refs\/pull\/(\d+)\//);
-      const manifestPath = "dist/extension/manifest.json";
-      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      manifest.name = prMatch
-        ? `Stem Mixer for YouTube [PR#${prMatch[1]} ${revision}]`
-        : `Stem Mixer for YouTube [${revision}]`;
-      writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    },
-  };
-}
-
 export default defineConfig({
-  plugins: [react(), tailwindcss(), patchCiManifest()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "onnxruntime-web/wasm": resolve(
@@ -66,6 +44,19 @@ export default defineConfig({
       await builder.build(builder.environments.rpcRelay);
       await builder.build(builder.environments.embedContent);
       await builder.build(builder.environments.background);
+
+      if (process.env.PATCH_MANIFEST === "true") {
+        const revision = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+          encoding: "utf8",
+        }).trim();
+        const prMatch = process.env.GITHUB_REF?.match(/refs\/pull\/(\d+)\//);
+        const manifestPath = "dist/extension/manifest.json";
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        manifest.name = prMatch
+          ? `Stem Mixer for YouTube [PR#${prMatch[1]} ${revision}]`
+          : `Stem Mixer for YouTube [${revision}]`;
+        writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
+      }
     },
   },
 });

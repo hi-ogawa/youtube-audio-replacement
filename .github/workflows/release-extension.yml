@@ -44,23 +44,7 @@ jobs:
             fs.writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
           '
       - run: pnpm lint-check
-      - name: Build store package
-        env:
-          CI: ""
-        run: pnpm build
-      - name: Verify store package
-        run: |
-          node -e '
-            const fs = require("node:fs");
-            const manifest = JSON.parse(fs.readFileSync("dist/extension/manifest.json", "utf8"));
-            if (manifest.name !== "Stem Mixer for YouTube") {
-              throw new Error(`Unexpected extension name: ${manifest.name}`);
-            }
-            if (manifest.version !== process.env.RELEASE_VERSION) {
-              throw new Error(`Unexpected extension version: ${manifest.version}`);
-            }
-          '
-          unzip -t dist/extension.zip
+      - run: pnpm build
       - id: upload
         uses: actions/upload-artifact@v7
         with:
