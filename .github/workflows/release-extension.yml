@@ -1,0 +1,71 @@
+name: release extension
+
+run-name: release extension v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Chrome Web Store version (for example, 0.0.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Set release version
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const version = process.env.RELEASE_VERSION;
+            const parts = version.split(".");
+            const valid = /^(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){0,3}$/.test(version)
+              && parts.every((part) => Number(part) <= 65535)
+              && parts.some((part) => part !== "0");
+            if (!valid) {
+              throw new Error(`Invalid Chrome extension version: ${version}`);
+            }
+            const path = "public/manifest.json";
+            const manifest = JSON.parse(fs.readFileSync(path, "utf8"));
+            manifest.version = version;
+            fs.writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
+          '
+      - run: pnpm lint-check
+      - name: Build store package
+        env:
+          CI: ""
+        run: pnpm build
+      - name: Verify store package
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const manifest = JSON.parse(fs.readFileSync("dist/extension/manifest.json", "utf8"));
+            if (manifest.name !== "Stem Mixer for YouTube") {
+              throw new Error(`Unexpected extension name: ${manifest.name}`);
+            }
+            if (manifest.version !== process.env.RELEASE_VERSION) {
+              throw new Error(`Unexpected extension version: ${manifest.version}`);
+            }
+          '
+          unzip -t dist/extension.zip
+      - id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: stem-mixer-for-youtube-${{ inputs.version }}
+          path: dist/extension.zip
+          archive: false
+          if-no-files-found: error
+      - run: echo "::notice title=Store package::${{ steps.upload.outputs.artifact-url }}"

@@ -4,24 +4,15 @@ Canonical listing details and release checklist for Stem Mixer for YouTube. Revi
 
 ## Release workflow
 
-1. Review user-visible changes since the previous store submission.
-2. Confirm that the listing, privacy disclosures, permission justifications, and test instructions below remain accurate.
-3. Increment `version` in `public/manifest.json`. Chrome Web Store versions cannot be reused.
-4. Run the checks and build locally with `CI` unset:
+1. Merge the release changes into `main`.
+2. Open GitHub Actions, select **release extension**, and choose **Run workflow**.
+3. Enter a new Chrome Web Store version. Chrome does not allow reusing a previously uploaded version.
+4. Download `extension.zip` from the completed workflow's `stem-mixer-for-youtube-<version>` artifact.
+5. Extract the ZIP, load it through `chrome://extensions`, and complete the manual tests below.
+6. Upload the same `extension.zip` to the Chrome Web Store Developer Dashboard.
+7. Recheck all dashboard fields, submit for review, and verify the approved listing and installation flow.
 
-   ```sh
-   pnpm lint-check
-   pnpm test-ui
-   pnpm test-e2e
-   pnpm build
-   ```
-
-5. Inspect `dist/extension/manifest.json` and `dist/extension.zip`. The extension name must not contain a CI revision suffix.
-6. Load `dist/extension` through `chrome://extensions` and complete the manual tests below.
-7. Upload `dist/extension.zip` to the Chrome Web Store Developer Dashboard.
-8. Recheck all dashboard fields, submit for review, and verify the approved listing and installation flow.
-
-CI artifacts are intended for development testing. CI adds a revision suffix to the extension name, so they are not canonical store packages.
+The manual workflow validates and applies the entered version only in its runner, runs static checks, builds with the CI name patch disabled, verifies the packaged name and version, tests the ZIP, and uploads the ZIP directly. It does not commit a version bump. Normal CI artifacts retain their revision-suffixed development names and must not be submitted to the store.
 
 ## Listing
 
@@ -33,7 +24,7 @@ Stem Mixer for YouTube
 
 ### Version
 
-Initial submission version: `0.0.1`. This matches `public/manifest.json`.
+Enter the release version when dispatching the **release extension** workflow. Use `0.0.1` for the initial submission. The workflow applies it to the packaged manifest without changing `public/manifest.json` in the repository.
 
 ### Summary
 
@@ -187,7 +178,6 @@ Model files are not bundled because of their size. Local audio replacement is av
 
 ## Submission checklist
 
-- [x] Set the initial release version to `0.0.1` in `public/manifest.json`.
 - [x] Confirm the manifest description and store summary are current.
 - [x] Confirm permissions are minimal and all justifications are current.
 - [x] Confirm `PRIVACY.md` matches actual storage and network behavior.
@@ -195,10 +185,9 @@ Model files are not bundled because of their size. Local audio replacement is av
 - [x] Set the dashboard data categories using the established Zamak interpretation.
 - [ ] Confirm the support and privacy URLs are publicly accessible.
 - [ ] 🙋 Capture and upload the current 1280x800 screenshots.
-- [x] Run lint, UI tests, and end-to-end tests.
-- [x] Build locally with `CI` unset.
-- [x] Inspect the packaged manifest and ZIP contents.
-- [ ] 🙋 Smoke-test the exact unpacked release package in Chrome.
-- [ ] 🙋 Upload `dist/extension.zip` and complete the privacy form.
+- [ ] 🙋 Dispatch **release extension** with a new version and download `extension.zip`.
+- [ ] Confirm the release workflow's checks, build, and package verification pass.
+- [ ] 🙋 Smoke-test the downloaded package in Chrome.
+- [ ] 🙋 Upload the downloaded `extension.zip` and complete the privacy form.
 - [ ] 🙋 Submit for review.
 - [ ] 🙋 Verify the approved listing and installation flow.
