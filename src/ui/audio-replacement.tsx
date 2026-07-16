@@ -364,16 +364,14 @@ export function Fab({
       <svg
         aria-hidden="true"
         className="size-7"
-        viewBox="0 0 24 24"
+        viewBox="0 0 128 128"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="9"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        <path d="M11 5 6 9H2v6h4l5 4V5Z" />
-        <path d="M15 9.5a4 4 0 0 1 0 5" />
-        <path d="M18 7a7 7 0 0 1 0 10" />
+        <path d="M24 67h10l6-20 10 39 10-58 10 72 10-53 8 29 6-18h10" />
       </svg>
     </button>
   );
