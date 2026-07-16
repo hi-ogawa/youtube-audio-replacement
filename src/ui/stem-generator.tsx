@@ -108,6 +108,9 @@ export function StemGeneratorView({
     <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8 max-w-[760px]">
+          <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-accent uppercase">
+            Stem Mixer for YouTube
+          </p>
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
             <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
               Stem generator

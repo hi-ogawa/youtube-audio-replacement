@@ -1,4 +1,4 @@
-# YouTube Audio Replacement
+# Stem Mixer for YouTube
 
 A Chrome extension for preparing and playing replacement audio on YouTube. It can generate Demucs stems from a public YouTube video or local audio file entirely in the browser, then synchronize the selected replacement track with YouTube playback, seeking, and playback rate.
 
@@ -33,5 +33,7 @@ Then open `http://localhost:5173/src/ui/preview.html`.
 ## References
 
 - [Extension architecture](docs/extension-architecture.html): execution contexts and acquisition RPC flow.
+- [Chrome Web Store submission](docs/chrome-store-submission.md): listing details, privacy disclosures, test instructions, and release checklist.
+- [Privacy policy](PRIVACY.md): local storage and network behavior.
 - [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext): source for the YouTube acquisition path.
 - [demucs-onnx](https://github.com/hi-ogawa/demucs-onnx): source for Demucs inference, model management, progress reporting, and stem export.

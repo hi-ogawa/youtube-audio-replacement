@@ -1,8 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Audio Replacement",
+  "name": "Stem Mixer for YouTube",
   "version": "0.0.1",
-  "description": "Replace a YouTube video's audio with a synchronized local audio file.",
+  "description": "Replace YouTube audio with a synchronized local track, or separate YouTube and local audio into Demucs stems.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": ["activeTab"],
   "host_permissions": [
     "https://www.youtube.com/*",
@@ -20,7 +25,12 @@
   "cross_origin_opener_policy": {
     "value": "same-origin"
   },
-  "action": {},
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
