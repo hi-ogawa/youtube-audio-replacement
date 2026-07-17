@@ -14,6 +14,7 @@ test("basic", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="trace-preview"
+          videoTitle="Trace preview"
           getVideo={() => video}
           initialSelectedAudio={null}
           onSelectAudio={onSelectAudio}

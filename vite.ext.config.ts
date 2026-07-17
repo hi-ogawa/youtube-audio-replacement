@@ -28,6 +28,7 @@ export default defineConfig({
         rolldownOptions: {
           input: {
             "extension-page": "./index.html",
+            storage: "./src/storage.html",
           },
         },
       },

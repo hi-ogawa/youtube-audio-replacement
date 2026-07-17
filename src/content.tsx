@@ -4,13 +4,17 @@ import { createRoot } from "react-dom/client";
 import type { BackgroundRpcHandlers } from "./background.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
+import { createWindowRpc } from "./lib/rpc/window.ts";
+import { STORAGE_FRAME_ID } from "./lib/storage-frame.ts";
 import { videoStorage } from "./lib/storage.ts";
+import type { StoragePageRpcHandlers } from "./storage-page.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
 import contentCss from "./ui/content.css?inline";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
+const storageRpcPromise = createStorageRpc();
 
 interface MountedController {
   cleanup(): void;
@@ -166,15 +170,67 @@ function App({ videoId }: { videoId: string }) {
         <div className={open ? "pointer-events-auto" : "hidden"}>
           <StoredPanel
             videoId={videoId}
+            videoTitle={getVideoTitle()}
             getVideo={getMainVideo}
             onError={setError}
             onGenerate={() => void openGenerator()}
+            loadAudio={async (nextVideoId) => {
+              const rpc = await storageRpcPromise;
+              return rpc.loadAudio({ videoId: nextVideoId });
+            }}
+            storeAudio={async (audio) => {
+              const rpc = await storageRpcPromise;
+              await rpc.storeAudio({ audio });
+            }}
           />
         </div>
       </div>
       <Fab open={open} shifted={zamakPresent} onClick={toggleOpen} />
     </>
   );
+}
+
+function getVideoTitle() {
+  return (
+    document
+      .querySelector<HTMLElement>("h1.ytd-watch-metadata yt-formatted-string")
+      ?.textContent?.trim() || document.title.replace(/\s*-\s*YouTube$/, "")
+  );
+}
+
+async function createStorageRpc() {
+  const iframe = await new Promise<HTMLIFrameElement>((resolve, reject) => {
+    const timeout = window.setTimeout(
+      () => reject(new Error("Storage frame did not load")),
+      15_000,
+    );
+    const check = () => {
+      const candidate = document.getElementById(
+        STORAGE_FRAME_ID,
+      ) as HTMLIFrameElement | null;
+      if (candidate?.dataset.storageReady === "true") {
+        window.clearTimeout(timeout);
+        observer.disconnect();
+        resolve(candidate);
+      }
+    };
+    const observer = new MutationObserver(check);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-storage-ready"],
+      childList: true,
+      subtree: true,
+    });
+    check();
+  });
+  if (!iframe.contentWindow) {
+    throw new Error("Storage frame is unavailable");
+  }
+  return createWindowRpc<StoragePageRpcHandlers>({
+    targetWindow: iframe.contentWindow,
+    targetOrigin: "*",
+    sourceWindow: iframe.contentWindow,
+  });
 }
 
 function createUi(videoId: string): MountedController {

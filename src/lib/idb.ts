@@ -64,6 +64,19 @@ export class IdbStore<T> {
     });
   }
 
+  async delete(key: IDBValidKey): Promise<void> {
+    const database = await this.openDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = database.transaction(
+        this.options.storeName,
+        "readwrite",
+      );
+      transaction.objectStore(this.options.storeName).delete(key);
+      transaction.oncomplete = () => resolve();
+      transaction.onabort = () => reject(transaction.error);
+    });
+  }
+
   private openDatabase(): Promise<IDBDatabase> {
     if (this.databasePromise) {
       return this.databasePromise;

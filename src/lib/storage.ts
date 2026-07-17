@@ -4,6 +4,16 @@ export interface StoredAudio {
   videoId: string;
   blob: Blob;
   name: string;
+  videoTitle?: string;
+  savedAt?: number;
+}
+
+export interface StoredAudioSummary {
+  videoId: string;
+  name: string;
+  size: number;
+  videoTitle?: string;
+  savedAt?: number;
 }
 
 interface VideoState {
@@ -64,7 +74,22 @@ export const videoStorage = {
     } catch {}
     return state;
   },
+};
 
+export const audioStorage = {
   loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
+  async listAudio(): Promise<StoredAudioSummary[]> {
+    const audio = await audioStore.getAll();
+    return audio
+      .map(({ videoId, name, blob, videoTitle, savedAt }) => ({
+        videoId,
+        name,
+        size: blob.size,
+        videoTitle,
+        savedAt,
+      }))
+      .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0));
+  },
+  deleteAudio: (videoId: string) => audioStore.delete(videoId),
 };

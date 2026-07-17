@@ -2,24 +2,30 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { resolveAudioFile } from "../lib/audio-file.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
-import { type StoredAudio, videoStorage } from "../lib/storage.ts";
+import type { StoredAudio } from "../lib/storage.ts";
 
 export function StoredPanel({
   videoId,
+  videoTitle,
   getVideo,
   onError,
   onGenerate,
+  loadAudio,
+  storeAudio,
 }: {
   videoId: string;
+  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
   onGenerate(): void;
+  loadAudio(videoId: string): Promise<StoredAudio | null>;
+  storeAudio(audio: StoredAudio): Promise<void>;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
-        return await videoStorage.loadAudio(videoId);
+        return await loadAudio(videoId);
       } catch (error) {
         console.error(error);
         onError("Saved audio is unavailable. You can still choose a file.");
@@ -29,7 +35,7 @@ export function StoredPanel({
   });
 
   const storeAudioMutation = useMutation({
-    mutationFn: videoStorage.storeAudio,
+    mutationFn: storeAudio,
     onError: (error) => {
       console.error(error);
       onError("Audio is available for this session but could not be saved.");
@@ -39,6 +45,7 @@ export function StoredPanel({
   return (
     <Panel
       videoId={videoId}
+      videoTitle={videoTitle}
       getVideo={getVideo}
       initialSelectedAudio={storedAudioQuery.data}
       onSelectAudio={storeAudioMutation.mutate}
@@ -50,6 +57,7 @@ export function StoredPanel({
 
 export function Panel({
   videoId,
+  videoTitle,
   getVideo,
   initialSelectedAudio,
   onSelectAudio,
@@ -57,6 +65,7 @@ export function Panel({
   onGenerate,
 }: {
   videoId: string;
+  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio: StoredAudio | null;
   onSelectAudio(audio: StoredAudio): void;
@@ -127,6 +136,8 @@ export function Panel({
         videoId,
         blob: audioFile,
         name: audioFile.name,
+        videoTitle,
+        savedAt: Date.now(),
       };
       setSelectedAudio(nextAudio);
       onSelectAudio(nextAudio);

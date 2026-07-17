@@ -31,6 +31,12 @@
       "48": "icons/icon-48.png"
     }
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["src/storage.html", "assets/storage-*.js"],
+      "matches": ["https://www.youtube.com/*"]
+    }
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],

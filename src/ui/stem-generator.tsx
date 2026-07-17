@@ -7,6 +7,7 @@ import {
 import type { Preferences } from "../lib/demucs/preferences.ts";
 import type { RunProgress } from "../lib/demucs/progress/model.ts";
 import { RunProgressPanel } from "../lib/demucs/progress/panel.tsx";
+import { AppHeader } from "./app-header.tsx";
 
 export type StemGeneratorSource = {
   name: string;
@@ -62,6 +63,7 @@ export function StemGeneratorView({
   onSeparate,
   canSeparate,
   results,
+  onOpenSavedVideos,
 }: {
   initialInput: string;
   sourceMode: StemGeneratorSourceMode;
@@ -88,6 +90,7 @@ export function StemGeneratorView({
     outputs: GeneratedFile[];
     archive: GeneratedFile;
   };
+  onOpenSavedVideos(): void;
 }) {
   const [input, setInput] = useState(initialInput);
   const sourceState = sourceStates[sourceMode];
@@ -107,29 +110,7 @@ export function StemGeneratorView({
   return (
     <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8 max-w-[760px]">
-          <p className="mb-2 text-xs font-semibold tracking-[0.16em] text-accent uppercase">
-            Stem Mixer for YouTube
-          </p>
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2">
-            <h1 className="text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
-              Stem generator
-            </h1>
-            <a
-              className="ml-auto text-sm font-semibold text-foreground underline underline-offset-3 hover:text-accent"
-              href="https://github.com/hi-ogawa/youtube-audio-replacement"
-              target="_blank"
-              rel="noreferrer"
-            >
-              View on GitHub
-            </a>
-          </div>
-          <p className="mt-4 mb-2 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Load a YouTube video or choose a local audio file, then separate it
-            into stems in your browser. Your audio and model files stay on this
-            device.
-          </p>
-        </header>
+        <AppHeader view="generator" onViewChange={onOpenSavedVideos} />
 
         <div className="grid gap-5">
           <Section
