@@ -32,7 +32,8 @@ jobs:
         with:
           path: .vitest/index.html
           archive: false
-      - if: always()
+      - name: UI report artifact
+        if: always()
         run: echo "::notice title=UI report artifact::${{ steps.upload-ui-report.outputs.artifact-url }}"
       - run: pnpm build
         env:
@@ -43,4 +44,5 @@ jobs:
         with:
           name: youtube-audio-replacement-${{ github.event.pull_request.number && format('pr{0}-{1}', github.event.pull_request.number, env.SHORT_SHA) || env.SHORT_SHA }}
           path: dist/extension
-      - run: echo "::notice title=Extension artifact::${{ steps.upload-extension.outputs.artifact-url }}"
+      - name: Extension artifact
+        run: echo "::notice title=Extension artifact::${{ steps.upload-extension.outputs.artifact-url }}"
