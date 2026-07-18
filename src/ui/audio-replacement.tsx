@@ -216,14 +216,12 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      {selectedAudio && (
-        <TrackMixer mixer={mixer} onChange={updateMixerTrack} />
-      )}
+      {selectedAudio && <Mixer mixer={mixer} onChange={updateMixerTrack} />}
     </div>
   );
 }
 
-function TrackMixer({
+function Mixer({
   mixer,
   onChange,
 }: {
@@ -233,13 +231,13 @@ function TrackMixer({
   return (
     <div className="mt-2.5">
       {mixer.map((track) => (
-        <MixerTrack key={track.id} track={track} onChange={onChange} />
+        <MixerTrackRow key={track.id} track={track} onChange={onChange} />
       ))}
     </div>
   );
 }
 
-function MixerTrack({
+function MixerTrackRow({
   track,
   onChange,
 }: {
