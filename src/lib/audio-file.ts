@@ -17,16 +17,6 @@ export interface ResolvedAudioTrack {
   file: File;
 }
 
-export function formatTrackName(name: string): string {
-  const basename = name.split("/").at(-1) ?? name;
-  const extensionIndex = basename.lastIndexOf(".");
-  const displayName =
-    extensionIndex > 0 ? basename.slice(0, extensionIndex) : basename;
-  return displayName
-    ? displayName[0].toUpperCase() + displayName.slice(1)
-    : basename;
-}
-
 export interface ResolvedAudioSet {
   name: string;
   tracks: ResolvedAudioTrack[];
@@ -66,4 +56,14 @@ export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
     throw new Error("ZIP does not contain a supported audio file.");
   }
   return { name: file.name, tracks };
+}
+
+export function formatTrackName(name: string): string {
+  const basename = name.split("/").at(-1) ?? name;
+  const extensionIndex = basename.lastIndexOf(".");
+  const displayName =
+    extensionIndex > 0 ? basename.slice(0, extensionIndex) : basename;
+  return displayName
+    ? displayName[0].toUpperCase() + displayName.slice(1)
+    : basename;
 }
