@@ -148,7 +148,7 @@ export function Panel({
   });
 
   function toggle() {
-    if (playerSync.enabled) {
+    if (playerSync.isEnabled()) {
       playerSync.disable();
       setEnabled(false);
       return;

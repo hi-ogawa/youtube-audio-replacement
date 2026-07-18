@@ -24,7 +24,7 @@ export class PlayerSync {
     this.#onError = onError;
   }
 
-  get enabled(): boolean {
+  isEnabled(): boolean {
     return Boolean(this.#video);
   }
 
@@ -72,7 +72,7 @@ export class PlayerSync {
   }
 
   #onPlay = () => {
-    if (!this.enabled) {
+    if (!this.isEnabled()) {
       return;
     }
     this.#alignTime();
@@ -91,7 +91,7 @@ export class PlayerSync {
   };
 
   #onSeeked = () => {
-    if (!this.enabled) {
+    if (!this.isEnabled()) {
       return;
     }
     this.#alignTime();
