@@ -26,7 +26,7 @@ interface AudioGroupNotifications {
 }
 
 export function createMixerState(
-  audio: StoredAudio | null | undefined,
+  audio: StoredAudio | undefined,
   stored: StoredMixerState,
 ): MixerState {
   return deriveMixerState(

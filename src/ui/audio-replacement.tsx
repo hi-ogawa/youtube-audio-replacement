@@ -52,7 +52,7 @@ export function StoredPanel({
     <Panel
       videoId={videoId}
       getVideo={getVideo}
-      initialSelectedAudio={storedAudioQuery.data}
+      initialSelectedAudio={storedAudioQuery.data ?? undefined}
       onSelectAudio={storeAudioMutation.mutate}
       onError={onError}
       onGenerate={onGenerate}
@@ -70,14 +70,12 @@ export function Panel({
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
-  initialSelectedAudio: StoredAudio | null;
+  initialSelectedAudio?: StoredAudio;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;
   onGenerate(): void;
 }) {
-  const [selectedAudio, setSelectedAudio] = useState(
-    initialSelectedAudio ?? undefined,
-  );
+  const [selectedAudio, setSelectedAudio] = useState(initialSelectedAudio);
   const [mixerState, setMixerState] = useState(() =>
     createMixerState(
       initialSelectedAudio,

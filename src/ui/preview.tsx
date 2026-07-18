@@ -131,7 +131,7 @@ export function PreviewApp() {
               key={withAudio ? "selected" : "empty"}
               videoId="preview-video"
               getVideo={() => fakeVideo}
-              initialSelectedAudio={withAudio ? previewAudio : null}
+              initialSelectedAudio={withAudio ? previewAudio : undefined}
               onSelectAudio={() => undefined}
               onGenerate={() => undefined}
               onError={setError}

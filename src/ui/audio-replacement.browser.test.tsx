@@ -17,7 +17,7 @@ test("basic", async () => {
         <Panel
           videoId="trace-preview"
           getVideo={() => video}
-          initialSelectedAudio={null}
+          initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
           onGenerate={vi.fn()}
           onError={vi.fn()}
@@ -73,7 +73,7 @@ test("imports and mixes every audio file in a ZIP", async () => {
         <Panel
           videoId="zip-preview"
           getVideo={() => video}
-          initialSelectedAudio={null}
+          initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
           onGenerate={vi.fn()}
           onError={vi.fn()}
