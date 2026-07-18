@@ -20,9 +20,7 @@ export class PlayerSync {
   #originalMuted = false;
   readonly #onError: (error: unknown) => void;
 
-  constructor({
-    onError = console.error,
-  }: { onError?: (error: unknown) => void } = {}) {
+  constructor({ onError }: { onError: (error: unknown) => void }) {
     this.#onError = onError;
   }
 
