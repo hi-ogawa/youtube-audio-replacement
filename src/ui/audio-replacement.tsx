@@ -284,53 +284,72 @@ function TrackMixer({
 
   return (
     <div className="mt-2.5">
-      {tracks.map((track) => {
-        const state = mixer[track.id] ?? DEFAULT_MIXER_TRACK;
-        const effectivelyMuted = state.muted || (anySoloed && !state.soloed);
-        return (
-          <div
-            className={`flex items-center gap-1.5 border-t border-border py-2 ${effectivelyMuted ? "text-muted-foreground" : ""}`}
-            key={track.id}
-          >
-            <span
-              className="w-12 shrink-0 truncate text-xs font-semibold"
-              title={track.id}
-            >
-              {track.name}
-            </span>
-            <input
-              className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value={state.volume}
-              aria-label={`${track.name} volume`}
-              onChange={(event) =>
-                onChange(track.id, { volume: Number(event.target.value) })
-              }
-            />
-            <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
-              {state.volume}%
-            </span>
-            <MixerButton
-              label={`Mute ${track.name}`}
-              pressed={state.muted}
-              onClick={() => onChange(track.id, { muted: !state.muted })}
-            >
-              M
-            </MixerButton>
-            <MixerButton
-              label={`Solo ${track.name}`}
-              pressed={state.soloed}
-              accent
-              onClick={() => onChange(track.id, { soloed: !state.soloed })}
-            >
-              S
-            </MixerButton>
-          </div>
-        );
-      })}
+      {tracks.map((track) => (
+        <MixerTrack
+          key={track.id}
+          track={track}
+          state={mixer[track.id] ?? DEFAULT_MIXER_TRACK}
+          anySoloed={anySoloed}
+          onChange={onChange}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MixerTrack({
+  track,
+  state,
+  anySoloed,
+  onChange,
+}: {
+  track: StoredAudio["tracks"][number];
+  state: MixerTrackState;
+  anySoloed: boolean;
+  onChange(trackId: string, update: Partial<MixerTrackState>): void;
+}) {
+  const effectivelyMuted = state.muted || (anySoloed && !state.soloed);
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 border-t border-border py-2 ${effectivelyMuted ? "text-muted-foreground" : ""}`}
+    >
+      <span
+        className="w-12 shrink-0 truncate text-xs font-semibold"
+        title={track.id}
+      >
+        {track.name}
+      </span>
+      <input
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={state.volume}
+        aria-label={`${track.name} volume`}
+        onChange={(event) =>
+          onChange(track.id, { volume: Number(event.target.value) })
+        }
+      />
+      <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+        {state.volume}%
+      </span>
+      <MixerButton
+        label={`Mute ${track.name}`}
+        pressed={state.muted}
+        onClick={() => onChange(track.id, { muted: !state.muted })}
+      >
+        M
+      </MixerButton>
+      <MixerButton
+        label={`Solo ${track.name}`}
+        pressed={state.soloed}
+        accent
+        onClick={() => onChange(track.id, { soloed: !state.soloed })}
+      >
+        S
+      </MixerButton>
     </div>
   );
 }
