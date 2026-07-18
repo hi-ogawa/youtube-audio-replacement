@@ -4,7 +4,10 @@ import { resolveAudioFiles } from "../lib/audio-file.ts";
 import {
   AudioGroup,
   createMixer,
-  DEFAULT_MIXER_TRACK,
+  type Mixer,
+  type MixerTrack,
+  storeMixer,
+  updateMixer,
 } from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
 import {
@@ -143,7 +146,7 @@ export function Panel({
       const nextMixer = createMixer(nextAudio, {});
       setSelectedAudio(nextAudio);
       setMixer(nextMixer);
-      videoStorage.updateState(videoId, { mixer: nextMixer });
+      videoStorage.updateState(videoId, { mixer: storeMixer(nextMixer) });
       onSelectAudio(nextAudio);
       setEnabled(false);
     },
@@ -183,11 +186,8 @@ export function Panel({
 
   function updateMixerTrack(trackId: string, update: Partial<MixerTrackState>) {
     setMixer((current) => {
-      const next = {
-        ...current,
-        [trackId]: { ...current[trackId], ...update },
-      };
-      videoStorage.updateState(videoId, { mixer: next });
+      const next = updateMixer(current, trackId, update);
+      videoStorage.updateState(videoId, { mixer: storeMixer(next) });
       return next;
     });
   }
@@ -219,17 +219,14 @@ export function Panel({
         onChoose={chooseFileMutation.mutate}
       />
       {selectedAudio && selectedAudio.tracks.length > 1 ? (
-        <TrackMixer
-          tracks={selectedAudio.tracks}
-          mixer={mixer}
-          onChange={updateMixerTrack}
-        />
+        <TrackMixer mixer={mixer} onChange={updateMixerTrack} />
       ) : (
         <SingleTrackVolume
           trackId={selectedAudio?.tracks[0]?.id}
           volume={
             selectedAudio
-              ? (mixer[selectedAudio.tracks[0].id]?.volume ?? 100)
+              ? (mixer.find((track) => track.id === selectedAudio.tracks[0].id)
+                  ?.volume ?? 100)
               : 100
           }
           onChange={(trackId, volume) => updateMixerTrack(trackId, { volume })}
@@ -272,26 +269,16 @@ function SingleTrackVolume({
 }
 
 function TrackMixer({
-  tracks,
   mixer,
   onChange,
 }: {
-  tracks: StoredAudio["tracks"];
-  mixer: Record<string, MixerTrackState>;
+  mixer: Mixer;
   onChange(trackId: string, update: Partial<MixerTrackState>): void;
 }) {
-  const anySoloed = Object.values(mixer).some((track) => track.soloed);
-
   return (
     <div className="mt-2.5">
-      {tracks.map((track) => (
-        <MixerTrack
-          key={track.id}
-          track={track}
-          state={mixer[track.id] ?? DEFAULT_MIXER_TRACK}
-          anySoloed={anySoloed}
-          onChange={onChange}
-        />
+      {mixer.map((track) => (
+        <MixerTrack key={track.id} track={track} onChange={onChange} />
       ))}
     </div>
   );
@@ -299,20 +286,14 @@ function TrackMixer({
 
 function MixerTrack({
   track,
-  state,
-  anySoloed,
   onChange,
 }: {
-  track: StoredAudio["tracks"][number];
-  state: MixerTrackState;
-  anySoloed: boolean;
+  track: MixerTrack;
   onChange(trackId: string, update: Partial<MixerTrackState>): void;
 }) {
-  const effectivelyMuted = state.muted || (anySoloed && !state.soloed);
-
   return (
     <div
-      className={`flex items-center gap-1.5 border-t border-border py-2 ${effectivelyMuted ? "text-muted-foreground" : ""}`}
+      className={`flex items-center gap-1.5 border-t border-border py-2 ${track.enabled ? "" : "text-muted-foreground"}`}
     >
       <span
         className="w-12 shrink-0 truncate text-xs font-semibold"
@@ -326,27 +307,27 @@ function MixerTrack({
         min="0"
         max="100"
         step="1"
-        value={state.volume}
+        value={track.volume}
         aria-label={`${track.name} volume`}
         onChange={(event) =>
           onChange(track.id, { volume: Number(event.target.value) })
         }
       />
       <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
-        {state.volume}%
+        {track.volume}%
       </span>
       <MixerButton
         label={`Mute ${track.name}`}
-        pressed={state.muted}
-        onClick={() => onChange(track.id, { muted: !state.muted })}
+        pressed={track.muted}
+        onClick={() => onChange(track.id, { muted: !track.muted })}
       >
         M
       </MixerButton>
       <MixerButton
         label={`Solo ${track.name}`}
-        pressed={state.soloed}
+        pressed={track.soloed}
         accent
-        onClick={() => onChange(track.id, { soloed: !state.soloed })}
+        onClick={() => onChange(track.id, { soloed: !track.soloed })}
       >
         S
       </MixerButton>

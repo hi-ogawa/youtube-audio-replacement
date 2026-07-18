@@ -5,28 +5,68 @@ import type {
   StoredAudioTrack,
 } from "./storage.ts";
 
-export const DEFAULT_MIXER_TRACK: MixerTrackState = {
+const DEFAULT_MIXER_TRACK: MixerTrackState = {
   volume: 100,
   muted: false,
   soloed: false,
 };
 
+export interface MixerTrack extends MixerTrackState {
+  id: string;
+  name: string;
+  // `enabled` is the derived mixer output before master volume is applied.
+  enabled: boolean;
+}
+
+export type Mixer = MixerTrack[];
+
 export function createMixer(
   audio: StoredAudio | null | undefined,
   stored: Record<string, MixerTrackState>,
-): Record<string, MixerTrackState> {
+): Mixer {
+  return deriveMixer(
+    (audio?.tracks ?? []).map((track) => ({
+      id: track.id,
+      name: track.name,
+      ...DEFAULT_MIXER_TRACK,
+      ...stored[track.id],
+    })),
+  );
+}
+
+export function updateMixer(
+  mixer: Mixer,
+  trackId: string,
+  update: Partial<MixerTrackState>,
+): Mixer {
+  return deriveMixer(
+    mixer.map((track) =>
+      track.id === trackId ? { ...track, ...update } : track,
+    ),
+  );
+}
+
+export function storeMixer(mixer: Mixer): Record<string, MixerTrackState> {
   return Object.fromEntries(
-    (audio?.tracks ?? []).map((track) => [
-      track.id,
-      { ...DEFAULT_MIXER_TRACK, ...stored[track.id] },
+    mixer.map(({ id, volume, muted, soloed }) => [
+      id,
+      { volume, muted, soloed },
     ]),
   );
+}
+
+function deriveMixer(tracks: Omit<MixerTrack, "enabled">[]): Mixer {
+  const anySoloed = tracks.some((track) => track.soloed);
+  return tracks.map((track) => ({
+    ...track,
+    enabled: !track.muted && (!anySoloed || track.soloed),
+  }));
 }
 
 export class AudioGroup implements ReplacementAudio {
   #masterVolume = 1;
   #players = new Map<string, { audio: HTMLAudioElement; objectUrl: string }>();
-  #mixer: Record<string, MixerTrackState> = {};
+  #mixer: Mixer = [];
 
   get primary(): HTMLAudioElement | undefined {
     return this.#players.values().next().value?.audio;
@@ -74,7 +114,7 @@ export class AudioGroup implements ReplacementAudio {
     this.#applyMixer();
   }
 
-  setMixer(mixer: Record<string, MixerTrackState>): void {
+  setMixer(mixer: Mixer): void {
     this.#mixer = mixer;
     this.#applyMixer();
   }
@@ -102,11 +142,10 @@ export class AudioGroup implements ReplacementAudio {
   }
 
   #applyMixer(): void {
-    const anySoloed = Object.values(this.#mixer).some((track) => track.soloed);
+    const mixer = new Map(this.#mixer.map((track) => [track.id, track]));
     for (const [id, { audio }] of this.#players) {
-      const state = this.#mixer[id];
-      const audible = state && !state.muted && (!anySoloed || state.soloed);
-      audio.volume = audible
+      const state = mixer.get(id);
+      audio.volume = state?.enabled
         ? Math.max(0, Math.min(1, this.#masterVolume * (state.volume / 100)))
         : 0;
     }
