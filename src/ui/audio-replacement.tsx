@@ -1,7 +1,11 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { resolveAudioFiles } from "../lib/audio-file.ts";
-import { AudioGroup } from "../lib/audio-group.ts";
+import {
+  AudioGroup,
+  createMixer,
+  DEFAULT_MIXER_TRACK,
+} from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
 import {
   type MixerTrackState,
@@ -361,24 +365,6 @@ function MixerButton({
     >
       {children}
     </button>
-  );
-}
-
-const DEFAULT_MIXER_TRACK: MixerTrackState = {
-  volume: 100,
-  muted: false,
-  soloed: false,
-};
-
-function createMixer(
-  audio: StoredAudio | null | undefined,
-  stored: Record<string, MixerTrackState>,
-): Record<string, MixerTrackState> {
-  return Object.fromEntries(
-    (audio?.tracks ?? []).map((track) => [
-      track.id,
-      { ...DEFAULT_MIXER_TRACK, ...stored[track.id] },
-    ]),
   );
 }
 

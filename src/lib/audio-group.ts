@@ -1,5 +1,27 @@
 import type { ReplacementAudio } from "./player-sync.ts";
-import type { MixerTrackState, StoredAudioTrack } from "./storage.ts";
+import type {
+  MixerTrackState,
+  StoredAudio,
+  StoredAudioTrack,
+} from "./storage.ts";
+
+export const DEFAULT_MIXER_TRACK: MixerTrackState = {
+  volume: 100,
+  muted: false,
+  soloed: false,
+};
+
+export function createMixer(
+  audio: StoredAudio | null | undefined,
+  stored: Record<string, MixerTrackState>,
+): Record<string, MixerTrackState> {
+  return Object.fromEntries(
+    (audio?.tracks ?? []).map((track) => [
+      track.id,
+      { ...DEFAULT_MIXER_TRACK, ...stored[track.id] },
+    ]),
+  );
+}
 
 export class AudioGroup implements ReplacementAudio {
   #masterVolume = 1;
