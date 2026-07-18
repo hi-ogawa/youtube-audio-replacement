@@ -218,53 +218,10 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      {selectedAudio && selectedAudio.tracks.length > 1 ? (
+      {selectedAudio && (
         <TrackMixer mixer={mixer} onChange={updateMixerTrack} />
-      ) : (
-        <SingleTrackVolume
-          trackId={selectedAudio?.tracks[0]?.id}
-          volume={
-            selectedAudio
-              ? (mixer.find((track) => track.id === selectedAudio.tracks[0].id)
-                  ?.volume ?? 100)
-              : 100
-          }
-          onChange={(trackId, volume) => updateMixerTrack(trackId, { volume })}
-        />
       )}
     </div>
-  );
-}
-
-function SingleTrackVolume({
-  trackId,
-  volume,
-  onChange,
-}: {
-  trackId: string | undefined;
-  volume: number;
-  onChange(trackId: string, volume: number): void;
-}) {
-  return (
-    <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
-      <span>Volume</span>
-      <input
-        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
-        type="range"
-        min="0"
-        max="100"
-        step="1"
-        value={volume}
-        disabled={!trackId}
-        aria-label="Replacement audio volume"
-        onChange={(event) => {
-          if (trackId) {
-            onChange(trackId, Number(event.target.value));
-          }
-        }}
-      />
-      <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
-    </label>
   );
 }
 

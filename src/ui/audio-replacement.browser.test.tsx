@@ -46,7 +46,7 @@ test("basic", async () => {
   expect(video.muted).toBe(true);
   await page.mark("replacement enabled");
 
-  const volume = screen.getByLabelText("Replacement audio volume");
+  const volume = screen.getByLabelText("Sine-2s volume");
   await volume.click();
   await userEvent.keyboard("{Home}{ArrowRight>35/}");
   await expect.element(screen.getByText("35%")).toBeVisible();
