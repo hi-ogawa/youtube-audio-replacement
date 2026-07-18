@@ -20,6 +20,11 @@ export interface MixerTrack extends MixerTrackState {
 
 export type Mixer = MixerTrack[];
 
+interface AudioGroupNotifications {
+  onTimeChange(currentTime: number): void;
+  onDurationChange(duration: number | undefined): void;
+}
+
 export function createMixer(
   audio: StoredAudio | null | undefined,
   stored: Record<string, MixerTrackState>,
@@ -72,6 +77,10 @@ export class AudioGroup implements ReplacementAudio {
     return this.#players.values().next().value?.audio;
   }
 
+  get hasTracks(): boolean {
+    return this.#players.size > 0;
+  }
+
   get currentTime(): number {
     return this.primary?.currentTime ?? 0;
   }
@@ -101,7 +110,10 @@ export class AudioGroup implements ReplacementAudio {
     this.#applyMixer();
   }
 
-  setTracks(tracks: StoredAudioTrack[]): void {
+  setTracks(
+    tracks: StoredAudioTrack[],
+    notifications: AudioGroupNotifications,
+  ): void {
     this.clear();
     for (const track of tracks) {
       const audio = document.createElement("audio");
@@ -110,6 +122,19 @@ export class AudioGroup implements ReplacementAudio {
       audio.src = objectUrl;
       audio.load();
       this.#players.set(track.id, { audio, objectUrl });
+    }
+    const primary = this.primary;
+    if (primary) {
+      const updateDuration = () => {
+        notifications.onDurationChange(
+          Number.isFinite(primary.duration) ? primary.duration : undefined,
+        );
+      };
+      primary.addEventListener("timeupdate", () =>
+        notifications.onTimeChange(primary.currentTime),
+      );
+      primary.addEventListener("loadedmetadata", updateDuration);
+      primary.addEventListener("durationchange", updateDuration);
     }
     this.#applyMixer();
   }

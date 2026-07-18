@@ -113,27 +113,12 @@ export function Panel({
     // Install the source's mixer before creating players. Mixer-only changes
     // are applied synchronously in updateMixerTrack.
     audioGroup.setMixer(mixer);
-    audioGroup.setTracks(selectedAudio.tracks);
-    const audio = audioGroup.primary;
-    if (!audio) {
-      return;
-    }
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => {
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : undefined);
-    };
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("durationchange", updateDuration);
+    audioGroup.setTracks(selectedAudio.tracks, {
+      onTimeChange: setCurrentTime,
+      onDurationChange: setDuration,
+    });
     setCurrentTime(0);
     setDuration(undefined);
-
-    return () => {
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", updateDuration);
-      audio.removeEventListener("durationchange", updateDuration);
-    };
   }, [audioGroup, selectedAudio]);
 
   const chooseFileMutation = useMutation({
@@ -172,7 +157,7 @@ export function Panel({
     }
 
     const video = getVideo();
-    if (!video || !audioGroup.primary) {
+    if (!video || !audioGroup.hasTracks) {
       onError("YouTube video player not found.");
       return;
     }
