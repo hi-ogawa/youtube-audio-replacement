@@ -110,9 +110,10 @@ export function Panel({
       return;
     }
 
-    audioGroup.setTracks(selectedAudio.tracks);
-    // Mixer-only changes are applied synchronously in updateMixerTrack.
+    // Install the source's mixer before creating players. Mixer-only changes
+    // are applied synchronously in updateMixerTrack.
     audioGroup.setMixer(mixer);
+    audioGroup.setTracks(selectedAudio.tracks);
     const audio = audioGroup.primary;
     if (!audio) {
       return;
