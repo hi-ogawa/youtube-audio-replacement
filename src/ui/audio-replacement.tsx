@@ -85,14 +85,22 @@ export function Panel({
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
   const [audioGroup] = useState(() => new AudioGroup());
-  const syncRef = useRef<PlayerSync>(null);
+  const [playerSync] = useState(
+    () =>
+      new PlayerSync({
+        onError(error) {
+          console.error(error);
+          onError("Replacement audio playback failed.");
+        },
+      }),
+  );
 
   useEffect(() => {
     return () => {
-      syncRef.current?.destroy();
+      playerSync.disable();
       audioGroup.clear();
     };
-  }, [audioGroup]);
+  }, [audioGroup, playerSync]);
 
   // The first track supplies display metadata. AudioGroup owns all player and
   // object URL cleanup, including when this source is replaced.
@@ -132,8 +140,7 @@ export function Panel({
   const chooseFileMutation = useMutation({
     mutationFn: async (file: File) => {
       const resolved = await resolveAudioFiles(file);
-      syncRef.current?.destroy();
-      syncRef.current = null;
+      playerSync.disable();
       const nextAudio = {
         videoId,
         name: resolved.name,
@@ -159,10 +166,8 @@ export function Panel({
   });
 
   function toggle() {
-    const sync = syncRef.current;
-    if (sync?.enabled) {
-      sync.destroy();
-      syncRef.current = null;
+    if (playerSync.enabled) {
+      playerSync.disable();
       setEnabled(false);
       return;
     }
@@ -173,14 +178,7 @@ export function Panel({
       return;
     }
 
-    const nextSync = new PlayerSync(video, audioGroup, {
-      onError(error) {
-        console.error(error);
-        onError("Replacement audio playback failed.");
-      },
-    });
-    nextSync.enable();
-    syncRef.current = nextSync;
+    playerSync.enable(video, audioGroup);
     setEnabled(true);
   }
 
