@@ -111,6 +111,8 @@ export function Panel({
     }
 
     audioGroup.setTracks(selectedAudio.tracks);
+    // Mixer-only changes are applied synchronously in updateMixerTrack.
+    audioGroup.setMixer(mixer);
     const audio = audioGroup.primary;
     if (!audio) {
       return;
@@ -132,10 +134,6 @@ export function Panel({
       audio.removeEventListener("durationchange", updateDuration);
     };
   }, [audioGroup, selectedAudio]);
-
-  useEffect(() => {
-    audioGroup.setMixer(mixer);
-  }, [audioGroup, mixer]);
 
   const chooseFileMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -183,11 +181,10 @@ export function Panel({
   }
 
   function updateMixerTrack(trackId: string, update: Partial<MixerTrackState>) {
-    setMixer((current) => {
-      const next = updateMixer(current, trackId, update);
-      videoStorage.updateState(videoId, { mixer: storeMixer(next) });
-      return next;
-    });
+    const next = updateMixer(mixer, trackId, update);
+    audioGroup.setMixer(next);
+    setMixer(next);
+    videoStorage.updateState(videoId, { mixer: storeMixer(next) });
   }
 
   return (
