@@ -18,15 +18,17 @@ interface LegacyStoredAudio {
   name: string;
 }
 
-export interface MixerTrackState {
+export interface StoredMixerTrackState {
   volume: number;
   muted: boolean;
   soloed: boolean;
 }
 
+export type StoredMixerState = Record<string, StoredMixerTrackState>;
+
 interface VideoState {
   panelOpen: boolean;
-  mixer: Record<string, MixerTrackState>;
+  mixer: StoredMixerState;
 }
 
 interface StoredVideoStates {

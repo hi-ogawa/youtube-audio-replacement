@@ -3,15 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { resolveAudioFiles } from "../lib/audio-file.ts";
 import {
   AudioGroup,
-  createMixer,
-  type Mixer,
-  type MixerTrack,
-  storeMixer,
-  updateMixer,
+  createMixerState,
+  type MixerState,
+  type MixerTrackState,
+  toStoredMixerState,
+  updateMixerState,
 } from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
 import {
-  type MixerTrackState,
+  type StoredMixerTrackState,
   type StoredAudio,
   videoStorage,
 } from "../lib/storage.ts";
@@ -78,8 +78,11 @@ export function Panel({
   const [selectedAudio, setSelectedAudio] = useState(
     initialSelectedAudio ?? undefined,
   );
-  const [mixer, setMixer] = useState(() =>
-    createMixer(initialSelectedAudio, videoStorage.getState(videoId).mixer),
+  const [mixerState, setMixerState] = useState(() =>
+    createMixerState(
+      initialSelectedAudio,
+      videoStorage.getState(videoId).mixer,
+    ),
   );
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
@@ -108,7 +111,7 @@ export function Panel({
 
     // Install the source's mixer before creating players. Mixer-only changes
     // are applied synchronously in updateMixerTrack.
-    audioGroup.setMixer(mixer);
+    audioGroup.setMixerState(mixerState);
     audioGroup.setTracks(selectedAudio.tracks, {
       onTimeChange: setCurrentTime,
       onDurationChange: setDuration,
@@ -130,10 +133,12 @@ export function Panel({
           blob: track.file,
         })),
       };
-      const nextMixer = createMixer(nextAudio, {});
+      const nextMixerState = createMixerState(nextAudio, {});
       setSelectedAudio(nextAudio);
-      setMixer(nextMixer);
-      videoStorage.updateState(videoId, { mixer: storeMixer(nextMixer) });
+      setMixerState(nextMixerState);
+      videoStorage.updateState(videoId, {
+        mixer: toStoredMixerState(nextMixerState),
+      });
       onSelectAudio(nextAudio);
       setEnabled(false);
     },
@@ -162,11 +167,16 @@ export function Panel({
     setEnabled(true);
   }
 
-  function updateMixerTrack(trackId: string, update: Partial<MixerTrackState>) {
-    const next = updateMixer(mixer, trackId, update);
-    audioGroup.setMixer(next);
-    setMixer(next);
-    videoStorage.updateState(videoId, { mixer: storeMixer(next) });
+  function updateMixerTrack(
+    trackId: string,
+    update: Partial<StoredMixerTrackState>,
+  ) {
+    const nextMixerState = updateMixerState(mixerState, trackId, update);
+    audioGroup.setMixerState(nextMixerState);
+    setMixerState(nextMixerState);
+    videoStorage.updateState(videoId, {
+      mixer: toStoredMixerState(nextMixerState),
+    });
   }
 
   return (
@@ -195,21 +205,23 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      {selectedAudio && <Mixer mixer={mixer} onChange={updateMixerTrack} />}
+      {selectedAudio && (
+        <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+      )}
     </div>
   );
 }
 
 function Mixer({
-  mixer,
+  mixerState,
   onChange,
 }: {
-  mixer: Mixer;
-  onChange(trackId: string, update: Partial<MixerTrackState>): void;
+  mixerState: MixerState;
+  onChange(trackId: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   return (
     <div className="mt-2.5">
-      {mixer.map((track) => (
+      {mixerState.map((track) => (
         <MixerTrackRow key={track.id} track={track} onChange={onChange} />
       ))}
     </div>
@@ -220,8 +232,8 @@ function MixerTrackRow({
   track,
   onChange,
 }: {
-  track: MixerTrack;
-  onChange(trackId: string, update: Partial<MixerTrackState>): void;
+  track: MixerTrackState;
+  onChange(trackId: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   return (
     <div
