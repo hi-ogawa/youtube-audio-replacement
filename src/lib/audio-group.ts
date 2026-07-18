@@ -13,7 +13,6 @@ const DEFAULT_MIXER_TRACK_STATE: StoredMixerTrackState = {
 };
 
 export interface MixerTrackState extends StoredMixerTrackState {
-  id: string;
   name: string;
   // `enabled` is the derived mixer output before master volume is applied.
   enabled: boolean;
@@ -32,30 +31,29 @@ export function createMixerState(
 ): MixerState {
   return deriveMixerState(
     (audio?.tracks ?? []).map((track) => ({
-      id: track.id,
       name: track.name,
       ...DEFAULT_MIXER_TRACK_STATE,
-      ...stored[track.id],
+      ...stored[track.name],
     })),
   );
 }
 
 export function updateMixerState(
   mixerState: MixerState,
-  trackId: string,
+  trackName: string,
   update: Partial<StoredMixerTrackState>,
 ): MixerState {
   return deriveMixerState(
     mixerState.map((track) =>
-      track.id === trackId ? { ...track, ...update } : track,
+      track.name === trackName ? { ...track, ...update } : track,
     ),
   );
 }
 
 export function toStoredMixerState(mixerState: MixerState): StoredMixerState {
   return Object.fromEntries(
-    mixerState.map(({ id, volume, muted, soloed }) => [
-      id,
+    mixerState.map(({ name, volume, muted, soloed }) => [
+      name,
       { volume, muted, soloed },
     ]),
   );
@@ -124,7 +122,7 @@ export class AudioGroup implements ReplacementAudio {
       audio.preload = "auto";
       audio.src = objectUrl;
       audio.load();
-      this.#players.set(track.id, { audio, objectUrl });
+      this.#players.set(track.name, { audio, objectUrl });
     }
     const primary = this.primary;
     if (primary) {
@@ -170,9 +168,9 @@ export class AudioGroup implements ReplacementAudio {
   }
 
   #applyMixer(): void {
-    const mixer = new Map(this.#mixerState.map((track) => [track.id, track]));
-    for (const [id, { audio }] of this.#players) {
-      const state = mixer.get(id);
+    const mixer = new Map(this.#mixerState.map((track) => [track.name, track]));
+    for (const [name, { audio }] of this.#players) {
+      const state = mixer.get(name);
       audio.volume = state?.enabled
         ? Math.max(0, Math.min(1, this.#masterVolume * (state.volume / 100)))
         : 0;

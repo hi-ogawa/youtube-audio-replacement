@@ -1,6 +1,6 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { resolveAudioFiles } from "../lib/audio-file.ts";
+import { formatTrackName, resolveAudioFiles } from "../lib/audio-file.ts";
 import {
   AudioGroup,
   createMixerState,
@@ -128,7 +128,6 @@ export function Panel({
         videoId,
         name: resolved.name,
         tracks: resolved.tracks.map((track) => ({
-          id: track.id,
           name: track.name,
           blob: track.file,
         })),
@@ -168,10 +167,10 @@ export function Panel({
   }
 
   function updateMixerTrack(
-    trackId: string,
+    trackName: string,
     update: Partial<StoredMixerTrackState>,
   ) {
-    const nextMixerState = updateMixerState(mixerState, trackId, update);
+    const nextMixerState = updateMixerState(mixerState, trackName, update);
     audioGroup.setMixerState(nextMixerState);
     setMixerState(nextMixerState);
     videoStorage.updateState(videoId, {
@@ -217,12 +216,12 @@ function Mixer({
   onChange,
 }: {
   mixerState: MixerState;
-  onChange(trackId: string, update: Partial<StoredMixerTrackState>): void;
+  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   return (
     <div className="mt-2.5">
       {mixerState.map((track) => (
-        <MixerTrackRow key={track.id} track={track} onChange={onChange} />
+        <MixerTrackRow key={track.name} track={track} onChange={onChange} />
       ))}
     </div>
   );
@@ -233,17 +232,19 @@ function MixerTrackRow({
   onChange,
 }: {
   track: MixerTrackState;
-  onChange(trackId: string, update: Partial<StoredMixerTrackState>): void;
+  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
+  const displayName = formatTrackName(track.name);
+
   return (
     <div
       className={`flex items-center gap-1.5 border-t border-border py-2 ${track.enabled ? "" : "text-muted-foreground"}`}
     >
       <span
         className="w-12 shrink-0 truncate text-xs font-semibold"
-        title={track.id}
+        title={track.name}
       >
-        {track.name}
+        {displayName}
       </span>
       <input
         className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
@@ -252,26 +253,26 @@ function MixerTrackRow({
         max="100"
         step="1"
         value={track.volume}
-        aria-label={`${track.name} volume`}
+        aria-label={`${displayName} volume`}
         onChange={(event) =>
-          onChange(track.id, { volume: Number(event.target.value) })
+          onChange(track.name, { volume: Number(event.target.value) })
         }
       />
       <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
         {track.volume}%
       </span>
       <MixerButton
-        label={`Mute ${track.name}`}
+        label={`Mute ${displayName}`}
         pressed={track.muted}
-        onClick={() => onChange(track.id, { muted: !track.muted })}
+        onClick={() => onChange(track.name, { muted: !track.muted })}
       >
         M
       </MixerButton>
       <MixerButton
-        label={`Solo ${track.name}`}
+        label={`Solo ${displayName}`}
         pressed={track.soloed}
         accent
-        onClick={() => onChange(track.id, { soloed: !track.soloed })}
+        onClick={() => onChange(track.name, { soloed: !track.soloed })}
       >
         S
       </MixerButton>

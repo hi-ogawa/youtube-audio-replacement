@@ -19,23 +19,19 @@ const previewAudio: StoredAudio = {
   name: "example.stems.zip",
   tracks: [
     {
-      id: "vocals.wav",
-      name: "Vocals",
+      name: "vocals.wav",
       blob: new Blob(),
     },
     {
-      id: "drums.wav",
-      name: "Drums",
+      name: "drums.wav",
       blob: new Blob(),
     },
     {
-      id: "bass.wav",
-      name: "Bass",
+      name: "bass.wav",
       blob: new Blob(),
     },
     {
-      id: "other.wav",
-      name: "Other",
+      name: "other.wav",
       blob: new Blob(),
     },
   ],

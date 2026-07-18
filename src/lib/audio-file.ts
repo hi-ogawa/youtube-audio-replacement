@@ -13,9 +13,18 @@ const AUDIO_MIME_TYPES: Record<string, string> = {
 };
 
 export interface ResolvedAudioTrack {
-  id: string;
   name: string;
   file: File;
+}
+
+export function formatTrackName(name: string): string {
+  const basename = name.split("/").at(-1) ?? name;
+  const extensionIndex = basename.lastIndexOf(".");
+  const displayName =
+    extensionIndex > 0 ? basename.slice(0, extensionIndex) : basename;
+  return displayName
+    ? displayName[0].toUpperCase() + displayName.slice(1)
+    : basename;
 }
 
 export interface ResolvedAudioSet {
@@ -27,7 +36,7 @@ export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
   if (!file.name.toLowerCase().endsWith(".zip")) {
     return {
       name: file.name,
-      tracks: [{ id: file.name, name: toTrackName(file.name), file }],
+      tracks: [{ name: file.name, file }],
     };
   }
 
@@ -48,8 +57,7 @@ export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
     const type = AUDIO_MIME_TYPES[extension];
     if (name && type) {
       tracks.push({
-        id: entry.name,
-        name: toTrackName(name),
+        name: entry.name,
         file: new File([await entry.async("blob")], name, { type }),
       });
     }
@@ -58,12 +66,4 @@ export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
     throw new Error("ZIP does not contain a supported audio file.");
   }
   return { name: file.name, tracks };
-}
-
-function toTrackName(filename: string): string {
-  const basename = filename.split("/").at(-1) ?? filename;
-  const extensionIndex = basename.lastIndexOf(".");
-  const name =
-    extensionIndex > 0 ? basename.slice(0, extensionIndex) : basename;
-  return name ? name[0].toUpperCase() + name.slice(1) : basename;
 }

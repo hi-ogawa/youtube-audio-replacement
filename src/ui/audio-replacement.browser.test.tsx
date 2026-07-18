@@ -123,10 +123,10 @@ test("imports and mixes every audio file in a ZIP", async () => {
     expect.objectContaining({
       name: "song.stems.zip",
       tracks: [
-        expect.objectContaining({ id: "stems/vocals.wav", name: "Vocals" }),
-        expect.objectContaining({ id: "stems/drums.wav", name: "Drums" }),
-        expect.objectContaining({ id: "stems/bass.wav", name: "Bass" }),
-        expect.objectContaining({ id: "stems/other.wav", name: "Other" }),
+        expect.objectContaining({ name: "stems/vocals.wav" }),
+        expect.objectContaining({ name: "stems/drums.wav" }),
+        expect.objectContaining({ name: "stems/bass.wav" }),
+        expect.objectContaining({ name: "stems/other.wav" }),
       ],
     }),
   );

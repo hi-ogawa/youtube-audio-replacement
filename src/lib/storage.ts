@@ -1,7 +1,6 @@
 import { IdbStore } from "./idb.ts";
 
 export interface StoredAudioTrack {
-  id: string;
   name: string;
   blob: Blob;
 }
@@ -97,7 +96,6 @@ export const videoStorage = {
       name: stored.name,
       tracks: [
         {
-          id: stored.name,
           name: stored.name,
           blob: stored.blob,
         },
