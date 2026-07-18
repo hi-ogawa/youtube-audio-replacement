@@ -15,61 +15,64 @@ export interface ReplacementAudio {
 }
 
 export class PlayerSync {
-  enabled = false;
+  #video?: VideoSyncSource;
+  #audio?: ReplacementAudio;
   #originalMuted = false;
   readonly #onError: (error: unknown) => void;
 
-  constructor(
-    private readonly video: VideoSyncSource,
-    private readonly audio: ReplacementAudio,
-    { onError = console.error }: { onError?: (error: unknown) => void } = {},
-  ) {
+  constructor({ onError }: { onError: (error: unknown) => void }) {
     this.#onError = onError;
+  }
+
+  isEnabled(): boolean {
+    return Boolean(this.#video);
+  }
+
+  enable(video: VideoSyncSource, audio: ReplacementAudio) {
+    if (this.#video === video && this.#audio === audio) {
+      return;
+    }
+
+    this.disable();
+    this.#video = video;
+    this.#audio = audio;
     video.addEventListener("play", this.#onPlay);
     video.addEventListener("pause", this.#onPause);
     video.addEventListener("seeking", this.#onSeeking);
     video.addEventListener("seeked", this.#onSeeked);
     video.addEventListener("ratechange", this.#onRateChange);
-  }
 
-  enable() {
-    if (this.enabled) {
-      return;
-    }
-
-    this.enabled = true;
-    this.#originalMuted = this.video.muted;
+    this.#originalMuted = video.muted;
     this.#alignTime();
     this.#alignRate();
-    this.audio.volume = this.#originalMuted ? 0 : this.video.volume;
-    this.video.muted = true;
+    audio.volume = this.#originalMuted ? 0 : video.volume;
+    video.muted = true;
 
-    if (!this.video.paused) {
+    if (!video.paused) {
       void this.#play();
     }
   }
 
   disable() {
-    if (!this.enabled) {
+    const video = this.#video;
+    const audio = this.#audio;
+    if (!video || !audio) {
       return;
     }
 
-    this.enabled = false;
-    this.audio.pause();
-    this.video.muted = this.#originalMuted;
-  }
-
-  destroy() {
-    this.disable();
-    this.video.removeEventListener("play", this.#onPlay);
-    this.video.removeEventListener("pause", this.#onPause);
-    this.video.removeEventListener("seeking", this.#onSeeking);
-    this.video.removeEventListener("seeked", this.#onSeeked);
-    this.video.removeEventListener("ratechange", this.#onRateChange);
+    audio.pause();
+    video.muted = this.#originalMuted;
+    video.removeEventListener("play", this.#onPlay);
+    video.removeEventListener("pause", this.#onPause);
+    video.removeEventListener("seeking", this.#onSeeking);
+    video.removeEventListener("seeked", this.#onSeeked);
+    video.removeEventListener("ratechange", this.#onRateChange);
+    this.#video = undefined;
+    this.#audio = undefined;
   }
 
   #onPlay = () => {
-    if (!this.enabled) {
+    if (!this.isEnabled()) {
       return;
     }
     this.#alignTime();
@@ -78,46 +81,44 @@ export class PlayerSync {
   };
 
   #onPause = () => {
-    if (this.enabled) {
-      this.audio.pause();
-    }
+    this.#audio?.pause();
   };
 
   #onSeeking = () => {
-    if (this.enabled) {
+    if (this.#video) {
       this.#alignTime();
     }
   };
 
   #onSeeked = () => {
-    if (!this.enabled) {
+    if (!this.isEnabled()) {
       return;
     }
     this.#alignTime();
-    if (this.video.paused) {
-      this.audio.pause();
+    if (this.#video!.paused) {
+      this.#audio!.pause();
     } else {
       void this.#play();
     }
   };
 
   #onRateChange = () => {
-    if (this.enabled) {
+    if (this.#video) {
       this.#alignRate();
     }
   };
 
   #alignTime() {
-    this.audio.currentTime = this.video.currentTime;
+    this.#audio!.currentTime = this.#video!.currentTime;
   }
 
   #alignRate() {
-    this.audio.playbackRate = this.video.playbackRate;
+    this.#audio!.playbackRate = this.#video!.playbackRate;
   }
 
   async #play() {
     try {
-      await this.audio.play();
+      await this.#audio!.play();
     } catch (error) {
       this.#onError(error);
     }
