@@ -95,12 +95,8 @@ export function Panel({
       }),
   );
 
-  useEffect(() => {
-    return () => {
-      playerSync.disable();
-      audioGroup.clear();
-    };
-  }, [audioGroup, playerSync]);
+  useEffect(() => () => playerSync.disable(), [playerSync]);
+  useEffect(() => () => audioGroup.clear(), [audioGroup]);
 
   // The first track supplies display metadata. AudioGroup owns all player and
   // object URL cleanup, including when this source is replaced.
