@@ -155,7 +155,7 @@ export function Panel({
     }
 
     const video = getVideo();
-    if (!video || !audioGroup.hasTracks) {
+    if (!video || !audioGroup.hasTracks()) {
       onError("YouTube video player not found.");
       return;
     }

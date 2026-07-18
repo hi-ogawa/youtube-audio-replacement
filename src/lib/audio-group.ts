@@ -74,16 +74,8 @@ export class AudioGroup implements ReplacementAudio {
   #players = new Map<string, { audio: HTMLAudioElement; objectUrl: string }>();
   #mixerState: MixerState = [];
 
-  get primary(): HTMLAudioElement | undefined {
-    return this.#players.values().next().value?.audio;
-  }
-
-  get hasTracks(): boolean {
-    return this.#players.size > 0;
-  }
-
   get currentTime(): number {
-    return this.primary?.currentTime ?? 0;
+    return this.#getPrimary()?.currentTime ?? 0;
   }
 
   set currentTime(value: number) {
@@ -93,7 +85,7 @@ export class AudioGroup implements ReplacementAudio {
   }
 
   get playbackRate(): number {
-    return this.primary?.playbackRate ?? 1;
+    return this.#getPrimary()?.playbackRate ?? 1;
   }
 
   set playbackRate(value: number) {
@@ -111,6 +103,10 @@ export class AudioGroup implements ReplacementAudio {
     this.#applyMixer();
   }
 
+  hasTracks(): boolean {
+    return this.#players.size > 0;
+  }
+
   setTracks(
     tracks: StoredAudioTrack[],
     notifications: AudioGroupNotifications,
@@ -124,7 +120,7 @@ export class AudioGroup implements ReplacementAudio {
       audio.load();
       this.#players.set(track.name, { audio, objectUrl });
     }
-    const primary = this.primary;
+    const primary = this.#getPrimary();
     if (primary) {
       const updateDuration = () => {
         notifications.onDurationChange(
@@ -165,6 +161,10 @@ export class AudioGroup implements ReplacementAudio {
       URL.revokeObjectURL(objectUrl);
     }
     this.#players.clear();
+  }
+
+  #getPrimary(): HTMLAudioElement | undefined {
+    return this.#players.values().next().value?.audio;
   }
 
   #applyMixer(): void {
