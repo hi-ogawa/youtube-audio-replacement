@@ -236,7 +236,7 @@ function MixerTrackRow({
 
   return (
     <div
-      className={`flex items-center gap-1.5 border-t border-border py-2 ${track.enabled ? "" : "text-muted-foreground"}`}
+      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${track.enabled ? "" : "text-muted-foreground"}`}
     >
       <span
         className="w-12 shrink-0 truncate text-xs font-semibold"
