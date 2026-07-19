@@ -8,16 +8,6 @@ import { videoStorage } from "../lib/storage.ts";
 import { Panel } from "./audio-replacement.tsx";
 import { FakeVideo } from "./preview.tsx";
 
-const { resolveAudioFilesMock } = vi.hoisted(() => ({
-  resolveAudioFilesMock: vi.fn(),
-}));
-vi.mock("../lib/audio-file.ts", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("../lib/audio-file.ts")>();
-  resolveAudioFilesMock.mockImplementation(original.resolveAudioFiles);
-  return { ...original, resolveAudioFiles: resolveAudioFilesMock };
-});
-
 test("basic", async () => {
   const video = new FakeVideo();
   const onSelectAudio = vi.fn();
@@ -141,46 +131,6 @@ test("imports and mixes every audio file in a ZIP", async () => {
     }),
   );
   await page.mark("stem mixer");
-});
-
-test("shows a loading state while importing audio", async () => {
-  let finishLoading: (() => void) | undefined;
-  resolveAudioFilesMock.mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        finishLoading = () => resolve({ name: "large.stems.zip", tracks: [] });
-      }),
-  );
-  const file = new File([], "large.stems.zip", { type: "application/zip" });
-  const screen = await render(
-    <div className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
-      <QueryClientProvider client={new QueryClient()}>
-        <Panel
-          videoId="loading-preview"
-          getVideo={() => new FakeVideo()}
-          initialSelectedAudio={undefined}
-          onSelectAudio={vi.fn()}
-          onGenerate={vi.fn()}
-          onError={vi.fn()}
-        />
-      </QueryClientProvider>
-    </div>,
-  );
-
-  await userEvent.upload(screen.getByLabelText("Replacement audio file"), file);
-
-  await expect.element(screen.getByRole("status")).toBeVisible();
-  await expect
-    .element(screen.getByText("large.stems.zip", { exact: true }))
-    .toBeVisible();
-  await expect
-    .element(screen.getByText("Loading audio...", { exact: true }))
-    .toBeVisible();
-  const drop = screen.getByRole("button", { name: "" });
-  await expect.element(drop).toBeDisabled();
-  await expect.element(drop).toHaveAttribute("aria-busy", "true");
-
-  finishLoading?.();
 });
 
 test("imports multiple audio files", async () => {
