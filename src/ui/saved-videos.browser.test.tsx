@@ -14,20 +14,32 @@ test("populated library", async () => {
             title: "Bass cover with a deliberately long video title",
           },
           name: "bass-and-drums.zip",
-          size: 38_400_000,
+          tracks: [
+            { name: "bass.wav", blob: new Blob([new Uint8Array(38_400_000)]) },
+          ],
           savedAt: Date.UTC(2026, 6, 17),
         },
         {
           videoId: "7GU_VQfgMT0",
           videoMetadata: { title: "Live session rehearsal" },
           name: "vocals.wav",
-          size: 12_800_000,
+          tracks: [
+            {
+              name: "vocals.wav",
+              blob: new Blob([new Uint8Array(12_800_000)]),
+            },
+          ],
           savedAt: Date.UTC(2026, 6, 14),
         },
         {
           videoId: "fallback-id",
           name: "replacement-audio.wav",
-          size: 6_400_000,
+          tracks: [
+            {
+              name: "replacement-audio.wav",
+              blob: new Blob([new Uint8Array(6_400_000)]),
+            },
+          ],
         },
       ]}
       loading={false}

@@ -40,7 +40,7 @@ import { audioStorage } from "./lib/storage.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import { AppHeader } from "./ui/app-header.tsx";
-import { type SavedVideo, SavedVideosView } from "./ui/saved-videos.tsx";
+import { SavedVideosView } from "./ui/saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
@@ -385,21 +385,7 @@ function SavedVideosPage() {
   const queryClient = useQueryClient();
   const storedAudioQuery = useQuery({
     queryKey: ["stored-audio-library"],
-    queryFn: async () =>
-      (await audioStorage.listAudio())
-        .map(
-          (audio): SavedVideo => ({
-            videoId: audio.videoId,
-            name: audio.name,
-            size: audio.tracks.reduce(
-              (total, track) => total + track.blob.size,
-              0,
-            ),
-            videoMetadata: audio.videoMetadata,
-            savedAt: audio.savedAt,
-          }),
-        )
-        .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0)),
+    queryFn: audioStorage.listAudio,
   });
   const deleteStoredAudioMutation = useMutation({
     mutationFn: audioStorage.deleteAudio,
