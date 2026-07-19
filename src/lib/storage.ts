@@ -1,5 +1,10 @@
 import { IdbStore } from "./idb.ts";
 
+// These abstractions run in different origins. videoStorage is called by the
+// YouTube MAIN-world content script, so its localStorage belongs to youtube.com.
+// audioStorage is called by extension-storage-page.ts, so its IndexedDB belongs
+// to the extension origin and is shared by extension pages.
+
 export interface StoredAudioTrack {
   name: string;
   blob: Blob;
