@@ -11,8 +11,8 @@ import {
 } from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
 import {
+  type SelectedAudio,
   type StoredMixerTrackState,
-  type StoredAudio,
   videoStorage,
 } from "../lib/storage.ts";
 
@@ -21,17 +21,21 @@ export function StoredPanel({
   getVideo,
   onError,
   onGenerate,
+  loadAudio,
+  storeAudio,
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
   onGenerate(): void;
+  loadAudio(): Promise<SelectedAudio | undefined>;
+  storeAudio(audio: SelectedAudio): Promise<void>;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
-        return await videoStorage.loadAudio(videoId);
+        return (await loadAudio()) ?? null;
       } catch (error) {
         console.error(error);
         onError("Saved audio is unavailable. You can still choose a file.");
@@ -41,7 +45,7 @@ export function StoredPanel({
   });
 
   const storeAudioMutation = useMutation({
-    mutationFn: videoStorage.storeAudio,
+    mutationFn: storeAudio,
     onError: (error) => {
       console.error(error);
       onError("Audio is available for this session but could not be saved.");
@@ -70,8 +74,8 @@ export function Panel({
 }: {
   videoId: string;
   getVideo: () => VideoSyncSource | undefined;
-  initialSelectedAudio?: StoredAudio;
-  onSelectAudio(audio: StoredAudio): void;
+  initialSelectedAudio?: SelectedAudio;
+  onSelectAudio(audio: SelectedAudio): void;
   onError(message: string): void;
   onGenerate(): void;
 }) {
@@ -348,7 +352,7 @@ function AudioDrop({
   duration,
   onChoose,
 }: {
-  audio: StoredAudio | undefined;
+  audio: SelectedAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
   onChoose(files: File[]): void;
