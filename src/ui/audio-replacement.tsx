@@ -200,7 +200,6 @@ export function Panel({
         audio={selectedAudio}
         currentTime={currentTime}
         duration={duration}
-        loadingName={chooseFileMutation.variables?.[0]?.name}
         loading={chooseFileMutation.isPending}
         onChoose={chooseFileMutation.mutate}
       />
@@ -348,14 +347,12 @@ function AudioDrop({
   audio,
   currentTime,
   duration,
-  loadingName,
   loading,
   onChoose,
 }: {
   audio: StoredAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
-  loadingName: string | undefined;
   loading: boolean;
   onChoose(files: File[]): void;
 }) {
@@ -404,13 +401,8 @@ function AudioDrop({
           <circle cx="16" cy="16" r="3" />
         </svg>
         {loading ? (
-          <span className="min-w-0 flex-1" role="status" aria-live="polite">
-            <span className="block truncate text-xs text-foreground">
-              {loadingName}
-            </span>
-            <span className="mt-0.5 block text-[11px] text-muted-foreground">
-              Loading audio...
-            </span>
+          <span className="text-xs" role="status" aria-live="polite">
+            Loading audio...
           </span>
         ) : audio ? (
           <>
