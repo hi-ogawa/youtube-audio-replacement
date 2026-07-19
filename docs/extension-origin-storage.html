@@ -396,8 +396,7 @@
         <nav aria-label="Page sections">
           <a href="#mental-model">Mental model</a>
           <a href="#runtime-map">Runtime map</a>
-          <a href="#operations">Storage operations</a>
-          <a href="#schema">Stored record</a>
+          <a href="#operations">Watch-page flow</a>
           <a href="#boundaries">Boundaries</a>
         </nav>
       </details>
@@ -555,7 +554,7 @@
             <text x="63" y="105" class="title">content.tsx</text>
             <text x="63" y="129" class="sub">www.youtube.com, MAIN world</text>
             <text x="63" y="151" class="sub">
-              loadAudio / storeAudio client
+              once(init iframe RPC) + audio client
             </text>
 
             <rect
@@ -565,16 +564,14 @@
               width="260"
               height="104"
               rx="10"
-              fill="#fff4df"
-              stroke="#996515"
+              fill="#eaf0ff"
+              stroke="#3759a6"
             />
-            <text x="403" y="105" class="title">rpc-relay.js</text>
+            <text x="403" y="105" class="title">Extension background</text>
             <text x="403" y="129" class="sub">
-              www.youtube.com, ISOLATED world
+              reached through the content relay
             </text>
-            <text x="403" y="151" class="sub">
-              chrome.runtime.getURL + mount
-            </text>
+            <text x="403" y="151" class="sub">chrome.runtime.getURL(...)</text>
 
             <rect
               x="45"
@@ -611,13 +608,14 @@
             <text x="90" y="403" class="sub">
               targetOrigin: https://www.youtube.com
             </text>
-            <path class="rpc" d="M175 179 C175 220 220 238 220 300" />
-            <text x="83" y="222" class="label">window RPC</text>
-            <path class="dom" d="M515 179 V245" />
-            <text x="527" y="207" class="label">MAIN lacks chrome.runtime</text>
-            <text x="527" y="223" class="label">
-              resolve URL + append iframe
-            </text>
+            <path class="rpc" d="M305 110 H385" />
+            <text x="316" y="92" class="label">ask extension for</text>
+            <text x="319" y="106" class="label">storage page URL</text>
+            <path class="dom" d="M175 179 C175 220 220 238 220 300" />
+            <text x="72" y="207" class="label">generic iframe helper</text>
+            <text x="94" y="224" class="label">resolve on load</text>
+            <path class="rpc" d="M285 179 C285 220 330 238 330 300" />
+            <text x="305" y="238" class="label">direct window RPC</text>
 
             <rect
               x="720"
@@ -679,10 +677,10 @@
       </section>
 
       <section id="operations">
-        <h2><a href="#operations">Storage operations</a></h2>
+        <h2><a href="#operations">Watch-page flow</a></h2>
         <p class="section-intro">
-          Watch-page operations cross the hidden-frame RPC boundary. Library
-          operations remain entirely within the extension origin.
+          Only watch-page access needs a bridge. The extension tab is an
+          ordinary client of its own origin's IndexedDB.
         </p>
         <div class="flow-grid">
           <article class="card flow-card">
@@ -690,21 +688,21 @@
             <h3>Save or load replacement audio</h3>
             <ol class="steps">
               <li>
-                <strong>The relay resolves the frame URL</strong>
+                <strong>MAIN asks the extension for the frame URL</strong>
                 <p>
                   <code>content.tsx</code> runs in MAIN world and cannot call
-                  <code>chrome.runtime.getURL</code>. The ISOLATED-world
-                  <code>entry.relay.ts</code> can, so it resolves the extension
-                  URL. <code>content.tsx</code> then uses the generic iframe RPC
-                  helper for hidden frame creation and load handling. The relay
-                  is not part of later storage RPC calls.
+                  <code>chrome.runtime.getURL</code>, so it calls
+                  <code>getExtensionStorageUrl</code> on the background handler.
+                  The existing content relay is only the transport for this
+                  bootstrap request.
                 </p>
               </li>
               <li>
-                <strong>MAIN waits for the frame load</strong>
+                <strong>MAIN creates the storage RPC once</strong>
                 <p>
-                  The RPC helper creates a typed window client from the loaded
-                  frame's <code>contentWindow</code>.
+                  <code>once</code> caches initialization, while the generic
+                  <code>createHiddenIframeRpcOnLoad</code> helper mounts the
+                  frame and creates a typed client after its load event.
                 </p>
               </li>
               <li>
@@ -725,86 +723,13 @@
           </article>
           <article class="card flow-card">
             <span class="tag extension">Extension tab</span>
-            <h3>List or delete saved videos</h3>
-            <ol class="steps">
-              <li>
-                <strong>The saved view activates its query</strong>
-                <p>
-                  <code>extension-page.tsx</code> calls
-                  <code>audioStorage.listAudio</code> only while the
-                  saved-videos view is active.
-                </p>
-              </li>
-              <li>
-                <strong>The page reads the shared store directly</strong>
-                <p>
-                  <code>getAll()</code> produces metadata summaries and computes
-                  aggregate blob sizes without transferring the audio to another
-                  origin.
-                </p>
-              </li>
-              <li>
-                <strong>Deletion uses the video ID key</strong>
-                <p>
-                  After confirmation, <code>deleteAudio(videoId)</code> removes
-                  the record and invalidates the library query.
-                </p>
-              </li>
-            </ol>
+            <h3>Normal client-side storage access</h3>
+            <p style="margin: 18px 0 0; color: var(--muted); font-size: 0.9rem">
+              <code>extension-page.tsx</code> runs under the extension origin,
+              so it calls <code>audioStorage</code> directly for library reads
+              and deletion. This path needs no iframe or RPC bridge.
+            </p>
           </article>
-        </div>
-      </section>
-
-      <section id="schema">
-        <h2><a href="#schema">Stored record</a></h2>
-        <p class="section-intro">
-          One record represents all replacement tracks for one YouTube video.
-          Existing one-blob records are interpreted as a single-track record
-          when loaded or listed.
-        </p>
-        <div class="card schema">
-          <table>
-            <thead>
-              <tr>
-                <th>Field</th>
-                <th>Role</th>
-                <th>Storage behavior</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><code>videoId</code></td>
-                <td>Object-store key</td>
-                <td>Uniquely selects the replacement for a YouTube video.</td>
-              </tr>
-              <tr>
-                <td><code>name</code></td>
-                <td>Display name</td>
-                <td>Usually the uploaded file or archive name.</td>
-              </tr>
-              <tr>
-                <td><code>tracks[]</code></td>
-                <td>Replacement audio</td>
-                <td>
-                  Each entry stores a track name and <code>Blob</code>; summary
-                  size is the sum of all blob sizes.
-                </td>
-              </tr>
-              <tr>
-                <td><code>videoTitle?</code></td>
-                <td>Library label</td>
-                <td>Captured from YouTube metadata when audio is selected.</td>
-              </tr>
-              <tr>
-                <td><code>savedAt?</code></td>
-                <td>Recency</td>
-                <td>
-                  New records use <code>Date.now()</code>; listings sort
-                  descending, with legacy records last.
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </section>
 
@@ -826,9 +751,9 @@
             <h3>YouTube ISOLATED world</h3>
             <p>
               MAIN world cannot access <code>chrome.runtime</code>. The relay
-              can, so it calls <code>chrome.runtime.getURL</code> and mounts the
-              web-accessible extension frame. After this bootstrap, storage RPC
-              goes directly between MAIN and the frame.
+              forwards the URL request to the extension background. MAIN then
+              mounts the web-accessible extension frame, and storage RPC goes
+              directly between MAIN and that frame.
             </p>
           </article>
           <article class="card boundary extension">
@@ -842,8 +767,8 @@
           <article class="card boundary extension">
             <h3>Extension tab</h3>
             <p>
-              Shares the storage origin with the hidden frame and directly owns
-              library-only operations such as listing and deletion.
+              Is an ordinary same-origin IndexedDB client. Listing and deletion
+              require no bridge or special runtime path.
             </p>
           </article>
           <article class="card boundary store">
@@ -857,9 +782,8 @@
           <article class="card boundary store">
             <h3>No service worker hop</h3>
             <p>
-              The background worker is not part of this path. It remains
-              responsible for privileged tab creation and network fetching, not
-              replacement-audio persistence.
+              The background worker only resolves the extension frame URL during
+              bootstrap. Replacement-audio data never passes through it.
             </p>
           </article>
         </div>
