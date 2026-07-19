@@ -119,8 +119,8 @@ export function Panel({
   }, [audioGroup, selectedAudio]);
 
   const chooseFileMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const resolved = await resolveAudioFiles(file);
+    mutationFn: async (files: File[]) => {
+      const resolved = await resolveAudioFiles(files);
       playerSync.disable();
       const nextAudio = {
         videoId,
@@ -351,7 +351,7 @@ function AudioDrop({
   audio: StoredAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
-  onChoose(file: File): void;
+  onChoose(files: File[]): void;
 }) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -375,9 +375,9 @@ function AudioDrop({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          const file = event.dataTransfer.files[0];
-          if (file) {
-            onChoose(file);
+          const files = [...event.dataTransfer.files];
+          if (files.length > 0) {
+            onChoose(files);
           }
         }}
       >
@@ -411,7 +411,7 @@ function AudioDrop({
           </>
         ) : (
           <span className="text-xs">
-            Drop audio or a stem ZIP, or{" "}
+            Drop audio files or a stem ZIP, or{" "}
             <span className="text-foreground">browse</span>
           </span>
         )}
@@ -421,11 +421,12 @@ function AudioDrop({
         aria-label="Replacement audio file"
         type="file"
         accept="audio/*,.zip,application/zip"
+        multiple
         hidden
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            onChoose(file);
+          const files = [...(event.target.files ?? [])];
+          if (files.length > 0) {
+            onChoose(files);
           }
           event.target.value = "";
         }}
