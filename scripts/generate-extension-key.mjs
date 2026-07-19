@@ -1,7 +1,9 @@
 import { createHash, generateKeyPairSync } from "node:crypto";
 
 // https://developer.chrome.com/docs/extensions/reference/manifest/key
-// https://developer.chrome.com/docs/extensions/how-to/distribute/host-on-linux
+// Chromium exports SubjectPublicKeyInfo bytes and derives the ID from their hash:
+// https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/crx_file/crx_creator.cc
+// https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/crx_file/id_util.cc
 const { publicKey } = generateKeyPairSync("rsa", {
   modulusLength: 2048,
   publicKeyEncoding: { type: "spki", format: "der" },
