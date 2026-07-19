@@ -2,17 +2,25 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { BackgroundRpcHandlers } from "./background.ts";
+import type { ExtensionStorageRpcHandlers } from "./extension-storage-page.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
-import { createExtensionStorageRpc } from "./lib/rpc/extension-storage.ts";
+import { createHiddenIframeRpcOnLoad } from "./lib/rpc/iframe.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
 import { videoStorage } from "./lib/storage.ts";
+import { once } from "./lib/utils.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
 import contentCss from "./ui/content.css?inline";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
-const storageRpcPromise = createExtensionStorageRpc(backgroundRpc);
+const initExtensionStorageRpc = once(async () => {
+  const { url } = await backgroundRpc.getExtensionStorageUrl({});
+  return createHiddenIframeRpcOnLoad<ExtensionStorageRpcHandlers>({
+    src: url,
+    timeoutMs: 15_000,
+  });
+});
 
 interface MountedController {
   cleanup(): void;
@@ -173,11 +181,11 @@ function App({ videoId }: { videoId: string }) {
             onError={setError}
             onGenerate={() => void openGenerator()}
             loadAudio={async (nextVideoId) => {
-              const rpc = await storageRpcPromise;
+              const rpc = await initExtensionStorageRpc();
               return rpc.loadAudio({ videoId: nextVideoId });
             }}
             storeAudio={async (audio) => {
-              const rpc = await storageRpcPromise;
+              const rpc = await initExtensionStorageRpc();
               await rpc.storeAudio({ audio });
             }}
           />

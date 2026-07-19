@@ -695,9 +695,9 @@
                   <code>content.tsx</code> runs in MAIN world and cannot call
                   <code>chrome.runtime.getURL</code>. The ISOLATED-world
                   <code>entry.relay.ts</code> can, so it resolves the extension
-                  URL. <code>lib/rpc/extension-storage.ts</code> then owns
-                  hidden frame creation and load handling. The relay is not part
-                  of later storage RPC calls.
+                  URL. <code>content.tsx</code> then uses the generic iframe RPC
+                  helper for hidden frame creation and load handling. The relay
+                  is not part of later storage RPC calls.
                 </p>
               </li>
               <li>
@@ -872,8 +872,7 @@
         implementation: <code>src/content.tsx</code>,
         <code>src/lib/rpc/entry.relay.ts</code>,
         <code>src/extension-storage-page.ts</code>,
-        <code>src/lib/rpc/extension-storage.ts</code>,
-        <code>src/lib/storage.ts</code>, and
+        <code>src/lib/rpc/iframe.ts</code>, <code>src/lib/storage.ts</code>, and
         <code>src/extension-page.tsx</code>.
       </div>
     </footer>
