@@ -6,8 +6,8 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Keep CI artifacts on one extension origin so browser storage survives updates.
-// Changing this public key changes the extension ID (gkkibdaednnfaiegidnaafjagffcoafh).
+// Generated with `pnpm generate-extension-key`. Changing this key changes the CI
+// extension ID and disconnects existing extension-origin storage.
 const CI_EXTENSION_PUBLIC_KEY =
   "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApf9N5qRz9dh1sE4EIb/8a8GlfJBZsxPa/SCaSLGST4Eg3se/0y/l9jWuHmKTHfLs9g0XWxh8uUQgh/OwsbzBZvwzzuv8GuTWZEbRfiFHpSDZm0ktpks1aS12OJps08W7X3yWvlrmNC+KNhjZjnzrqPFyavp3KL1HFD2rcHSE9tM4bCaPyoxbFDkvknS/kapBRQDFYT68c0bgEX1B6Uyrv8tSLYNRsWTBz4hk6TK8/y+V2sOqO3dr9zf1eZZdFiKHYzLb/QoWCoPWqBk5+rKZiVxckLyoNC1gKc5AgrosUeNDchkIy3SGjCT1E4G2AIgKoL4TLxwb4qICPXTh05mQPQIDAQAB";
 
