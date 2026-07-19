@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { VideoSyncSource } from "../lib/player-sync.ts";
 import type { SelectedAudio } from "../lib/storage.ts";
 import { ErrorPanel, Fab, Panel } from "./audio-replacement.tsx";
-import { StemGeneratorMockup } from "./stem-generator-mockup.tsx";
+import { ExtensionPagePreview } from "./extension-page-preview.tsx";
 
 export class FakeVideo extends EventTarget implements VideoSyncSource {
   currentTime = 0;
@@ -69,7 +69,7 @@ export function PreviewApp() {
   if (mockup) {
     return (
       <>
-        <StemGeneratorMockup />
+        <ExtensionPagePreview />
         <button
           className="fixed top-3 right-3 z-20 cursor-pointer rounded-md border border-button-border bg-panel px-2.5 py-1.5 text-xs text-foreground shadow-lg hover:bg-button-hover"
           type="button"
