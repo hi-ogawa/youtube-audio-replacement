@@ -2,6 +2,9 @@ import path from "node:path";
 import { chromium, expect, test } from "@playwright/test";
 
 test("stores replacement audio and survives YouTube navigation", async () => {
+  const startedAt = Date.now();
+  const checkpoint = (label: string) =>
+    console.log(`[${Date.now() - startedAt}ms] ${label}`);
   const extensionPath = path.resolve("dist/extension");
 
   await using disposables = new AsyncDisposableStack();
@@ -17,18 +20,20 @@ test("stores replacement audio and survives YouTube navigation", async () => {
   const page = await context.newPage();
   await page.goto("https://www.youtube.com/watch?v=7GU_VQfgMT0", {
     waitUntil: "domcontentloaded",
-    timeout: 30_000,
   });
+  checkpoint("initial navigation");
 
   const host = page.locator("#youtube-audio-replacement-host");
-  await expect(host).toBeAttached({ timeout: 15_000 });
+  await expect(host).toBeAttached();
   await host.getByRole("button", { name: "Show stem mixer controls" }).click();
   await expect(host.getByText("Stem mixer", { exact: true })).toBeVisible();
+  checkpoint("mixer opened");
 
   await host
     .locator('input[type="file"]')
     .setInputFiles(path.resolve("fixtures/sine-2s.wav"));
   await expect(host.getByText("sine-2s.wav", { exact: true })).toBeVisible();
+  checkpoint("file selected");
   await expect
     .poll(() => {
       const storageFrame = page
@@ -46,14 +51,27 @@ test("stores replacement audio and survives YouTube navigation", async () => {
       },
       savedAt: expect.any(Number),
     });
+  checkpoint("extension storage verified");
+
+  await page.reload({
+    waitUntil: "domcontentloaded",
+  });
+  checkpoint("page reloaded");
+  const reloadedHost = page.locator("#youtube-audio-replacement-host");
+  await expect(reloadedHost).toBeAttached();
+  checkpoint("content UI remounted");
+  await expect(
+    reloadedHost.getByText("sine-2s.wav", { exact: true }),
+  ).toBeVisible();
+  checkpoint("stored audio restored");
 
   await page.evaluate(() => {
     document.dispatchEvent(new Event("yt-navigate-start"));
     history.pushState({}, "", "/watch?v=spa-navigation-test");
     document.dispatchEvent(new Event("yt-navigate-finish"));
   });
-  await expect(host).toBeAttached();
+  await expect(reloadedHost).toBeAttached();
   await expect(
-    host.getByRole("button", { name: "Show stem mixer controls" }),
+    reloadedHost.getByRole("button", { name: "Show stem mixer controls" }),
   ).toBeVisible();
 });
