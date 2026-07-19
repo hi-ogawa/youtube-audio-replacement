@@ -1,8 +1,8 @@
 import type { ReplacementAudio } from "./player-sync.ts";
 import type {
+  SelectedAudio,
   StoredMixerState,
   StoredMixerTrackState,
-  StoredAudio,
   StoredAudioTrack,
 } from "./storage.ts";
 
@@ -26,7 +26,7 @@ interface AudioGroupNotifications {
 }
 
 export function createMixerState(
-  audio: StoredAudio | undefined,
+  audio: SelectedAudio | undefined,
   stored: StoredMixerState,
 ): MixerState {
   return deriveMixerState(

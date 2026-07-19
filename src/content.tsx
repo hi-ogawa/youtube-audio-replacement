@@ -179,9 +179,9 @@ function App({ videoId }: { videoId: string }) {
             getVideo={getMainVideo}
             onError={setError}
             onGenerate={() => void openGenerator()}
-            loadAudio={async (nextVideoId) => {
+            loadAudio={async () => {
               const rpc = await initExtensionStorageRpc();
-              return rpc.loadAudio({ videoId: nextVideoId });
+              return rpc.loadAudio({ videoId });
             }}
             storeAudio={async (audio) => {
               const rpc = await initExtensionStorageRpc();

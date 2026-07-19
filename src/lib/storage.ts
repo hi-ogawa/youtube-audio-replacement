@@ -5,10 +5,13 @@ export interface StoredAudioTrack {
   blob: Blob;
 }
 
-export interface StoredAudio {
+export interface SelectedAudio {
   videoId: string;
   name: string;
   tracks: StoredAudioTrack[];
+}
+
+export interface StoredAudio extends SelectedAudio {
   videoTitle?: string;
   savedAt?: number;
 }
@@ -92,7 +95,7 @@ export const videoStorage = {
 };
 
 export const audioStorage = {
-  async loadAudio(videoId: string): Promise<StoredAudio | null> {
+  async loadAudio(videoId: string): Promise<StoredAudio | undefined> {
     const stored = await audioStore.get(videoId);
     if (!stored || "tracks" in stored) {
       return stored;
