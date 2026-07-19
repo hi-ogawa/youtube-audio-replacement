@@ -16,7 +16,6 @@ test("basic", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="trace-preview"
-          videoTitle="Trace preview"
           getVideo={() => video}
           initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
@@ -73,7 +72,6 @@ test("imports and mixes every audio file in a ZIP", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="zip-preview"
-          videoTitle="ZIP preview"
           getVideo={() => video}
           initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
@@ -133,4 +131,32 @@ test("imports and mixes every audio file in a ZIP", async () => {
     }),
   );
   await page.mark("stem mixer");
+});
+
+test("imports multiple audio files", async () => {
+  const screen = await render(
+    <div className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
+      <QueryClientProvider client={new QueryClient()}>
+        <Panel
+          videoId="multi-file-preview"
+          getVideo={() => new FakeVideo()}
+          initialSelectedAudio={undefined}
+          onSelectAudio={vi.fn()}
+          onGenerate={vi.fn()}
+          onError={vi.fn()}
+        />
+      </QueryClientProvider>
+    </div>,
+  );
+
+  const files = ["vocals", "drums", "bass", "other"].map(
+    (name) => new File([name], `${name}.wav`, { type: "audio/wav" }),
+  );
+  await userEvent.upload(
+    screen.getByLabelText("Replacement audio file"),
+    files,
+  );
+
+  await expect.element(screen.getByLabelText("Other volume")).toBeVisible();
+  await page.mark("multiple audio files");
 });

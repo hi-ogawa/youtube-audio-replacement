@@ -33,6 +33,23 @@ export default defineConfig({
         },
       },
     },
+    extensionStorage: {
+      consumer: "client",
+      build: {
+        outDir: "dist/extension",
+        emptyOutDir: false,
+        copyPublicDir: false,
+        rolldownOptions: {
+          input: {
+            "extension-storage": "./src/extension-storage.html",
+          },
+          output: {
+            codeSplitting: false,
+            entryFileNames: "extension-storage.js",
+          },
+        },
+      },
+    },
     content: scriptBuild("content", "./src/content.tsx"),
     rpcRelay: scriptBuild("rpc-relay", "./src/lib/rpc/entry.relay.ts"),
     embedContent: scriptBuild("embed-content", "./src/embed-content.ts"),
@@ -41,6 +58,7 @@ export default defineConfig({
   builder: {
     async buildApp(builder) {
       await builder.build(builder.environments.extensionPage);
+      await builder.build(builder.environments.extensionStorage);
       await builder.build(builder.environments.content);
       await builder.build(builder.environments.rpcRelay);
       await builder.build(builder.environments.embedContent);

@@ -12,6 +12,8 @@ export class ExtensionStorageRpcHandlers {
 }
 
 function main() {
+  window.__e2e = { audioStorage };
+
   // MAIN-world page code already had access to YouTube-origin IndexedDB. This
   // bridge changes the storage origin, not the page-origin trust boundary.
   registerWindowRpcHandlers(new ExtensionStorageRpcHandlers(), {

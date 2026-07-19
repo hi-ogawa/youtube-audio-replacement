@@ -11,14 +11,14 @@ export class IdbStore<T> {
     },
   ) {}
 
-  async get(key: IDBValidKey): Promise<T | null> {
+  async get(key: IDBValidKey): Promise<T | undefined> {
     const database = await this.openDatabase();
     return new Promise((resolve, reject) => {
       const request = database
         .transaction(this.options.storeName, "readonly")
         .objectStore(this.options.storeName)
         .get(key);
-      request.onsuccess = () => resolve((request.result as T) ?? null);
+      request.onsuccess = () => resolve(request.result as T | undefined);
       request.onerror = () => reject(request.error);
     });
   }

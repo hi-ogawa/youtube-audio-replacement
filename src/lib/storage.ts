@@ -1,23 +1,29 @@
 import { IdbStore } from "./idb.ts";
 
+// These abstractions run in different origins. videoStorage is called by the
+// YouTube MAIN-world content script, so its localStorage belongs to youtube.com.
+// audioStorage is called by extension-storage-page.ts, so its IndexedDB belongs
+// to the extension origin and is shared by extension pages.
+
 export interface StoredAudioTrack {
   name: string;
   blob: Blob;
 }
 
-export interface StoredAudio {
+export interface SelectedAudio {
   videoId: string;
   name: string;
   tracks: StoredAudioTrack[];
-  videoTitle?: string;
-  savedAt?: number;
 }
 
-interface LegacyStoredAudio {
-  videoId: string;
-  blob: Blob;
-  name: string;
-  videoTitle?: string;
+export interface StoredVideoMetadata {
+  title?: string;
+  channelName?: string;
+  durationSeconds?: number;
+}
+
+export interface StoredAudio extends SelectedAudio {
+  videoMetadata?: StoredVideoMetadata;
   savedAt?: number;
 }
 
@@ -25,7 +31,7 @@ export interface StoredAudioSummary {
   videoId: string;
   name: string;
   size: number;
-  videoTitle?: string;
+  videoMetadata?: StoredVideoMetadata;
   savedAt?: number;
 }
 
@@ -52,7 +58,7 @@ const DEFAULT_VIDEO_STATE: VideoState = {
   mixer: {},
 };
 
-const audioStore = new IdbStore<StoredAudio | LegacyStoredAudio>({
+const audioStore = new IdbStore<StoredAudio>({
   databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
@@ -100,37 +106,16 @@ export const videoStorage = {
 };
 
 export const audioStorage = {
-  async loadAudio(videoId: string): Promise<StoredAudio | null> {
-    const stored = await audioStore.get(videoId);
-    if (!stored || "tracks" in stored) {
-      return stored;
-    }
-    return {
-      videoId: stored.videoId,
-      name: stored.name,
-      videoTitle: stored.videoTitle,
-      savedAt: stored.savedAt,
-      tracks: [
-        {
-          name: stored.name,
-          blob: stored.blob,
-        },
-      ],
-    };
-  },
+  loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
   async listAudio(): Promise<StoredAudioSummary[]> {
-    const audio = await audioStore.getAll();
-    return audio
-      .map((stored) => ({
-        videoId: stored.videoId,
-        name: stored.name,
-        size:
-          "tracks" in stored
-            ? stored.tracks.reduce((total, track) => total + track.blob.size, 0)
-            : stored.blob.size,
-        videoTitle: stored.videoTitle,
-        savedAt: stored.savedAt,
+    return (await audioStore.getAll())
+      .map((audio) => ({
+        videoId: audio.videoId,
+        name: audio.name,
+        size: audio.tracks.reduce((total, track) => total + track.blob.size, 0),
+        videoMetadata: audio.videoMetadata,
+        savedAt: audio.savedAt,
       }))
       .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0));
   },

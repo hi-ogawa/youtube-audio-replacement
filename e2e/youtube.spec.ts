@@ -1,7 +1,7 @@
 import path from "node:path";
 import { chromium, expect, test } from "@playwright/test";
 
-test("stores replacement audio, lists it, and survives YouTube navigation", async () => {
+test("stores replacement audio and survives YouTube navigation", async () => {
   const extensionPath = path.resolve("dist/extension");
 
   await using disposables = new AsyncDisposableStack();
@@ -34,23 +34,18 @@ test("stores replacement audio, lists it, and survives YouTube navigation", asyn
       const storageFrame = page
         .frames()
         .find((frame) => frame.url().includes("src/extension-storage.html"));
-      return storageFrame?.evaluate(async () => {
-        const database = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open("youtube-audio-replacement", 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        return new Promise<string | undefined>((resolve, reject) => {
-          const request = database
-            .transaction("audio", "readonly")
-            .objectStore("audio")
-            .get("7GU_VQfgMT0");
-          request.onsuccess = () => resolve(request.result?.name);
-          request.onerror = () => reject(request.error);
-        });
-      });
+      return storageFrame?.evaluate(() =>
+        window.__e2e?.audioStorage.loadAudio("7GU_VQfgMT0"),
+      );
     })
-    .toBe("sine-2s.wav");
+    .toMatchObject({
+      name: "sine-2s.wav",
+      videoMetadata: {
+        title: expect.any(String),
+        channelName: expect.any(String),
+      },
+      savedAt: expect.any(Number),
+    });
 
   const generatorPromise = context.waitForEvent("page");
   await host.getByRole("button", { name: "Prepare stems" }).click();
@@ -58,9 +53,7 @@ test("stores replacement audio, lists it, and survives YouTube navigation", asyn
   await generator.getByRole("button", { name: "Saved videos" }).click();
   await expect(
     generator.getByText("sine-2s.wav", { exact: false }),
-  ).toBeVisible({
-    timeout: 15_000,
-  });
+  ).toBeVisible({ timeout: 15_000 });
   await generator.close();
 
   await page.evaluate(() => {

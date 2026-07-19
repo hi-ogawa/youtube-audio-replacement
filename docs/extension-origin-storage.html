@@ -376,12 +376,8 @@
             >Repository</a
           >
           <a
-            href="https://github.com/hi-ogawa/youtube-audio-replacement/pull/14"
-            >Saved videos PR #14</a
-          >
-          <a
-            href="https://github.com/hi-ogawa/youtube-audio-replacement/tree/55d0a9fd47f0581f279e263b818a051576876e4a"
-            >Implementation snapshot</a
+            href="https://github.com/hi-ogawa/youtube-audio-replacement/issues/17"
+            >Storage issue #17</a
           >
           <a href="./extension-architecture.html"
             >General extension architecture</a
@@ -637,14 +633,14 @@
               fill="#eaf0ff"
               stroke="#3759a6"
             />
-            <text x="765" y="106" class="title">extension-page.tsx</text>
+            <text x="765" y="106" class="title">Future extension clients</text>
             <text x="765" y="131" class="sub">
               chrome-extension://&lt;id&gt;/index.html
             </text>
             <text x="765" y="155" class="sub">
-              listAudio / deleteAudio direct
+              direct same-origin IndexedDB access
             </text>
-            <text x="765" y="179" class="sub">Saved videos UI</text>
+            <text x="765" y="179" class="sub">no iframe or RPC bridge</text>
 
             <rect
               class="box"
@@ -671,7 +667,7 @@
             <path class="store" d="M620 365 C670 365 680 390 720 390" />
             <text x="635" y="350" class="label">get / put</text>
             <path class="store" d="M890 205 V335" />
-            <text x="904" y="280" class="label">getAll / delete</text>
+            <text x="904" y="280" class="label">normal client access</text>
           </svg>
         </div>
       </section>
@@ -679,7 +675,7 @@
       <section id="operations">
         <h2><a href="#operations">Watch-page flow</a></h2>
         <p class="section-intro">
-          Only watch-page access needs a bridge. The extension tab is an
+          Only watch-page access needs a bridge. Any future extension page is an
           ordinary client of its own origin's IndexedDB.
         </p>
         <div class="flow-grid">
@@ -722,12 +718,12 @@
             </ol>
           </article>
           <article class="card flow-card">
-            <span class="tag extension">Extension tab</span>
+            <span class="tag extension">Extension page</span>
             <h3>Normal client-side storage access</h3>
             <p style="margin: 18px 0 0; color: var(--muted); font-size: 0.9rem">
-              <code>extension-page.tsx</code> runs under the extension origin,
-              so it calls <code>audioStorage</code> directly for library reads
-              and deletion. This path needs no iframe or RPC bridge.
+              Code running under the extension origin can call
+              <code>audioStorage</code> directly. This path needs no iframe or
+              RPC bridge and does not depend on a particular UI feature.
             </p>
           </article>
         </div>
@@ -765,7 +761,7 @@
             </p>
           </article>
           <article class="card boundary extension">
-            <h3>Extension tab</h3>
+            <h3>Extension pages</h3>
             <p>
               Is an ordinary same-origin IndexedDB client. Listing and deletion
               require no bridge or special runtime path.
@@ -792,12 +788,10 @@
 
     <footer>
       <div class="shell">
-        Mapped against PR #14 commit <code>55d0a9f</code>. Relevant
-        implementation: <code>src/content.tsx</code>,
-        <code>src/lib/rpc/entry.relay.ts</code>,
+        Architecture for issue <code>#17</code>. Relevant implementation:
+        <code>src/content.tsx</code>, <code>src/lib/rpc/entry.relay.ts</code>,
         <code>src/extension-storage-page.ts</code>,
-        <code>src/lib/rpc/iframe.ts</code>, <code>src/lib/storage.ts</code>, and
-        <code>src/extension-page.tsx</code>.
+        <code>src/lib/rpc/iframe.ts</code>, and <code>src/lib/storage.ts</code>.
       </div>
     </footer>
   </body>

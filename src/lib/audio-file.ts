@@ -22,7 +22,28 @@ export interface ResolvedAudioSet {
   tracks: ResolvedAudioTrack[];
 }
 
-export async function resolveAudioFiles(file: File): Promise<ResolvedAudioSet> {
+export async function resolveAudioFiles(
+  files: File[],
+): Promise<ResolvedAudioSet> {
+  if (files.length === 0) {
+    throw new Error("No audio file was selected.");
+  }
+
+  if (files.length > 1) {
+    if (files.some((file) => file.name.toLowerCase().endsWith(".zip"))) {
+      throw new Error("Choose either one ZIP file or multiple audio files.");
+    }
+    const names = new Set(files.map((file) => file.name));
+    if (names.size !== files.length) {
+      throw new Error("Selected audio files must have unique names.");
+    }
+    return {
+      name: `${files[0].name} + ${files.length - 1} more`,
+      tracks: files.map((file) => ({ name: file.name, file })),
+    };
+  }
+
+  const file = files[0];
   if (!file.name.toLowerCase().endsWith(".zip")) {
     return {
       name: file.name,

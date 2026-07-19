@@ -6,7 +6,7 @@ import type { ExtensionStorageRpcHandlers } from "./extension-storage-page.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
 import { createHiddenIframeRpcOnLoad } from "./lib/rpc/iframe.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
-import { videoStorage } from "./lib/storage.ts";
+import { type StoredVideoMetadata, videoStorage } from "./lib/storage.ts";
 import { once } from "./lib/utils.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
 import contentCss from "./ui/content.css?inline";
@@ -27,6 +27,11 @@ interface MountedController {
 }
 
 interface YouTubePlayer extends HTMLElement {
+  getVideoData?(): {
+    title?: string;
+    author?: string;
+    length_seconds?: number | string;
+  };
   getVolume?(): number;
   isMuted?(): boolean;
   mute?(): void;
@@ -127,8 +132,23 @@ function getMainVideo() {
   if (!video) {
     return undefined;
   }
-  const player = document.querySelector<YouTubePlayer>("#movie_player");
-  return new YouTubeVideo(video, player);
+  return new YouTubeVideo(video, getYouTubePlayer());
+}
+
+function getYouTubePlayer() {
+  return document.querySelector<YouTubePlayer>("#movie_player");
+}
+
+function getVideoMetadata(): StoredVideoMetadata {
+  const details = getYouTubePlayer()?.getVideoData?.();
+  const durationSeconds = Number(details?.length_seconds);
+  return {
+    title: details?.title,
+    channelName: details?.author || undefined,
+    durationSeconds: Number.isFinite(durationSeconds)
+      ? durationSeconds
+      : undefined,
+  };
 }
 
 function App({ videoId }: { videoId: string }) {
@@ -176,31 +196,28 @@ function App({ videoId }: { videoId: string }) {
         <div className={open ? "pointer-events-auto" : "hidden"}>
           <StoredPanel
             videoId={videoId}
-            videoTitle={getVideoTitle()}
             getVideo={getMainVideo}
             onError={setError}
             onGenerate={() => void openGenerator()}
-            loadAudio={async (nextVideoId) => {
+            loadAudio={async () => {
               const rpc = await initExtensionStorageRpc();
-              return rpc.loadAudio({ videoId: nextVideoId });
+              return rpc.loadAudio({ videoId });
             }}
             storeAudio={async (audio) => {
               const rpc = await initExtensionStorageRpc();
-              await rpc.storeAudio({ audio });
+              await rpc.storeAudio({
+                audio: {
+                  ...audio,
+                  videoMetadata: getVideoMetadata(),
+                  savedAt: Date.now(),
+                },
+              });
             }}
           />
         </div>
       </div>
       <Fab open={open} shifted={zamakPresent} onClick={toggleOpen} />
     </>
-  );
-}
-
-function getVideoTitle() {
-  return (
-    document
-      .querySelector<HTMLElement>("h1.ytd-watch-metadata yt-formatted-string")
-      ?.textContent?.trim() || document.title.replace(/\s*-\s*YouTube$/, "")
   );
 }
 

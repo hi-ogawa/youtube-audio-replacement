@@ -10,14 +10,16 @@ test("populated library", async () => {
       videos={[
         {
           videoId: "YsmSk0cZa6w",
-          videoTitle: "Bass cover with a deliberately long video title",
+          videoMetadata: {
+            title: "Bass cover with a deliberately long video title",
+          },
           name: "bass-and-drums.zip",
           size: 38_400_000,
           savedAt: Date.UTC(2026, 6, 17),
         },
         {
           videoId: "7GU_VQfgMT0",
-          videoTitle: "Live session rehearsal",
+          videoMetadata: { title: "Live session rehearsal" },
           name: "vocals.wav",
           size: 12_800_000,
           savedAt: Date.UTC(2026, 6, 14),

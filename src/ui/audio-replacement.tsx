@@ -11,14 +11,13 @@ import {
 } from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
 import {
-  type StoredAudio,
+  type SelectedAudio,
   type StoredMixerTrackState,
   videoStorage,
 } from "../lib/storage.ts";
 
 export function StoredPanel({
   videoId,
-  videoTitle,
   getVideo,
   onError,
   onGenerate,
@@ -26,18 +25,17 @@ export function StoredPanel({
   storeAudio,
 }: {
   videoId: string;
-  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
   onGenerate(): void;
-  loadAudio(videoId: string): Promise<StoredAudio | null>;
-  storeAudio(audio: StoredAudio): Promise<void>;
+  loadAudio(): Promise<SelectedAudio | undefined>;
+  storeAudio(audio: SelectedAudio): Promise<void>;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
-        return await loadAudio(videoId);
+        return (await loadAudio()) ?? null;
       } catch (error) {
         console.error(error);
         onError("Saved audio is unavailable. You can still choose a file.");
@@ -57,7 +55,6 @@ export function StoredPanel({
   return (
     <Panel
       videoId={videoId}
-      videoTitle={videoTitle}
       getVideo={getVideo}
       initialSelectedAudio={storedAudioQuery.data ?? undefined}
       onSelectAudio={storeAudioMutation.mutate}
@@ -69,7 +66,6 @@ export function StoredPanel({
 
 export function Panel({
   videoId,
-  videoTitle,
   getVideo,
   initialSelectedAudio,
   onSelectAudio,
@@ -77,10 +73,9 @@ export function Panel({
   onGenerate,
 }: {
   videoId: string;
-  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
-  initialSelectedAudio?: StoredAudio;
-  onSelectAudio(audio: StoredAudio): void;
+  initialSelectedAudio?: SelectedAudio;
+  onSelectAudio(audio: SelectedAudio): void;
   onError(message: string): void;
   onGenerate(): void;
 }) {
@@ -128,8 +123,8 @@ export function Panel({
   }, [audioGroup, selectedAudio]);
 
   const chooseFileMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const resolved = await resolveAudioFiles(file);
+    mutationFn: async (files: File[]) => {
+      const resolved = await resolveAudioFiles(files);
       playerSync.disable();
       const nextAudio = {
         videoId,
@@ -138,8 +133,6 @@ export function Panel({
           name: track.name,
           blob: track.file,
         })),
-        videoTitle,
-        savedAt: Date.now(),
       };
       const nextMixerState = createMixerState(nextAudio, {});
       setSelectedAudio(nextAudio);
@@ -359,10 +352,10 @@ function AudioDrop({
   duration,
   onChoose,
 }: {
-  audio: StoredAudio | undefined;
+  audio: SelectedAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
-  onChoose(file: File): void;
+  onChoose(files: File[]): void;
 }) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -386,9 +379,9 @@ function AudioDrop({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          const file = event.dataTransfer.files[0];
-          if (file) {
-            onChoose(file);
+          const files = [...event.dataTransfer.files];
+          if (files.length > 0) {
+            onChoose(files);
           }
         }}
       >
@@ -422,7 +415,7 @@ function AudioDrop({
           </>
         ) : (
           <span className="text-xs">
-            Drop audio or a stem ZIP, or{" "}
+            Drop audio files or a stem ZIP, or{" "}
             <span className="text-foreground">browse</span>
           </span>
         )}
@@ -432,11 +425,12 @@ function AudioDrop({
         aria-label="Replacement audio file"
         type="file"
         accept="audio/*,.zip,application/zip"
+        multiple
         hidden
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) {
-            onChoose(file);
+          const files = [...(event.target.files ?? [])];
+          if (files.length > 0) {
+            onChoose(files);
           }
           event.target.value = "";
         }}

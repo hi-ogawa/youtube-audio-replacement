@@ -57,7 +57,7 @@ export function SavedVideosView({
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate font-semibold">
-                    {video.videoTitle || video.videoId}
+                    {video.videoMetadata?.title || video.videoId}
                   </h2>
                   <p className="mt-1 truncate text-sm text-muted-foreground">
                     {video.name} / {formatBytes(video.size)}
@@ -77,12 +77,12 @@ export function SavedVideosView({
                   <button
                     className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-button-border text-muted-foreground hover:bg-button-hover hover:text-error disabled:cursor-default disabled:opacity-50"
                     type="button"
-                    aria-label={`Delete saved audio for ${video.videoTitle || video.videoId}`}
+                    aria-label={`Delete saved audio for ${video.videoMetadata?.title || video.videoId}`}
                     disabled={deletingVideoId === video.videoId}
                     onClick={() => {
                       if (
                         window.confirm(
-                          `Delete saved replacement audio for ${video.videoTitle || video.videoId}?`,
+                          `Delete saved replacement audio for ${video.videoMetadata?.title || video.videoId}?`,
                         )
                       ) {
                         onDelete(video.videoId);
