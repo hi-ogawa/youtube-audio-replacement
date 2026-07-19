@@ -251,7 +251,7 @@ function MixerTrackRow({
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   const displayName = formatTrackName(track.name);
-  const trackDisabled = !disabled && !track.enabled;
+  const trackDisabled = disabled || !track.enabled;
 
   return (
     <div
