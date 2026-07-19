@@ -5,9 +5,8 @@ test("stores replacement audio and survives YouTube navigation", async () => {
   const startedAt = Date.now();
   const checkpoint = (label: string) =>
     console.log(`[${Date.now() - startedAt}ms] ${label}`);
-  const extensionPath = path.resolve("dist/extension");
 
-  await using disposables = new AsyncDisposableStack();
+  const extensionPath = path.resolve("dist/extension");
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     args: [
@@ -15,6 +14,7 @@ test("stores replacement audio and survives YouTube navigation", async () => {
       `--load-extension=${extensionPath}`,
     ],
   });
+  await using disposables = new AsyncDisposableStack();
   disposables.defer(() => context.close());
 
   const page = await context.newPage();
@@ -28,6 +28,10 @@ test("stores replacement audio and survives YouTube navigation", async () => {
   await host.getByRole("button", { name: "Show stem mixer controls" }).click();
   await expect(host.getByText("Stem mixer", { exact: true })).toBeVisible();
   checkpoint("mixer opened");
+
+  const generatorPromise = context.waitForEvent("page");
+  await host.getByRole("button", { name: "Prepare stems" }).click();
+  const generator = await generatorPromise;
 
   await host
     .locator('input[type="file"]')
@@ -53,26 +57,25 @@ test("stores replacement audio and survives YouTube navigation", async () => {
     });
   checkpoint("extension storage verified");
 
+  await generator.getByRole("button", { name: "Saved videos" }).click();
+  await expect(
+    generator.getByText("sine-2s.wav", { exact: false }),
+  ).toBeVisible();
+  await generator.close();
+
   await page.reload({
     waitUntil: "domcontentloaded",
   });
   checkpoint("page reloaded");
+
   const reloadedHost = page.locator("#youtube-audio-replacement-host");
   await expect(reloadedHost).toBeAttached();
   checkpoint("content UI remounted");
+
   await expect(
     reloadedHost.getByText("sine-2s.wav", { exact: true }),
   ).toBeVisible();
   checkpoint("stored audio restored");
-
-  const generatorPromise = context.waitForEvent("page");
-  await host.getByRole("button", { name: "Prepare stems" }).click();
-  const generator = await generatorPromise;
-  await generator.getByRole("button", { name: "Saved videos" }).click();
-  await expect(
-    generator.getByText("sine-2s.wav", { exact: false }),
-  ).toBeVisible({ timeout: 15_000 });
-  await generator.close();
 
   await page.evaluate(() => {
     document.dispatchEvent(new Event("yt-navigate-start"));
