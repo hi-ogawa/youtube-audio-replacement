@@ -57,8 +57,8 @@ export default defineConfig({
   builder: {
     async buildApp(builder) {
       await builder.build(builder.environments.extensionPage);
-      await builder.build(builder.environments.content);
       await builder.build(builder.environments.extensionStorage);
+      await builder.build(builder.environments.content);
       await builder.build(builder.environments.rpcRelay);
       await builder.build(builder.environments.embedContent);
       await builder.build(builder.environments.background);
