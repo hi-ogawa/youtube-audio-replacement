@@ -1,20 +1,30 @@
 import { IdbStore } from "./idb.ts";
 
+// These abstractions run in different origins. videoStorage is called by the
+// YouTube MAIN-world content script, so its localStorage belongs to youtube.com.
+// audioStorage is called by extension-storage-page.ts, so its IndexedDB belongs
+// to the extension origin and is shared by extension pages.
+
 export interface StoredAudioTrack {
   name: string;
   blob: Blob;
 }
 
-export interface StoredAudio {
+export interface SelectedAudio {
   videoId: string;
   name: string;
   tracks: StoredAudioTrack[];
 }
 
-interface LegacyStoredAudio {
-  videoId: string;
-  blob: Blob;
-  name: string;
+export interface StoredVideoMetadata {
+  title?: string;
+  channelName?: string;
+  durationSeconds?: number;
+}
+
+export interface StoredAudio extends SelectedAudio {
+  videoMetadata?: StoredVideoMetadata;
+  savedAt?: number;
 }
 
 export interface StoredMixerTrackState {
@@ -40,7 +50,7 @@ const DEFAULT_VIDEO_STATE: VideoState = {
   mixer: {},
 };
 
-const audioStore = new IdbStore<StoredAudio | LegacyStoredAudio>({
+const audioStore = new IdbStore<StoredAudio>({
   databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
@@ -85,22 +95,9 @@ export const videoStorage = {
     } catch {}
     return state;
   },
+};
 
-  async loadAudio(videoId: string): Promise<StoredAudio | null> {
-    const stored = await audioStore.get(videoId);
-    if (!stored || "tracks" in stored) {
-      return stored;
-    }
-    return {
-      videoId: stored.videoId,
-      name: stored.name,
-      tracks: [
-        {
-          name: stored.name,
-          blob: stored.blob,
-        },
-      ],
-    };
-  },
+export const audioStorage = {
+  loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
 };

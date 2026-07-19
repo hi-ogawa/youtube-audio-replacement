@@ -17,7 +17,7 @@ export function serializeParams(
   if (Array.isArray(params)) {
     return params.map((value) => serializeParams(value, register));
   }
-  if (params !== null && typeof params === "object") {
+  if (isPlainObject(params)) {
     return Object.fromEntries(
       Object.entries(params as Record<string, unknown>).map(([key, value]) => [
         key,
@@ -44,7 +44,7 @@ export function deserializeParams(
   if (Array.isArray(params)) {
     return params.map((value) => deserializeParams(value, invoke));
   }
-  if (params !== null && typeof params === "object") {
+  if (isPlainObject(params)) {
     return Object.fromEntries(
       Object.entries(params as Record<string, unknown>).map(([key, value]) => [
         key,
@@ -53,6 +53,14 @@ export function deserializeParams(
     );
   }
   return params;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 type HandlerParams<Handler> = Handler extends (

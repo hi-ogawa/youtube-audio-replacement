@@ -31,6 +31,12 @@ export class BackgroundRpcHandlers {
       data: toBase64(new Uint8Array(await response.arrayBuffer())),
     };
   }
+
+  async getExtensionStorageUrl(_params: Record<string, never>) {
+    return {
+      url: chrome.runtime.getURL("src/extension-storage.html"),
+    };
+  }
 }
 
 async function openGenerator(videoId?: string) {

@@ -2,21 +2,36 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { BackgroundRpcHandlers } from "./background.ts";
+import type { ExtensionStorageRpcHandlers } from "./extension-storage-page.ts";
 import type { VideoSyncSource } from "./lib/player-sync.ts";
+import { createHiddenIframeRpcOnLoad } from "./lib/rpc/iframe.ts";
 import { createRuntimeRelayRpc } from "./lib/rpc/runtime.ts";
-import { videoStorage } from "./lib/storage.ts";
+import { type StoredVideoMetadata, videoStorage } from "./lib/storage.ts";
+import { once } from "./lib/utils.ts";
 import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
 import contentCss from "./ui/content.css?inline";
 
 const HOST_ID = "youtube-audio-replacement-host";
 const queryClient = new QueryClient();
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
+const initExtensionStorageRpc = once(async () => {
+  const { url } = await backgroundRpc.getExtensionStorageUrl({});
+  return createHiddenIframeRpcOnLoad<ExtensionStorageRpcHandlers>({
+    src: url,
+    timeoutMs: 15_000,
+  });
+});
 
 interface MountedController {
   cleanup(): void;
 }
 
 interface YouTubePlayer extends HTMLElement {
+  getVideoData?(): {
+    title?: string;
+    author?: string;
+    length_seconds?: number | string;
+  };
   getVolume?(): number;
   isMuted?(): boolean;
   mute?(): void;
@@ -117,8 +132,23 @@ function getMainVideo() {
   if (!video) {
     return undefined;
   }
-  const player = document.querySelector<YouTubePlayer>("#movie_player");
-  return new YouTubeVideo(video, player);
+  return new YouTubeVideo(video, getYouTubePlayer());
+}
+
+function getYouTubePlayer() {
+  return document.querySelector<YouTubePlayer>("#movie_player");
+}
+
+function getVideoMetadata(): StoredVideoMetadata {
+  const details = getYouTubePlayer()?.getVideoData?.();
+  const durationSeconds = Number(details?.length_seconds);
+  return {
+    title: details?.title,
+    channelName: details?.author || undefined,
+    durationSeconds: Number.isFinite(durationSeconds)
+      ? durationSeconds
+      : undefined,
+  };
 }
 
 function App({ videoId }: { videoId: string }) {
@@ -169,6 +199,20 @@ function App({ videoId }: { videoId: string }) {
             getVideo={getMainVideo}
             onError={setError}
             onGenerate={() => void openGenerator()}
+            loadAudio={async () => {
+              const rpc = await initExtensionStorageRpc();
+              return rpc.loadAudio({ videoId });
+            }}
+            storeAudio={async (audio) => {
+              const rpc = await initExtensionStorageRpc();
+              await rpc.storeAudio({
+                audio: {
+                  ...audio,
+                  videoMetadata: getVideoMetadata(),
+                  savedAt: Date.now(),
+                },
+              });
+            }}
           />
         </div>
       </div>

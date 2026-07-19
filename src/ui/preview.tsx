@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { VideoSyncSource } from "../lib/player-sync.ts";
-import type { StoredAudio } from "../lib/storage.ts";
+import type { SelectedAudio } from "../lib/storage.ts";
 import { ErrorPanel, Fab, Panel } from "./audio-replacement.tsx";
 import { StemGeneratorMockup } from "./stem-generator-mockup.tsx";
 
@@ -14,7 +14,7 @@ export class FakeVideo extends EventTarget implements VideoSyncSource {
 
 const fakeVideo = new FakeVideo();
 
-const previewAudio: StoredAudio = {
+const previewAudio: SelectedAudio = {
   videoId: "preview-video",
   name: "example.stems.zip",
   tracks: [
