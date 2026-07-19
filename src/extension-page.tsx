@@ -3,6 +3,7 @@ import {
   QueryClientProvider,
   useMutation,
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -35,8 +36,12 @@ import {
 } from "./lib/demucs/progress/model.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
+import { audioStorage } from "./lib/storage.ts";
+import { useSearchParam } from "./lib/url-state.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
+import { type ExtensionView, ExtensionPageView } from "./ui/extension-page.tsx";
+import { SavedVideosView } from "./ui/saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
@@ -54,6 +59,25 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
+  const [viewParam, navigateViewParam] = useSearchParam("view");
+  const appView: ExtensionView = viewParam === "saved" ? "saved" : "generator";
+
+  function navigateView(view: ExtensionView) {
+    navigateViewParam(view === "saved" ? "saved" : null);
+  }
+
+  return (
+    <ExtensionPageView view={appView} onViewChange={navigateView}>
+      {appView === "saved" ? (
+        <SavedVideosPage />
+      ) : (
+        <StemGeneratorPage initialInput={initialInput} />
+      )}
+    </ExtensionPageView>
+  );
+}
+
+function StemGeneratorPage({ initialInput }: { initialInput: string }) {
   const [sourceMode, setSourceMode] =
     useState<StemGeneratorSourceMode>("youtube");
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
@@ -356,6 +380,35 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       onSeparate={() => runSeparationMutation.mutate()}
       canSeparate={Boolean(sourceFilesRef.current[sourceMode] && modelSource)}
       results={runSeparationMutation.data}
+    />
+  );
+}
+
+function SavedVideosPage() {
+  const queryClient = useQueryClient();
+  const storedAudioQuery = useQuery({
+    queryKey: ["stored-audio-library"],
+    queryFn: audioStorage.listAudio,
+  });
+  const deleteStoredAudioMutation = useMutation({
+    mutationFn: audioStorage.deleteAudio,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["stored-audio-library"] }),
+  });
+
+  return (
+    <SavedVideosView
+      videos={storedAudioQuery.data ?? []}
+      loading={storedAudioQuery.isPending}
+      error={
+        storedAudioQuery.error
+          ? "Saved videos could not be loaded from browser storage."
+          : deleteStoredAudioMutation.error
+            ? "The saved replacement could not be deleted."
+            : undefined
+      }
+      deletingVideoId={deleteStoredAudioMutation.variables}
+      onDelete={deleteStoredAudioMutation.mutate}
     />
   );
 }
