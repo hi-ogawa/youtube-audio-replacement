@@ -251,10 +251,11 @@ function MixerTrackRow({
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   const displayName = formatTrackName(track.name);
+  const trackDisabled = !disabled && !track.enabled;
 
   return (
     <div
-      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${track.enabled ? "" : "text-muted-foreground"}`}
+      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${trackDisabled ? "text-muted-foreground" : ""}`}
     >
       <span
         className="w-12 shrink-0 truncate text-xs font-semibold"
@@ -263,7 +264,8 @@ function MixerTrackRow({
         {displayName}
       </span>
       <input
-        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default"
+        // TODO: Add explicit dark-mode styling for Chromium's native disabled range.
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default dark:disabled:opacity-65"
         type="range"
         min="0"
         max="100"
