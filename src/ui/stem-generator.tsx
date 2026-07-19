@@ -7,7 +7,6 @@ import {
 import type { Preferences } from "../lib/demucs/preferences.ts";
 import type { RunProgress } from "../lib/demucs/progress/model.ts";
 import { RunProgressPanel } from "../lib/demucs/progress/panel.tsx";
-import { AppHeader } from "./app-header.tsx";
 
 export type StemGeneratorSource = {
   name: string;
@@ -63,7 +62,6 @@ export function StemGeneratorView({
   onSeparate,
   canSeparate,
   results,
-  onOpenSavedVideos,
 }: {
   initialInput: string;
   sourceMode: StemGeneratorSourceMode;
@@ -90,7 +88,6 @@ export function StemGeneratorView({
     outputs: GeneratedFile[];
     archive: GeneratedFile;
   };
-  onOpenSavedVideos(): void;
 }) {
   const [input, setInput] = useState(initialInput);
   const sourceState = sourceStates[sourceMode];
@@ -108,342 +105,333 @@ export function StemGeneratorView({
       : undefined;
 
   return (
-    <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-3xl">
-        <AppHeader view="generator" onViewChange={onOpenSavedVideos} />
-
-        <div className="grid gap-5">
-          <Section
-            number="1"
-            title="Choose audio"
-            description="Select the track you want to separate."
+    <div className="grid gap-5">
+      <Section
+        number="1"
+        title="Choose audio"
+        description="Select the track you want to separate."
+      >
+        <div
+          className="grid grid-cols-2 gap-1 rounded-lg bg-button p-1"
+          role="group"
+          aria-label="Audio source"
+        >
+          <button
+            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${sourceMode === "youtube" ? "bg-panel text-foreground shadow-sm" : "text-muted-foreground hover:bg-button-hover hover:text-foreground"}`}
+            type="button"
+            aria-pressed={sourceMode === "youtube"}
+            disabled={separationPending}
+            onClick={() => {
+              if (sourceMode !== "youtube") {
+                onSourceModeChange("youtube");
+              }
+            }}
           >
-            <div
-              className="grid grid-cols-2 gap-1 rounded-lg bg-button p-1"
-              role="group"
-              aria-label="Audio source"
-            >
-              <button
-                className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${sourceMode === "youtube" ? "bg-panel text-foreground shadow-sm" : "text-muted-foreground hover:bg-button-hover hover:text-foreground"}`}
-                type="button"
-                aria-pressed={sourceMode === "youtube"}
-                disabled={separationPending}
-                onClick={() => {
-                  if (sourceMode !== "youtube") {
-                    onSourceModeChange("youtube");
-                  }
+            YouTube video
+          </button>
+          <button
+            className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${sourceMode === "local" ? "bg-panel text-foreground shadow-sm" : "text-muted-foreground hover:bg-button-hover hover:text-foreground"}`}
+            type="button"
+            aria-pressed={sourceMode === "local"}
+            disabled={separationPending}
+            onClick={() => {
+              if (sourceMode !== "local") {
+                onSourceModeChange("local");
+              }
+            }}
+          >
+            Local file
+          </button>
+        </div>
+
+        <div className="mt-3">
+          {source ? (
+            <SelectedSource
+              mode={sourceMode}
+              source={source}
+              onSave={onSaveSource}
+              onRemove={() => onRemoveSource(sourceMode)}
+              disabled={separationPending}
+            />
+          ) : sourceMode === "youtube" ? (
+            <>
+              <form
+                className="flex flex-col gap-2 sm:flex-row"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  onLoadYouTube(input);
                 }}
               >
-                YouTube video
-              </button>
-              <button
-                className={`cursor-pointer rounded-md px-3 py-2 text-sm font-semibold transition-colors ${sourceMode === "local" ? "bg-panel text-foreground shadow-sm" : "text-muted-foreground hover:bg-button-hover hover:text-foreground"}`}
-                type="button"
-                aria-pressed={sourceMode === "local"}
-                disabled={separationPending}
-                onClick={() => {
-                  if (sourceMode !== "local") {
-                    onSourceModeChange("local");
-                  }
-                }}
-              >
-                Local file
-              </button>
-            </div>
-
-            <div className="mt-3">
-              {source ? (
-                <SelectedSource
-                  mode={sourceMode}
-                  source={source}
-                  onSave={onSaveSource}
-                  onRemove={() => onRemoveSource(sourceMode)}
-                  disabled={separationPending}
-                />
-              ) : sourceMode === "youtube" ? (
-                <>
-                  <form
-                    className="flex flex-col gap-2 sm:flex-row"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      onLoadYouTube(input);
-                    }}
-                  >
-                    <label className="min-w-0 flex-1">
-                      <span className="sr-only">YouTube video ID or URL</span>
-                      <input
-                        className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
-                        value={input}
-                        placeholder="YouTube video ID or URL"
-                        disabled={youtubeSourceLoading}
-                        onChange={(event) => setInput(event.target.value)}
-                      />
-                    </label>
-                    <button
-                      className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60 sm:w-44"
-                      type="submit"
-                      disabled={youtubeSourceLoading}
-                    >
-                      {youtubeSourceLoading
-                        ? youtubeSourceLoadingPercent === undefined
-                          ? "Loading..."
-                          : `Loading ${youtubeSourceLoadingPercent}%`
-                        : "Load from YouTube"}
-                    </button>
-                  </form>
-                  {sourceError && (
-                    <p className="mt-3 text-sm text-error" role="alert">
-                      {sourceError}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <input
-                  className="w-full cursor-pointer rounded-md border border-dashed border-button-border bg-button p-2.5 text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
-                  type="file"
-                  accept="audio/*"
-                  disabled={separationPending}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) {
-                      return;
-                    }
-                    onChooseLocalFile(file);
-                    event.target.value = "";
-                  }}
-                />
-              )}
-            </div>
-          </Section>
-
-          <Section number="2" title="Configure">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Model"
-                htmlFor="model"
-                help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
-              >
-                <select
-                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-                  id="model"
-                  value={configuration.model}
-                  disabled={separationPending}
-                  onChange={(event) =>
-                    onConfigurationChange({
-                      ...configuration,
-                      model: event.target.value as Preferences["model"],
-                    })
-                  }
-                >
-                  <option value="htdemucs">htdemucs</option>
-                  <option value="htdemucs_ft">htdemucs_ft</option>
-                </select>
-              </Field>
-              <Field
-                label="Shifts"
-                htmlFor="shifts"
-                help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
-              >
-                <input
-                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-                  type="number"
-                  id="shifts"
-                  min="1"
-                  max="4"
-                  value={configuration.shifts}
-                  disabled={separationPending}
-                  onChange={(event) =>
-                    onConfigurationChange({
-                      ...configuration,
-                      shifts: Number(event.target.value),
-                    })
-                  }
-                />
-              </Field>
-              <Field
-                label="Two-stems"
-                htmlFor="twoStems"
-                help="Output the selected source and a mix without it. Other contains instruments not classified as vocals, drums, or bass."
-              >
-                <select
-                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-                  id="twoStems"
-                  value={configuration.twoStems ?? ""}
-                  disabled={separationPending}
-                  onChange={(event) =>
-                    onConfigurationChange({
-                      ...configuration,
-                      twoStems: (event.target.value ||
-                        null) as Preferences["twoStems"],
-                    })
-                  }
-                >
-                  <option value="">off</option>
-                  <option>vocals</option>
-                  <option>drums</option>
-                  <option>bass</option>
-                  <option>other</option>
-                </select>
-              </Field>
-              <Field
-                label="Method"
-                htmlFor="method"
-                help="Add combines the other separated stems. Minus subtracts the source from the original and, with htdemucs_ft, runs about four times faster. Results vary by track."
-              >
-                <select
-                  className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
-                  id="method"
-                  value={configuration.method}
-                  disabled={!configuration.twoStems || separationPending}
-                  onChange={(event) =>
-                    onConfigurationChange({
-                      ...configuration,
-                      method: event.target.value as Preferences["method"],
-                    })
-                  }
-                >
-                  <option value="add">add</option>
-                  <option value="minus">minus</option>
-                </select>
-              </Field>
-            </div>
-            <p
-              className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm leading-relaxed text-muted-foreground"
-              id="outputSummary"
-            >
-              {configuration.twoStems ? (
-                <>
-                  Creates{" "}
-                  <strong className="text-foreground">
-                    {configuration.twoStems}.wav
-                  </strong>{" "}
-                  and <strong className="text-foreground">backing.wav</strong>.
-                </>
-              ) : (
-                <>
-                  Creates{" "}
-                  <strong className="text-foreground">vocals.wav</strong>,{" "}
-                  <strong className="text-foreground">drums.wav</strong>,{" "}
-                  <strong className="text-foreground">bass.wav</strong>, and{" "}
-                  <strong className="text-foreground">other.wav</strong>.
-                </>
-              )}
-            </p>
-          </Section>
-
-          <Section
-            number="3"
-            title="Add models"
-            description="Download each required model, then drop or select the downloaded file."
-          >
-            <div className="grid gap-2.5">
-              {modelFiles.map((modelFile) => (
-                <ModelFileSlot
-                  key={modelFile.name}
-                  filename={modelFile.name}
-                  ready={modelFile.ready}
-                  error={modelFile.error}
-                  disabled={separationPending}
-                  onChoose={(files) =>
-                    onChooseModelFiles(files, modelFile.name)
-                  }
-                />
-              ))}
-            </div>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Alternatively,{" "}
-              <label className="cursor-pointer font-semibold text-accent underline underline-offset-3 hover:opacity-80">
-                choose multiple files at once
-                <input
-                  className="sr-only"
-                  type="file"
-                  id="modelFiles"
-                  accept=".bin,.onnx"
-                  multiple
-                  disabled={separationPending}
-                  onChange={(event) =>
-                    onChooseModelFiles([...(event.target.files ?? [])])
-                  }
-                />
-              </label>
-              .
-            </p>
-            {unsupportedModelFiles.length > 0 && (
-              <p className="mt-2 text-sm text-error">
-                Unsupported files: {unsupportedModelFiles.join(", ")}.
-              </p>
-            )}
-            {modelStorageError && (
-              <p className="mt-2 text-sm text-error" role="alert">
-                {modelStorageError}
-              </p>
-            )}
-          </Section>
-
-          <Section number="4" title="Separate">
-            <button
-              className="h-13 w-full cursor-pointer rounded-md bg-accent text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-40"
-              type="button"
-              disabled={!source || !canSeparate || separationPending}
-              onClick={onSeparate}
-            >
-              {separationPending ? "Separating..." : "Separate track"}
-            </button>
-            {(!source || !canSeparate) && !separationPending && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                Choose audio and add all required models before starting.
-              </p>
-            )}
-            {separationProgress && (
-              <RunProgressPanel progress={separationProgress} />
-            )}
-            {separationStatus && (
-              <p
-                className="mt-3.5 text-sm leading-normal whitespace-pre-line text-muted-foreground"
-                id="status"
-              >
-                {separationStatus}
-              </p>
-            )}
-            {separationError && (
-              <p className="mt-3 text-sm text-error" role="alert">
-                {separationError}
-              </p>
-            )}
-          </Section>
-
-          {results && (
-            <section className="rounded-xl border border-border bg-panel p-5 shadow-lg sm:p-7">
-              <div className="mb-5 flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold tracking-wide text-accent uppercase">
-                    Separation complete
-                  </p>
-                  <h2 className="mt-1 text-2xl font-semibold">Your stems</h2>
-                </div>
-                <a
-                  className="cursor-pointer text-sm font-semibold text-accent hover:underline"
-                  href={results.archive.url}
-                  download={results.archive.name}
-                >
-                  Download ZIP
-                </a>
-              </div>
-              <div className="grid gap-3">
-                {results.outputs.map((output) => (
-                  <StemRow
-                    key={output.name}
-                    name={output.name}
-                    url={output.url}
-                    source={configuration.twoStems}
+                <label className="min-w-0 flex-1">
+                  <span className="sr-only">YouTube video ID or URL</span>
+                  <input
+                    className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm outline-none focus:border-accent-border"
+                    value={input}
+                    placeholder="YouTube video ID or URL"
+                    disabled={youtubeSourceLoading}
+                    onChange={(event) => setInput(event.target.value)}
                   />
-                ))}
-              </div>
-            </section>
+                </label>
+                <button
+                  className="h-11 cursor-pointer rounded-md bg-accent px-5 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-60 sm:w-44"
+                  type="submit"
+                  disabled={youtubeSourceLoading}
+                >
+                  {youtubeSourceLoading
+                    ? youtubeSourceLoadingPercent === undefined
+                      ? "Loading..."
+                      : `Loading ${youtubeSourceLoadingPercent}%`
+                    : "Load from YouTube"}
+                </button>
+              </form>
+              {sourceError && (
+                <p className="mt-3 text-sm text-error" role="alert">
+                  {sourceError}
+                </p>
+              )}
+            </>
+          ) : (
+            <input
+              className="w-full cursor-pointer rounded-md border border-dashed border-button-border bg-button p-2.5 text-sm text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-panel file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
+              type="file"
+              accept="audio/*"
+              disabled={separationPending}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
+                onChooseLocalFile(file);
+                event.target.value = "";
+              }}
+            />
           )}
         </div>
-      </div>
-    </main>
+      </Section>
+
+      <Section number="2" title="Configure">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Model"
+            htmlFor="model"
+            help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
+          >
+            <select
+              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+              id="model"
+              value={configuration.model}
+              disabled={separationPending}
+              onChange={(event) =>
+                onConfigurationChange({
+                  ...configuration,
+                  model: event.target.value as Preferences["model"],
+                })
+              }
+            >
+              <option value="htdemucs">htdemucs</option>
+              <option value="htdemucs_ft">htdemucs_ft</option>
+            </select>
+          </Field>
+          <Field
+            label="Shifts"
+            htmlFor="shifts"
+            help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
+          >
+            <input
+              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+              type="number"
+              id="shifts"
+              min="1"
+              max="4"
+              value={configuration.shifts}
+              disabled={separationPending}
+              onChange={(event) =>
+                onConfigurationChange({
+                  ...configuration,
+                  shifts: Number(event.target.value),
+                })
+              }
+            />
+          </Field>
+          <Field
+            label="Two-stems"
+            htmlFor="twoStems"
+            help="Output the selected source and a mix without it. Other contains instruments not classified as vocals, drums, or bass."
+          >
+            <select
+              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+              id="twoStems"
+              value={configuration.twoStems ?? ""}
+              disabled={separationPending}
+              onChange={(event) =>
+                onConfigurationChange({
+                  ...configuration,
+                  twoStems: (event.target.value ||
+                    null) as Preferences["twoStems"],
+                })
+              }
+            >
+              <option value="">off</option>
+              <option>vocals</option>
+              <option>drums</option>
+              <option>bass</option>
+              <option>other</option>
+            </select>
+          </Field>
+          <Field
+            label="Method"
+            htmlFor="method"
+            help="Add combines the other separated stems. Minus subtracts the source from the original and, with htdemucs_ft, runs about four times faster. Results vary by track."
+          >
+            <select
+              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
+              id="method"
+              value={configuration.method}
+              disabled={!configuration.twoStems || separationPending}
+              onChange={(event) =>
+                onConfigurationChange({
+                  ...configuration,
+                  method: event.target.value as Preferences["method"],
+                })
+              }
+            >
+              <option value="add">add</option>
+              <option value="minus">minus</option>
+            </select>
+          </Field>
+        </div>
+        <p
+          className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm leading-relaxed text-muted-foreground"
+          id="outputSummary"
+        >
+          {configuration.twoStems ? (
+            <>
+              Creates{" "}
+              <strong className="text-foreground">
+                {configuration.twoStems}.wav
+              </strong>{" "}
+              and <strong className="text-foreground">backing.wav</strong>.
+            </>
+          ) : (
+            <>
+              Creates <strong className="text-foreground">vocals.wav</strong>,{" "}
+              <strong className="text-foreground">drums.wav</strong>,{" "}
+              <strong className="text-foreground">bass.wav</strong>, and{" "}
+              <strong className="text-foreground">other.wav</strong>.
+            </>
+          )}
+        </p>
+      </Section>
+
+      <Section
+        number="3"
+        title="Add models"
+        description="Download each required model, then drop or select the downloaded file."
+      >
+        <div className="grid gap-2.5">
+          {modelFiles.map((modelFile) => (
+            <ModelFileSlot
+              key={modelFile.name}
+              filename={modelFile.name}
+              ready={modelFile.ready}
+              error={modelFile.error}
+              disabled={separationPending}
+              onChoose={(files) => onChooseModelFiles(files, modelFile.name)}
+            />
+          ))}
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Alternatively,{" "}
+          <label className="cursor-pointer font-semibold text-accent underline underline-offset-3 hover:opacity-80">
+            choose multiple files at once
+            <input
+              className="sr-only"
+              type="file"
+              id="modelFiles"
+              accept=".bin,.onnx"
+              multiple
+              disabled={separationPending}
+              onChange={(event) =>
+                onChooseModelFiles([...(event.target.files ?? [])])
+              }
+            />
+          </label>
+          .
+        </p>
+        {unsupportedModelFiles.length > 0 && (
+          <p className="mt-2 text-sm text-error">
+            Unsupported files: {unsupportedModelFiles.join(", ")}.
+          </p>
+        )}
+        {modelStorageError && (
+          <p className="mt-2 text-sm text-error" role="alert">
+            {modelStorageError}
+          </p>
+        )}
+      </Section>
+
+      <Section number="4" title="Separate">
+        <button
+          className="h-13 w-full cursor-pointer rounded-md bg-accent text-sm font-semibold text-white hover:opacity-90 disabled:cursor-default disabled:opacity-40"
+          type="button"
+          disabled={!source || !canSeparate || separationPending}
+          onClick={onSeparate}
+        >
+          {separationPending ? "Separating..." : "Separate track"}
+        </button>
+        {(!source || !canSeparate) && !separationPending && (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Choose audio and add all required models before starting.
+          </p>
+        )}
+        {separationProgress && (
+          <RunProgressPanel progress={separationProgress} />
+        )}
+        {separationStatus && (
+          <p
+            className="mt-3.5 text-sm leading-normal whitespace-pre-line text-muted-foreground"
+            id="status"
+          >
+            {separationStatus}
+          </p>
+        )}
+        {separationError && (
+          <p className="mt-3 text-sm text-error" role="alert">
+            {separationError}
+          </p>
+        )}
+      </Section>
+
+      {results && (
+        <section className="rounded-xl border border-border bg-panel p-5 shadow-lg sm:p-7">
+          <div className="mb-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-wide text-accent uppercase">
+                Separation complete
+              </p>
+              <h2 className="mt-1 text-2xl font-semibold">Your stems</h2>
+            </div>
+            <a
+              className="cursor-pointer text-sm font-semibold text-accent hover:underline"
+              href={results.archive.url}
+              download={results.archive.name}
+            >
+              Download ZIP
+            </a>
+          </div>
+          <div className="grid gap-3">
+            {results.outputs.map((output) => (
+              <StemRow
+                key={output.name}
+                name={output.name}
+                url={output.url}
+                source={configuration.twoStems}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 

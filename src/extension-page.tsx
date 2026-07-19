@@ -39,6 +39,7 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { audioStorage } from "./lib/storage.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
+import { AppHeader } from "./ui/app-header.tsx";
 import { type SavedVideo, SavedVideosView } from "./ui/saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
@@ -57,8 +58,23 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const queryClient = useQueryClient();
   const [appView, setAppView] = useState<"generator" | "saved">("generator");
+
+  return (
+    <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-3xl">
+        <AppHeader view={appView} onViewChange={setAppView} />
+        {appView === "saved" ? (
+          <SavedVideosPage />
+        ) : (
+          <StemGeneratorPage initialInput={initialInput} />
+        )}
+      </div>
+    </main>
+  );
+}
+
+function StemGeneratorPage({ initialInput }: { initialInput: string }) {
   const [sourceMode, setSourceMode] =
     useState<StemGeneratorSourceMode>("youtube");
   const [sourceStates, setSourceStates] = useState<StemGeneratorSourceStates>({
@@ -322,50 +338,6 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
     ? `Done in ${(runSeparationMutation.data.durationMs / 1000).toFixed(1)}s`
     : "";
 
-  const storedAudioQuery = useQuery({
-    queryKey: ["stored-audio-library"],
-    queryFn: async () =>
-      (await audioStorage.listAudio())
-        .map(
-          (audio): SavedVideo => ({
-            videoId: audio.videoId,
-            name: audio.name,
-            size: audio.tracks.reduce(
-              (total, track) => total + track.blob.size,
-              0,
-            ),
-            videoMetadata: audio.videoMetadata,
-            savedAt: audio.savedAt,
-          }),
-        )
-        .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0)),
-    enabled: appView === "saved",
-  });
-  const deleteStoredAudioMutation = useMutation({
-    mutationFn: audioStorage.deleteAudio,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["stored-audio-library"] }),
-  });
-
-  if (appView === "saved") {
-    return (
-      <SavedVideosView
-        videos={storedAudioQuery.data ?? []}
-        loading={storedAudioQuery.isPending}
-        error={
-          storedAudioQuery.error
-            ? "Saved videos could not be loaded from browser storage."
-            : deleteStoredAudioMutation.error
-              ? "The saved replacement could not be deleted."
-              : undefined
-        }
-        deletingVideoId={deleteStoredAudioMutation.variables}
-        onOpenGenerator={() => setAppView("generator")}
-        onDelete={deleteStoredAudioMutation.mutate}
-      />
-    );
-  }
-
   return (
     <StemGeneratorView
       initialInput={initialInput}
@@ -405,7 +377,49 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
       onSeparate={() => runSeparationMutation.mutate()}
       canSeparate={Boolean(sourceFilesRef.current[sourceMode] && modelSource)}
       results={runSeparationMutation.data}
-      onOpenSavedVideos={() => setAppView("saved")}
+    />
+  );
+}
+
+function SavedVideosPage() {
+  const queryClient = useQueryClient();
+  const storedAudioQuery = useQuery({
+    queryKey: ["stored-audio-library"],
+    queryFn: async () =>
+      (await audioStorage.listAudio())
+        .map(
+          (audio): SavedVideo => ({
+            videoId: audio.videoId,
+            name: audio.name,
+            size: audio.tracks.reduce(
+              (total, track) => total + track.blob.size,
+              0,
+            ),
+            videoMetadata: audio.videoMetadata,
+            savedAt: audio.savedAt,
+          }),
+        )
+        .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0)),
+  });
+  const deleteStoredAudioMutation = useMutation({
+    mutationFn: audioStorage.deleteAudio,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["stored-audio-library"] }),
+  });
+
+  return (
+    <SavedVideosView
+      videos={storedAudioQuery.data ?? []}
+      loading={storedAudioQuery.isPending}
+      error={
+        storedAudioQuery.error
+          ? "Saved videos could not be loaded from browser storage."
+          : deleteStoredAudioMutation.error
+            ? "The saved replacement could not be deleted."
+            : undefined
+      }
+      deletingVideoId={deleteStoredAudioMutation.variables}
+      onDelete={deleteStoredAudioMutation.mutate}
     />
   );
 }

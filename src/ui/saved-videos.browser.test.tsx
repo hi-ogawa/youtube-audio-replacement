@@ -31,7 +31,6 @@ test("populated library", async () => {
         },
       ]}
       loading={false}
-      onOpenGenerator={vi.fn()}
       onDelete={vi.fn()}
     />,
   );
@@ -47,12 +46,7 @@ test("populated library", async () => {
 
 test("empty library", async () => {
   const screen = await render(
-    <SavedVideosView
-      videos={[]}
-      loading={false}
-      onOpenGenerator={vi.fn()}
-      onDelete={vi.fn()}
-    />,
+    <SavedVideosView videos={[]} loading={false} onDelete={vi.fn()} />,
   );
 
   await expect.element(screen.getByText("No saved videos yet")).toBeVisible();

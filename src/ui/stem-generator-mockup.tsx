@@ -76,7 +76,6 @@ export function StemGeneratorMockup() {
       separationPending={false}
       onSeparate={() => undefined}
       canSeparate
-      onOpenSavedVideos={() => undefined}
     />
   );
 }
