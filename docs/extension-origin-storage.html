@@ -406,7 +406,7 @@
         <h2><a href="#mental-model">Mental model</a></h2>
         <p class="section-intro">
           Origin, rather than tab or frame, determines which IndexedDB database
-          code can open. Both <code>src/storage.html</code> and
+          code can open. Both <code>src/extension-storage.html</code> and
           <code>index.html</code> run under the extension origin, so their
           separate <code>IdbStore</code> instances open the same database and
           object store.
@@ -600,13 +600,13 @@
               stroke="#3759a6"
             />
             <text x="90" y="331" class="title">
-              src/storage.html + storage-page.ts
+              extension-storage.html + extension-storage-page.ts
             </text>
             <text x="90" y="356" class="sub">
-              chrome-extension://&lt;id&gt;/src/storage.html
+              chrome-extension://&lt;id&gt;/src/extension-storage.html
             </text>
             <text x="90" y="380" class="sub">
-              StoragePageRpcHandlers: loadAudio, storeAudio
+              ExtensionStorageRpcHandlers: loadAudio, storeAudio
             </text>
             <text x="90" y="403" class="sub">
               targetOrigin: https://www.youtube.com
@@ -690,28 +690,28 @@
             <h3>Save or load replacement audio</h3>
             <ol class="steps">
               <li>
-                <strong>The relay mounts the frame</strong>
+                <strong>The relay resolves the frame URL</strong>
                 <p>
                   <code>content.tsx</code> runs in MAIN world and cannot call
                   <code>chrome.runtime.getURL</code>. The ISOLATED-world
                   <code>entry.relay.ts</code> can, so it resolves the extension
-                  URL, appends one hidden <code>src/storage.html</code> iframe,
-                  and marks it ready after load. It is not part of later storage
-                  RPC calls.
+                  URL. <code>lib/rpc/extension-storage.ts</code> then owns
+                  hidden frame creation and load handling. The relay is not part
+                  of later storage RPC calls.
                 </p>
               </li>
               <li>
-                <strong>MAIN waits for readiness</strong>
+                <strong>MAIN waits for the frame load</strong>
                 <p>
-                  <code>content.tsx</code> observes the frame and creates a
-                  typed window RPC client using its <code>contentWindow</code>.
+                  The RPC helper creates a typed window client from the loaded
+                  frame's <code>contentWindow</code>.
                 </p>
               </li>
               <li>
                 <strong>Audio crosses by structured clone</strong>
                 <p>
                   <code>StoredAudio</code>, including track blobs, is sent to
-                  <code>StoragePageRpcHandlers</code>, or returned from it.
+                  <code>ExtensionStorageRpcHandlers</code>, or returned from it.
                 </p>
               </li>
               <li>
@@ -871,7 +871,9 @@
         Mapped against PR #14 commit <code>55d0a9f</code>. Relevant
         implementation: <code>src/content.tsx</code>,
         <code>src/lib/rpc/entry.relay.ts</code>,
-        <code>src/storage-page.ts</code>, <code>src/lib/storage.ts</code>, and
+        <code>src/extension-storage-page.ts</code>,
+        <code>src/lib/rpc/extension-storage.ts</code>,
+        <code>src/lib/storage.ts</code>, and
         <code>src/extension-page.tsx</code>.
       </div>
     </footer>

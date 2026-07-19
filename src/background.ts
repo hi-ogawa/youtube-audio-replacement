@@ -4,6 +4,12 @@ import { toBase64 } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 
 export class BackgroundRpcHandlers {
+  async getExtensionStorageUrl(_params: Record<string, never>) {
+    return {
+      url: chrome.runtime.getURL("src/extension-storage.html"),
+    };
+  }
+
   async openGenerator({ videoId }: { videoId: string }) {
     if (parseVideoId(videoId) !== videoId) {
       throw new Error("Invalid YouTube video ID");

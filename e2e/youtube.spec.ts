@@ -33,7 +33,7 @@ test("stores replacement audio, lists it, and survives YouTube navigation", asyn
     .poll(() => {
       const storageFrame = page
         .frames()
-        .find((frame) => frame.url().includes("src/storage.html"));
+        .find((frame) => frame.url().includes("src/extension-storage.html"));
       return storageFrame?.evaluate(async () => {
         const database = await new Promise<IDBDatabase>((resolve, reject) => {
           const request = indexedDB.open("youtube-audio-replacement", 1);

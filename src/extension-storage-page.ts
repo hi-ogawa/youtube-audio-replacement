@@ -1,7 +1,7 @@
 import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
 import { audioStorage, type StoredAudio } from "./lib/storage.ts";
 
-export class StoragePageRpcHandlers {
+export class ExtensionStorageRpcHandlers {
   loadAudio({ videoId }: { videoId: string }) {
     return audioStorage.loadAudio(videoId);
   }
@@ -12,7 +12,9 @@ export class StoragePageRpcHandlers {
 }
 
 function main() {
-  registerWindowRpcHandlers(new StoragePageRpcHandlers(), {
+  // MAIN-world page code already had access to YouTube-origin IndexedDB. This
+  // bridge changes the storage origin, not the page-origin trust boundary.
+  registerWindowRpcHandlers(new ExtensionStorageRpcHandlers(), {
     sourceWindow: window.parent,
     targetWindow: window.parent,
     targetOrigin: "https://www.youtube.com",
