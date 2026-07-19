@@ -73,11 +73,11 @@ function SavedVideoRow({
   const title = video.videoMetadata?.title || video.videoId;
 
   return (
-    <article className="flex flex-col gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm sm:flex-row sm:items-center">
+    <article className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm">
       <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-button text-muted-foreground">
         <Music2 className="size-5" aria-hidden="true" />
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         <h2 className="truncate font-semibold">{title}</h2>
         <p className="mt-1 truncate text-sm text-muted-foreground">
           {video.name} / {formatBytes(getAudioSize(video))}

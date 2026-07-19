@@ -37,9 +37,9 @@ const PREVIEW_SAVED_VIDEOS: StoredAudio[] = [
   {
     videoId: "YsmSk0cZa6w",
     videoMetadata: {
-      title: "Bass cover with a deliberately long video title",
+      title: "RESCENE (리센느) 'Pretty Girl' Special Video",
     },
-    name: "bass-and-drums.zip",
+    name: "RESCENE (리센느) 'Pretty Girl' Special Video_webm.stems.zip",
     tracks: [
       {
         name: "bass.wav",
