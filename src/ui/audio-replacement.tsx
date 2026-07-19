@@ -18,20 +18,26 @@ import {
 
 export function StoredPanel({
   videoId,
+  videoTitle,
   getVideo,
   onError,
   onGenerate,
+  loadAudio,
+  storeAudio,
 }: {
   videoId: string;
+  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
   onGenerate(): void;
+  loadAudio(videoId: string): Promise<StoredAudio | null>;
+  storeAudio(audio: StoredAudio): Promise<void>;
 }) {
   const storedAudioQuery = useSuspenseQuery({
     queryKey: ["stored-audio", videoId],
     queryFn: async () => {
       try {
-        return await videoStorage.loadAudio(videoId);
+        return await loadAudio(videoId);
       } catch (error) {
         console.error(error);
         onError("Saved audio is unavailable. You can still choose a file.");
@@ -41,7 +47,7 @@ export function StoredPanel({
   });
 
   const storeAudioMutation = useMutation({
-    mutationFn: videoStorage.storeAudio,
+    mutationFn: storeAudio,
     onError: (error) => {
       console.error(error);
       onError("Audio is available for this session but could not be saved.");
@@ -51,6 +57,7 @@ export function StoredPanel({
   return (
     <Panel
       videoId={videoId}
+      videoTitle={videoTitle}
       getVideo={getVideo}
       initialSelectedAudio={storedAudioQuery.data ?? undefined}
       onSelectAudio={storeAudioMutation.mutate}
@@ -62,6 +69,7 @@ export function StoredPanel({
 
 export function Panel({
   videoId,
+  videoTitle,
   getVideo,
   initialSelectedAudio,
   onSelectAudio,
@@ -69,6 +77,7 @@ export function Panel({
   onGenerate,
 }: {
   videoId: string;
+  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio?: StoredAudio;
   onSelectAudio(audio: StoredAudio): void;
@@ -129,6 +138,8 @@ export function Panel({
           name: track.name,
           blob: track.file,
         })),
+        videoTitle,
+        savedAt: Date.now(),
       };
       const nextMixerState = createMixerState(nextAudio, {});
       setSelectedAudio(nextAudio);

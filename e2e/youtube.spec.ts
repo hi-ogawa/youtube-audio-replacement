@@ -1,7 +1,7 @@
 import path from "node:path";
 import { chromium, expect, test } from "@playwright/test";
 
-test("loads the FAB, uploads audio, and survives YouTube navigation", async () => {
+test("stores replacement audio and survives YouTube navigation", async () => {
   const extensionPath = path.resolve("dist/extension");
 
   await using disposables = new AsyncDisposableStack();
@@ -29,6 +29,36 @@ test("loads the FAB, uploads audio, and survives YouTube navigation", async () =
     .locator('input[type="file"]')
     .setInputFiles(path.resolve("fixtures/sine-2s.wav"));
   await expect(host.getByText("sine-2s.wav", { exact: true })).toBeVisible();
+  await expect
+    .poll(() => {
+      const storageFrame = page
+        .frames()
+        .find((frame) => frame.url().includes("src/extension-storage.html"));
+      return storageFrame?.evaluate(async () => {
+        const database = await new Promise<IDBDatabase>((resolve, reject) => {
+          const request = indexedDB.open("youtube-audio-replacement", 1);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        return new Promise<{
+          name?: string;
+          videoTitle?: string;
+          savedAt?: number;
+        }>((resolve, reject) => {
+          const request = database
+            .transaction("audio", "readonly")
+            .objectStore("audio")
+            .get("7GU_VQfgMT0");
+          request.onsuccess = () => resolve(request.result ?? {});
+          request.onerror = () => reject(request.error);
+        });
+      });
+    })
+    .toMatchObject({
+      name: "sine-2s.wav",
+      videoTitle: expect.any(String),
+      savedAt: expect.any(Number),
+    });
 
   await page.evaluate(() => {
     document.dispatchEvent(new Event("yt-navigate-start"));

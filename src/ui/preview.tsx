@@ -130,6 +130,7 @@ export function PreviewApp() {
             <Panel
               key={withAudio ? "selected" : "empty"}
               videoId="preview-video"
+              videoTitle="Preview video"
               getVideo={() => fakeVideo}
               initialSelectedAudio={withAudio ? previewAudio : undefined}
               onSelectAudio={() => undefined}

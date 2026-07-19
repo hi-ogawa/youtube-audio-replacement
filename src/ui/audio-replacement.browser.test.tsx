@@ -16,6 +16,7 @@ test("basic", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="trace-preview"
+          videoTitle="Trace preview"
           getVideo={() => video}
           initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
@@ -72,6 +73,7 @@ test("imports and mixes every audio file in a ZIP", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="zip-preview"
+          videoTitle="ZIP preview"
           getVideo={() => video}
           initialSelectedAudio={undefined}
           onSelectAudio={onSelectAudio}
@@ -139,6 +141,7 @@ test("imports multiple audio files", async () => {
       <QueryClientProvider client={new QueryClient()}>
         <Panel
           videoId="multi-file-preview"
+          videoTitle="Multiple file preview"
           getVideo={() => new FakeVideo()}
           initialSelectedAudio={undefined}
           onSelectAudio={vi.fn()}

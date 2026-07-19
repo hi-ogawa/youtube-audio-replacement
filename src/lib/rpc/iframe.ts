@@ -66,3 +66,46 @@ export function createHiddenIframeRpc<Handlers>({
     document.body.appendChild(iframe);
   });
 }
+
+export function createHiddenIframeRpcOnLoad<Handlers>({
+  src,
+  timeoutMs,
+}: {
+  src: string;
+  timeoutMs: number;
+}): Promise<RpcClient<Handlers>> {
+  // Use this for same-extension pages whose handlers are registered before the
+  // document load event. Cross-origin embeds need createHiddenIframeRpc because
+  // their content-script handlers announce readiness separately.
+  return new Promise((resolve, reject) => {
+    const iframe = document.createElement("iframe");
+    iframe.hidden = true;
+    iframe.src = src;
+
+    const timeout = window.setTimeout(() => {
+      iframe.remove();
+      reject(new Error("Hidden frame did not load"));
+    }, timeoutMs);
+
+    iframe.addEventListener("load", () => {
+      window.clearTimeout(timeout);
+      if (!iframe.contentWindow) {
+        reject(new Error("Hidden frame is unavailable"));
+        return;
+      }
+      resolve(
+        createWindowRpc<Handlers>({
+          targetWindow: iframe.contentWindow,
+          targetOrigin: "*",
+          sourceWindow: iframe.contentWindow,
+        }),
+      );
+    });
+    iframe.addEventListener("error", () => {
+      window.clearTimeout(timeout);
+      iframe.remove();
+      reject(new Error("Hidden frame could not be loaded"));
+    });
+    document.body.appendChild(iframe);
+  });
+}

@@ -9,12 +9,16 @@ export interface StoredAudio {
   videoId: string;
   name: string;
   tracks: StoredAudioTrack[];
+  videoTitle?: string;
+  savedAt?: number;
 }
 
 interface LegacyStoredAudio {
   videoId: string;
   blob: Blob;
   name: string;
+  videoTitle?: string;
+  savedAt?: number;
 }
 
 export interface StoredMixerTrackState {
@@ -85,7 +89,9 @@ export const videoStorage = {
     } catch {}
     return state;
   },
+};
 
+export const audioStorage = {
   async loadAudio(videoId: string): Promise<StoredAudio | null> {
     const stored = await audioStore.get(videoId);
     if (!stored || "tracks" in stored) {
@@ -94,6 +100,8 @@ export const videoStorage = {
     return {
       videoId: stored.videoId,
       name: stored.name,
+      videoTitle: stored.videoTitle,
+      savedAt: stored.savedAt,
       tracks: [
         {
           name: stored.name,
