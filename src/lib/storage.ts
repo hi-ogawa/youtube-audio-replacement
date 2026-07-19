@@ -19,7 +19,6 @@ export interface SelectedAudio {
 export interface StoredVideoMetadata {
   title?: string;
   channelName?: string;
-  channelId?: string;
   durationSeconds?: number;
 }
 
