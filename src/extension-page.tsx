@@ -37,9 +37,10 @@ import {
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { audioStorage } from "./lib/storage.ts";
+import { useSearchParam } from "./lib/url-state.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
-import { ExtensionPageView } from "./ui/extension-page.tsx";
+import { type ExtensionView, ExtensionPageView } from "./ui/extension-page.tsx";
 import { SavedVideosView } from "./ui/saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
@@ -58,10 +59,15 @@ const initEmbedContentRpc = once(() =>
 );
 
 function ExtensionPage({ initialInput }: { initialInput: string }) {
-  const [appView, setAppView] = useState<"generator" | "saved">("generator");
+  const [viewParam, navigateViewParam] = useSearchParam("view");
+  const appView: ExtensionView = viewParam === "saved" ? "saved" : "generator";
+
+  function navigateView(view: ExtensionView) {
+    navigateViewParam(view === "saved" ? "saved" : null);
+  }
 
   return (
-    <ExtensionPageView view={appView} onViewChange={setAppView}>
+    <ExtensionPageView view={appView} onViewChange={navigateView}>
       {appView === "saved" ? (
         <SavedVideosPage />
       ) : (
