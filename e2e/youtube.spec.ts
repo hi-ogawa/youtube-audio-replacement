@@ -29,12 +29,15 @@ test("stores replacement audio and survives YouTube navigation", async () => {
   await expect(host.getByText("Stem mixer", { exact: true })).toBeVisible();
   checkpoint("mixer opened");
 
+  const generatorPromise = context.waitForEvent("page");
+  await host.getByRole("button", { name: "Prepare stems" }).click();
+  const generator = await generatorPromise;
+
   await host
     .locator('input[type="file"]')
     .setInputFiles(path.resolve("fixtures/sine-2s.wav"));
   await expect(host.getByText("sine-2s.wav", { exact: true })).toBeVisible();
   checkpoint("file selected");
-
   await expect
     .poll(() => {
       const storageFrame = page
@@ -53,6 +56,12 @@ test("stores replacement audio and survives YouTube navigation", async () => {
       savedAt: expect.any(Number),
     });
   checkpoint("extension storage verified");
+
+  await generator.getByRole("button", { name: "Saved videos" }).click();
+  await expect(
+    generator.getByText("sine-2s.wav", { exact: false }),
+  ).toBeVisible();
+  await generator.close();
 
   await page.reload({
     waitUntil: "domcontentloaded",
