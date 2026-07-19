@@ -39,7 +39,7 @@ import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { audioStorage } from "./lib/storage.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
-import { AppHeader } from "./ui/app-header.tsx";
+import { ExtensionPageView } from "./ui/extension-page.tsx";
 import { SavedVideosView } from "./ui/saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
@@ -61,16 +61,13 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   const [appView, setAppView] = useState<"generator" | "saved">("generator");
 
   return (
-    <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
-      <div className="mx-auto max-w-3xl">
-        <AppHeader view={appView} onViewChange={setAppView} />
-        {appView === "saved" ? (
-          <SavedVideosPage />
-        ) : (
-          <StemGeneratorPage initialInput={initialInput} />
-        )}
-      </div>
-    </main>
+    <ExtensionPageView view={appView} onViewChange={setAppView}>
+      {appView === "saved" ? (
+        <SavedVideosPage />
+      ) : (
+        <StemGeneratorPage initialInput={initialInput} />
+      )}
+    </ExtensionPageView>
   );
 }
 

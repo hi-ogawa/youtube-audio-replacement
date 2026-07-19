@@ -1,6 +1,25 @@
-export type AppView = "generator" | "saved";
+type AppView = "generator" | "saved";
 
-export function AppHeader({
+export function ExtensionPageView({
+  view,
+  onViewChange,
+  children,
+}: {
+  view: AppView;
+  onViewChange(view: AppView): void;
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="min-h-screen bg-button px-4 py-10 font-sans text-foreground sm:px-6 sm:py-16">
+      <div className="mx-auto max-w-3xl">
+        <AppHeader view={view} onViewChange={onViewChange} />
+        {children}
+      </div>
+    </main>
+  );
+}
+
+function AppHeader({
   view,
   onViewChange,
 }: {
