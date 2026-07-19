@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "prepare": "vp config",
+    "generate-extension-key": "node scripts/generate-extension-key.mjs",
     "ui-preview": "vite --config vite.web.config.ts",
     "build": "vite build --config vite.ext.config.ts && cd dist/extension && zip -FS -r ../extension.zip .",
     "typecheck": "tsc --noEmit",
