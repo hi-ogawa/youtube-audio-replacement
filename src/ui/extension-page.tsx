@@ -1,12 +1,12 @@
-type AppView = "generator" | "saved";
+export type ExtensionView = "generator" | "saved";
 
 export function ExtensionPageView({
   view,
   onViewChange,
   children,
 }: {
-  view: AppView;
-  onViewChange(view: AppView): void;
+  view: ExtensionView;
+  onViewChange(view: ExtensionView): void;
   children: React.ReactNode;
 }) {
   return (
@@ -23,8 +23,8 @@ function AppHeader({
   view,
   onViewChange,
 }: {
-  view: AppView;
-  onViewChange(view: AppView): void;
+  view: ExtensionView;
+  onViewChange(view: ExtensionView): void;
 }) {
   const saved = view === "saved";
 
