@@ -1,5 +1,7 @@
 import { createHash, generateKeyPairSync } from "node:crypto";
 
+// https://developer.chrome.com/docs/extensions/reference/manifest/key
+// https://developer.chrome.com/docs/extensions/how-to/distribute/host-on-linux
 const { publicKey } = generateKeyPairSync("rsa", {
   modulusLength: 2048,
   publicKeyEncoding: { type: "spki", format: "der" },
