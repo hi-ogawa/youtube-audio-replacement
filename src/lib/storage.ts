@@ -16,16 +16,15 @@ export interface SelectedAudio {
   tracks: StoredAudioTrack[];
 }
 
-export interface StoredAudio extends SelectedAudio {
-  videoTitle?: string;
-  savedAt?: number;
+export interface StoredVideoMetadata {
+  title?: string;
+  channelName?: string;
+  channelId?: string;
+  durationSeconds?: number;
 }
 
-interface LegacyStoredAudio {
-  videoId: string;
-  blob: Blob;
-  name: string;
-  videoTitle?: string;
+export interface StoredAudio extends SelectedAudio {
+  videoMetadata?: StoredVideoMetadata;
   savedAt?: number;
 }
 
@@ -52,7 +51,7 @@ const DEFAULT_VIDEO_STATE: VideoState = {
   mixer: {},
 };
 
-const audioStore = new IdbStore<StoredAudio | LegacyStoredAudio>({
+const audioStore = new IdbStore<StoredAudio>({
   databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
@@ -100,23 +99,6 @@ export const videoStorage = {
 };
 
 export const audioStorage = {
-  async loadAudio(videoId: string): Promise<StoredAudio | undefined> {
-    const stored = await audioStore.get(videoId);
-    if (!stored || "tracks" in stored) {
-      return stored;
-    }
-    return {
-      videoId: stored.videoId,
-      name: stored.name,
-      videoTitle: stored.videoTitle,
-      savedAt: stored.savedAt,
-      tracks: [
-        {
-          name: stored.name,
-          blob: stored.blob,
-        },
-      ],
-    };
-  },
+  loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
 };

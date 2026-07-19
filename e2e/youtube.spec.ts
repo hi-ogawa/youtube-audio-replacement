@@ -42,7 +42,11 @@ test("stores replacement audio and survives YouTube navigation", async () => {
         });
         return new Promise<{
           name?: string;
-          videoTitle?: string;
+          videoMetadata?: {
+            title?: string;
+            channelName?: string;
+            durationSeconds?: number;
+          };
           savedAt?: number;
         }>((resolve, reject) => {
           const request = database
@@ -56,7 +60,10 @@ test("stores replacement audio and survives YouTube navigation", async () => {
     })
     .toMatchObject({
       name: "sine-2s.wav",
-      videoTitle: expect.any(String),
+      videoMetadata: {
+        title: expect.any(String),
+        channelName: expect.any(String),
+      },
       savedAt: expect.any(Number),
     });
 
