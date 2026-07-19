@@ -208,7 +208,11 @@ export function Panel({
         onChoose={chooseFileMutation.mutate}
       />
       {selectedAudio && (
-        <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+        <Mixer
+          mixerState={mixerState}
+          disabled={!enabled}
+          onChange={updateMixerTrack}
+        />
       )}
     </div>
   );
@@ -216,15 +220,22 @@ export function Panel({
 
 function Mixer({
   mixerState,
+  disabled,
   onChange,
 }: {
   mixerState: MixerState;
+  disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   return (
     <div className="mt-2.5">
       {mixerState.map((track) => (
-        <MixerTrackRow key={track.name} track={track} onChange={onChange} />
+        <MixerTrackRow
+          key={track.name}
+          track={track}
+          disabled={disabled}
+          onChange={onChange}
+        />
       ))}
     </div>
   );
@@ -232,9 +243,11 @@ function Mixer({
 
 function MixerTrackRow({
   track,
+  disabled,
   onChange,
 }: {
   track: MixerTrackState;
+  disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   const displayName = formatTrackName(track.name);
@@ -250,13 +263,14 @@ function MixerTrackRow({
         {displayName}
       </span>
       <input
-        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default"
         type="range"
         min="0"
         max="100"
         step="1"
         value={track.volume}
         aria-label={`${displayName} volume`}
+        disabled={disabled}
         onChange={(event) =>
           onChange(track.name, { volume: Number(event.target.value) })
         }
@@ -267,6 +281,7 @@ function MixerTrackRow({
       <MixerButton
         label={`Mute ${displayName}`}
         pressed={track.muted}
+        disabled={disabled}
         onClick={() => onChange(track.name, { muted: !track.muted })}
       >
         M
@@ -274,6 +289,7 @@ function MixerTrackRow({
       <MixerButton
         label={`Solo ${displayName}`}
         pressed={track.soloed}
+        disabled={disabled}
         accent
         onClick={() => onChange(track.name, { soloed: !track.soloed })}
       >
@@ -286,19 +302,21 @@ function MixerTrackRow({
 function MixerButton({
   label,
   pressed,
+  disabled,
   accent = false,
   children,
   onClick,
 }: {
   label: string;
   pressed: boolean;
+  disabled: boolean;
   accent?: boolean;
   children: string;
   onClick(): void;
 }) {
   return (
     <button
-      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold ${
+      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold disabled:cursor-default disabled:opacity-60 ${
         pressed
           ? accent
             ? "border-accent bg-accent text-white"
@@ -309,6 +327,7 @@ function MixerButton({
       aria-label={label}
       aria-pressed={pressed}
       title={label}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}

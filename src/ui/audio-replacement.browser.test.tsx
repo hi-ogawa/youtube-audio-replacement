@@ -98,10 +98,19 @@ test("imports and mixes every audio file in a ZIP", async () => {
 
   await expect.element(screen.getByText("song.stems.zip")).toBeVisible();
   expect(document.body.textContent).not.toContain("4 tracks");
-  await expect.element(screen.getByLabelText("Vocals volume")).toBeVisible();
+  const vocalsVolume = screen.getByLabelText("Vocals volume");
+  await expect.element(vocalsVolume).toBeDisabled();
   await expect.element(screen.getByLabelText("Drums volume")).toBeVisible();
   await expect.element(screen.getByLabelText("Bass volume")).toBeVisible();
   await expect.element(screen.getByLabelText("Other volume")).toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: "Mute Vocals" }))
+    .toBeDisabled();
+  await page.mark("stem mixer inactive");
+
+  await screen.getByRole("switch", { name: "Use replacement audio" }).click();
+  await expect.element(vocalsVolume).toBeEnabled();
+  await page.mark("stem mixer active");
 
   const muteVocals = screen.getByRole("button", { name: "Mute Vocals" });
   await muteVocals.click();
@@ -130,7 +139,6 @@ test("imports and mixes every audio file in a ZIP", async () => {
       ],
     }),
   );
-  await page.mark("stem mixer");
 });
 
 test("imports multiple audio files", async () => {
