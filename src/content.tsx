@@ -176,7 +176,6 @@ function App({ videoId }: { videoId: string }) {
         <div className={open ? "pointer-events-auto" : "hidden"}>
           <StoredPanel
             videoId={videoId}
-            videoTitle={getVideoTitle()}
             getVideo={getMainVideo}
             onError={setError}
             onGenerate={() => void openGenerator()}
@@ -186,7 +185,13 @@ function App({ videoId }: { videoId: string }) {
             }}
             storeAudio={async (audio) => {
               const rpc = await initExtensionStorageRpc();
-              await rpc.storeAudio({ audio });
+              await rpc.storeAudio({
+                audio: {
+                  ...audio,
+                  videoTitle: getVideoTitle(),
+                  savedAt: Date.now(),
+                },
+              });
             }}
           />
         </div>

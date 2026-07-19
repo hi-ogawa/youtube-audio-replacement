@@ -18,7 +18,6 @@ import {
 
 export function StoredPanel({
   videoId,
-  videoTitle,
   getVideo,
   onError,
   onGenerate,
@@ -26,7 +25,6 @@ export function StoredPanel({
   storeAudio,
 }: {
   videoId: string;
-  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   onError(message: string): void;
   onGenerate(): void;
@@ -57,7 +55,6 @@ export function StoredPanel({
   return (
     <Panel
       videoId={videoId}
-      videoTitle={videoTitle}
       getVideo={getVideo}
       initialSelectedAudio={storedAudioQuery.data ?? undefined}
       onSelectAudio={storeAudioMutation.mutate}
@@ -69,7 +66,6 @@ export function StoredPanel({
 
 export function Panel({
   videoId,
-  videoTitle,
   getVideo,
   initialSelectedAudio,
   onSelectAudio,
@@ -77,7 +73,6 @@ export function Panel({
   onGenerate,
 }: {
   videoId: string;
-  videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
   initialSelectedAudio?: StoredAudio;
   onSelectAudio(audio: StoredAudio): void;
@@ -138,8 +133,6 @@ export function Panel({
           name: track.name,
           blob: track.file,
         })),
-        videoTitle,
-        savedAt: Date.now(),
       };
       const nextMixerState = createMixerState(nextAudio, {});
       setSelectedAudio(nextAudio);
