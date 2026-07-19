@@ -1,8 +1,20 @@
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { resolveAudioFile } from "../lib/audio-file.ts";
+import { formatTrackName, resolveAudioFiles } from "../lib/audio-file.ts";
+import {
+  AudioGroup,
+  createMixerState,
+  type MixerState,
+  type MixerTrackState,
+  toStoredMixerState,
+  updateMixerState,
+} from "../lib/audio-group.ts";
 import { PlayerSync, type VideoSyncSource } from "../lib/player-sync.ts";
-import type { StoredAudio } from "../lib/storage.ts";
+import {
+  type StoredAudio,
+  type StoredMixerTrackState,
+  videoStorage,
+} from "../lib/storage.ts";
 
 export function StoredPanel({
   videoId,
@@ -47,7 +59,7 @@ export function StoredPanel({
       videoId={videoId}
       videoTitle={videoTitle}
       getVideo={getVideo}
-      initialSelectedAudio={storedAudioQuery.data}
+      initialSelectedAudio={storedAudioQuery.data ?? undefined}
       onSelectAudio={storeAudioMutation.mutate}
       onError={onError}
       onGenerate={onGenerate}
@@ -67,79 +79,74 @@ export function Panel({
   videoId: string;
   videoTitle: string;
   getVideo: () => VideoSyncSource | undefined;
-  initialSelectedAudio: StoredAudio | null;
+  initialSelectedAudio?: StoredAudio;
   onSelectAudio(audio: StoredAudio): void;
   onError(message: string): void;
   onGenerate(): void;
 }) {
-  const [selectedAudio, setSelectedAudio] = useState(
-    initialSelectedAudio ?? undefined,
+  const [selectedAudio, setSelectedAudio] = useState(initialSelectedAudio);
+  const [mixerState, setMixerState] = useState(() =>
+    createMixerState(
+      initialSelectedAudio,
+      videoStorage.getState(videoId).mixer,
+    ),
   );
-  const [volume, setVolume] = useState(100);
   const [enabled, setEnabled] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const syncRef = useRef<PlayerSync>(null);
+  const [audioGroup] = useState(() => new AudioGroup());
+  const [playerSync] = useState(
+    () =>
+      new PlayerSync({
+        onError(error) {
+          console.error(error);
+          onError("Replacement audio playback failed.");
+        },
+      }),
+  );
 
-  // The detached player and its event wiring live for the panel's lifetime, so
-  // this effect owns both setup and teardown as one external resource.
+  useEffect(() => () => playerSync.disable(), [playerSync]);
+  useEffect(() => () => audioGroup.clear(), [audioGroup]);
+
+  // The first track supplies display metadata. AudioGroup owns all player and
+  // object URL cleanup, including when this source is replaced.
   useEffect(() => {
-    const audio = document.createElement("audio");
-    audio.preload = "auto";
-    audio.volume = volume / 100;
-    audioRef.current = audio;
-
-    const updateTime = () => setCurrentTime(audio.currentTime);
-    const updateDuration = () => {
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : undefined);
-    };
-    const updateVolume = () => setVolume(Math.round(audio.volume * 100));
-    audio.addEventListener("timeupdate", updateTime);
-    audio.addEventListener("loadedmetadata", updateDuration);
-    audio.addEventListener("durationchange", updateDuration);
-    audio.addEventListener("volumechange", updateVolume);
-
-    return () => {
-      syncRef.current?.destroy();
-      audio.removeEventListener("timeupdate", updateTime);
-      audio.removeEventListener("loadedmetadata", updateDuration);
-      audio.removeEventListener("durationchange", updateDuration);
-      audio.removeEventListener("volumechange", updateVolume);
-      audio.removeAttribute("src");
-      audio.load();
-    };
-  }, []);
-
-  // The source can come from initial storage or a later upload. Synchronizing
-  // it here keeps Blob URL replacement and cleanup in one lifecycle owner.
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !selectedAudio) {
+    if (!selectedAudio) {
+      audioGroup.clear();
       return;
     }
 
-    const objectUrl = URL.createObjectURL(selectedAudio.blob);
-    audio.src = objectUrl;
-    audio.load();
+    // Install the source's mixer before creating players. Mixer-only changes
+    // are applied synchronously in updateMixerTrack.
+    audioGroup.setMixerState(mixerState);
+    audioGroup.setTracks(selectedAudio.tracks, {
+      onTimeChange: setCurrentTime,
+      onDurationChange: setDuration,
+    });
     setCurrentTime(0);
     setDuration(undefined);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [selectedAudio?.blob]);
+  }, [audioGroup, selectedAudio]);
 
   const chooseFileMutation = useMutation({
     mutationFn: async (file: File) => {
-      const audioFile = await resolveAudioFile(file);
-      syncRef.current?.destroy();
-      syncRef.current = null;
+      const resolved = await resolveAudioFiles(file);
+      playerSync.disable();
       const nextAudio = {
         videoId,
-        blob: audioFile,
-        name: audioFile.name,
+        name: resolved.name,
+        tracks: resolved.tracks.map((track) => ({
+          name: track.name,
+          blob: track.file,
+        })),
         videoTitle,
         savedAt: Date.now(),
       };
+      const nextMixerState = createMixerState(nextAudio, {});
       setSelectedAudio(nextAudio);
+      setMixerState(nextMixerState);
+      videoStorage.updateState(videoId, {
+        mixer: toStoredMixerState(nextMixerState),
+      });
       onSelectAudio(nextAudio);
       setEnabled(false);
     },
@@ -152,37 +159,32 @@ export function Panel({
   });
 
   function toggle() {
-    const sync = syncRef.current;
-    if (sync?.enabled) {
-      sync.destroy();
-      syncRef.current = null;
+    if (playerSync.isEnabled()) {
+      playerSync.disable();
       setEnabled(false);
       return;
     }
 
     const video = getVideo();
-    const audio = audioRef.current;
-    if (!video || !audio) {
+    if (!video || !audioGroup.hasTracks()) {
       onError("YouTube video player not found.");
       return;
     }
 
-    const nextSync = new PlayerSync(video, audio, {
-      onError(error) {
-        console.error(error);
-        onError("Replacement audio playback failed.");
-      },
-    });
-    nextSync.enable();
-    syncRef.current = nextSync;
+    playerSync.enable(video, audioGroup);
     setEnabled(true);
   }
 
-  function changeVolume(nextVolume: number) {
-    setVolume(nextVolume);
-    if (audioRef.current) {
-      audioRef.current.volume = nextVolume / 100;
-    }
+  function updateMixerTrack(
+    trackName: string,
+    update: Partial<StoredMixerTrackState>,
+  ) {
+    const nextMixerState = updateMixerState(mixerState, trackName, update);
+    audioGroup.setMixerState(nextMixerState);
+    setMixerState(nextMixerState);
+    videoStorage.updateState(videoId, {
+      mixer: toStoredMixerState(nextMixerState),
+    });
   }
 
   return (
@@ -211,22 +213,112 @@ export function Panel({
         duration={duration}
         onChoose={chooseFileMutation.mutate}
       />
-      <label className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
-        <span>Volume</span>
-        <input
-          className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default disabled:opacity-45"
-          type="range"
-          min="0"
-          max="100"
-          step="1"
-          value={volume}
-          disabled={!selectedAudio}
-          aria-label="Replacement audio volume"
-          onChange={(event) => changeVolume(Number(event.target.value))}
-        />
-        <span className="w-9 text-right font-mono tabular-nums">{volume}%</span>
-      </label>
+      {selectedAudio && (
+        <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+      )}
     </div>
+  );
+}
+
+function Mixer({
+  mixerState,
+  onChange,
+}: {
+  mixerState: MixerState;
+  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
+}) {
+  return (
+    <div className="mt-2.5">
+      {mixerState.map((track) => (
+        <MixerTrackRow key={track.name} track={track} onChange={onChange} />
+      ))}
+    </div>
+  );
+}
+
+function MixerTrackRow({
+  track,
+  onChange,
+}: {
+  track: MixerTrackState;
+  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
+}) {
+  const displayName = formatTrackName(track.name);
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${track.enabled ? "" : "text-muted-foreground"}`}
+    >
+      <span
+        className="w-12 shrink-0 truncate text-xs font-semibold"
+        title={track.name}
+      >
+        {displayName}
+      </span>
+      <input
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={track.volume}
+        aria-label={`${displayName} volume`}
+        onChange={(event) =>
+          onChange(track.name, { volume: Number(event.target.value) })
+        }
+      />
+      <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+        {track.volume}%
+      </span>
+      <MixerButton
+        label={`Mute ${displayName}`}
+        pressed={track.muted}
+        onClick={() => onChange(track.name, { muted: !track.muted })}
+      >
+        M
+      </MixerButton>
+      <MixerButton
+        label={`Solo ${displayName}`}
+        pressed={track.soloed}
+        accent
+        onClick={() => onChange(track.name, { soloed: !track.soloed })}
+      >
+        S
+      </MixerButton>
+    </div>
+  );
+}
+
+function MixerButton({
+  label,
+  pressed,
+  accent = false,
+  children,
+  onClick,
+}: {
+  label: string;
+  pressed: boolean;
+  accent?: boolean;
+  children: string;
+  onClick(): void;
+}) {
+  return (
+    <button
+      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold ${
+        pressed
+          ? accent
+            ? "border-accent bg-accent text-white"
+            : "border-foreground bg-foreground text-panel"
+          : "border-button-border bg-button text-foreground hover:bg-button-hover"
+      }`}
+      type="button"
+      aria-label={label}
+      aria-pressed={pressed}
+      title={label}
+      onClick={onClick}
+    >
+      {children}
+    </button>
   );
 }
 

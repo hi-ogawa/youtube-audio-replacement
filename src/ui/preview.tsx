@@ -16,8 +16,25 @@ const fakeVideo = new FakeVideo();
 
 const previewAudio: StoredAudio = {
   videoId: "preview-video",
-  blob: new Blob(),
-  name: "preview-audio.wav",
+  name: "example.stems.zip",
+  tracks: [
+    {
+      name: "vocals.wav",
+      blob: new Blob(),
+    },
+    {
+      name: "drums.wav",
+      blob: new Blob(),
+    },
+    {
+      name: "bass.wav",
+      blob: new Blob(),
+    },
+    {
+      name: "other.wav",
+      blob: new Blob(),
+    },
+  ],
 };
 
 export function PreviewApp() {
@@ -115,7 +132,7 @@ export function PreviewApp() {
               videoId="preview-video"
               videoTitle="Preview video"
               getVideo={() => fakeVideo}
-              initialSelectedAudio={withAudio ? previewAudio : null}
+              initialSelectedAudio={withAudio ? previewAudio : undefined}
               onSelectAudio={() => undefined}
               onGenerate={() => undefined}
               onError={setError}

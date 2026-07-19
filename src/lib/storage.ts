@@ -1,6 +1,19 @@
 import { IdbStore } from "./idb.ts";
 
+export interface StoredAudioTrack {
+  name: string;
+  blob: Blob;
+}
+
 export interface StoredAudio {
+  videoId: string;
+  name: string;
+  tracks: StoredAudioTrack[];
+  videoTitle?: string;
+  savedAt?: number;
+}
+
+interface LegacyStoredAudio {
   videoId: string;
   blob: Blob;
   name: string;
@@ -16,8 +29,17 @@ export interface StoredAudioSummary {
   savedAt?: number;
 }
 
+export interface StoredMixerTrackState {
+  volume: number;
+  muted: boolean;
+  soloed: boolean;
+}
+
+export type StoredMixerState = Record<string, StoredMixerTrackState>;
+
 interface VideoState {
   panelOpen: boolean;
+  mixer: StoredMixerState;
 }
 
 interface StoredVideoStates {
@@ -27,9 +49,10 @@ interface StoredVideoStates {
 const VIDEO_STATE_KEY = "youtube-audio-replacement:video-state:v1";
 const DEFAULT_VIDEO_STATE: VideoState = {
   panelOpen: false,
+  mixer: {},
 };
 
-const audioStore = new IdbStore<StoredAudio>({
+const audioStore = new IdbStore<StoredAudio | LegacyStoredAudio>({
   databaseName: "youtube-audio-replacement",
   storeName: "audio",
   version: 1,
@@ -77,17 +100,37 @@ export const videoStorage = {
 };
 
 export const audioStorage = {
-  loadAudio: (videoId: string) => audioStore.get(videoId),
+  async loadAudio(videoId: string): Promise<StoredAudio | null> {
+    const stored = await audioStore.get(videoId);
+    if (!stored || "tracks" in stored) {
+      return stored;
+    }
+    return {
+      videoId: stored.videoId,
+      name: stored.name,
+      videoTitle: stored.videoTitle,
+      savedAt: stored.savedAt,
+      tracks: [
+        {
+          name: stored.name,
+          blob: stored.blob,
+        },
+      ],
+    };
+  },
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
   async listAudio(): Promise<StoredAudioSummary[]> {
     const audio = await audioStore.getAll();
     return audio
-      .map(({ videoId, name, blob, videoTitle, savedAt }) => ({
-        videoId,
-        name,
-        size: blob.size,
-        videoTitle,
-        savedAt,
+      .map((stored) => ({
+        videoId: stored.videoId,
+        name: stored.name,
+        size:
+          "tracks" in stored
+            ? stored.tracks.reduce((total, track) => total + track.blob.size, 0)
+            : stored.blob.size,
+        videoTitle: stored.videoTitle,
+        savedAt: stored.savedAt,
       }))
       .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0));
   },
