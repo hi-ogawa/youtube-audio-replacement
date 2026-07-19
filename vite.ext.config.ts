@@ -28,7 +28,23 @@ export default defineConfig({
         rolldownOptions: {
           input: {
             "extension-page": "./index.html",
+          },
+        },
+      },
+    },
+    extensionStorage: {
+      consumer: "client",
+      build: {
+        outDir: "dist/extension",
+        emptyOutDir: false,
+        copyPublicDir: false,
+        rolldownOptions: {
+          input: {
             "extension-storage": "./src/extension-storage.html",
+          },
+          output: {
+            codeSplitting: false,
+            entryFileNames: "extension-storage.js",
           },
         },
       },
@@ -42,6 +58,7 @@ export default defineConfig({
     async buildApp(builder) {
       await builder.build(builder.environments.extensionPage);
       await builder.build(builder.environments.content);
+      await builder.build(builder.environments.extensionStorage);
       await builder.build(builder.environments.rpcRelay);
       await builder.build(builder.environments.embedContent);
       await builder.build(builder.environments.background);
