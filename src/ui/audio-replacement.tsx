@@ -204,6 +204,7 @@ export function Panel({
         audio={selectedAudio}
         currentTime={currentTime}
         duration={duration}
+        loading={chooseFileMutation.isPending}
         onChoose={chooseFileMutation.mutate}
       />
       {selectedAudio && (
@@ -350,11 +351,13 @@ function AudioDrop({
   audio,
   currentTime,
   duration,
+  loading,
   onChoose,
 }: {
   audio: SelectedAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
+  loading: boolean;
   onChoose(files: File[]): void;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -363,8 +366,10 @@ function AudioDrop({
   return (
     <>
       <button
-        className={`mt-2.5 flex h-13 w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 text-left transition-colors ${audio ? "border-button-border bg-button hover:bg-button-hover" : "border-dashed border-button-border text-muted-foreground hover:border-accent-border hover:bg-button-hover"} ${dragging ? "border-accent-border bg-button-hover" : ""}`}
+        className={`mt-2.5 flex h-13 w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 text-left transition-colors disabled:cursor-wait disabled:opacity-70 ${audio ? "border-button-border bg-button hover:bg-button-hover" : "border-dashed border-button-border text-muted-foreground hover:border-accent-border hover:bg-button-hover"} ${dragging ? "border-accent-border bg-button-hover" : ""}`}
         type="button"
+        disabled={loading}
+        aria-busy={loading}
         onClick={() => inputRef.current?.click()}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -399,7 +404,11 @@ function AudioDrop({
           <circle cx="6" cy="18" r="3" />
           <circle cx="16" cy="16" r="3" />
         </svg>
-        {audio ? (
+        {loading ? (
+          <span className="text-xs" role="status" aria-live="polite">
+            Loading audio...
+          </span>
+        ) : audio ? (
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs text-foreground">
@@ -426,6 +435,7 @@ function AudioDrop({
         type="file"
         accept="audio/*,.zip,application/zip"
         multiple
+        disabled={loading}
         hidden
         onChange={(event) => {
           const files = [...(event.target.files ?? [])];
