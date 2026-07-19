@@ -5,9 +5,8 @@ test("stores replacement audio and survives YouTube navigation", async () => {
   const startedAt = Date.now();
   const checkpoint = (label: string) =>
     console.log(`[${Date.now() - startedAt}ms] ${label}`);
-  const extensionPath = path.resolve("dist/extension");
 
-  await using disposables = new AsyncDisposableStack();
+  const extensionPath = path.resolve("dist/extension");
   const context = await chromium.launchPersistentContext("", {
     channel: "chromium",
     args: [
@@ -15,6 +14,7 @@ test("stores replacement audio and survives YouTube navigation", async () => {
       `--load-extension=${extensionPath}`,
     ],
   });
+  await using disposables = new AsyncDisposableStack();
   disposables.defer(() => context.close());
 
   const page = await context.newPage();
@@ -34,6 +34,7 @@ test("stores replacement audio and survives YouTube navigation", async () => {
     .setInputFiles(path.resolve("fixtures/sine-2s.wav"));
   await expect(host.getByText("sine-2s.wav", { exact: true })).toBeVisible();
   checkpoint("file selected");
+
   await expect
     .poll(() => {
       const storageFrame = page
@@ -57,9 +58,11 @@ test("stores replacement audio and survives YouTube navigation", async () => {
     waitUntil: "domcontentloaded",
   });
   checkpoint("page reloaded");
+
   const reloadedHost = page.locator("#youtube-audio-replacement-host");
   await expect(reloadedHost).toBeAttached();
   checkpoint("content UI remounted");
+
   await expect(
     reloadedHost.getByText("sine-2s.wav", { exact: true }),
   ).toBeVisible();
