@@ -34,29 +34,9 @@ test("stores replacement audio and survives YouTube navigation", async () => {
       const storageFrame = page
         .frames()
         .find((frame) => frame.url().includes("src/extension-storage.html"));
-      return storageFrame?.evaluate(async () => {
-        const database = await new Promise<IDBDatabase>((resolve, reject) => {
-          const request = indexedDB.open("youtube-audio-replacement", 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        return new Promise<{
-          name?: string;
-          videoMetadata?: {
-            title?: string;
-            channelName?: string;
-            durationSeconds?: number;
-          };
-          savedAt?: number;
-        }>((resolve, reject) => {
-          const request = database
-            .transaction("audio", "readonly")
-            .objectStore("audio")
-            .get("7GU_VQfgMT0");
-          request.onsuccess = () => resolve(request.result ?? {});
-          request.onerror = () => reject(request.error);
-        });
-      });
+      return storageFrame?.evaluate(() =>
+        window.__e2e?.audioStorage.loadAudio("7GU_VQfgMT0"),
+      );
     })
     .toMatchObject({
       name: "sine-2s.wav",
