@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stem Mixer for YouTube - Extension-Origin Storage</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #657086;
+        --line: #d9dfeb;
+        --paper: #ffffff;
+        --wash: #f5f7fb;
+        --youtube: #e8f4ec;
+        --youtube-strong: #27734a;
+        --isolated: #fff4df;
+        --isolated-strong: #996515;
+        --extension: #eaf0ff;
+        --extension-strong: #3759a6;
+        --store: #e8f7f7;
+        --store-strong: #08747d;
+        --rpc: #7750a8;
+        --dom: #b75a28;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--wash);
+        color: var(--ink);
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        line-height: 1.55;
+      }
+      a {
+        color: #315ca8;
+        text-underline-offset: 3px;
+      }
+      code,
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+      code {
+        border: 1px solid #dde3ee;
+        border-radius: 4px;
+        background: #f7f9fc;
+        padding: 0.1rem 0.32rem;
+        font-size: 0.88em;
+      }
+      .shell {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+      header {
+        border-bottom: 1px solid var(--line);
+        background: var(--paper);
+        padding: 52px 0 36px;
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--store-strong);
+        font-size: 0.76rem;
+        font-weight: 750;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.8rem);
+        line-height: 1.03;
+      }
+      .lede {
+        max-width: 790px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 1.08rem;
+      }
+      .provenance {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin-top: 22px;
+        font-size: 0.9rem;
+      }
+      main {
+        padding: 44px 0 72px;
+      }
+      section {
+        scroll-margin-top: 72px;
+        margin-top: 56px;
+      }
+      main > section:first-of-type {
+        margin-top: 0;
+      }
+      h2 {
+        margin: 0 0 10px;
+        font-size: 1.55rem;
+      }
+      h2 a {
+        color: inherit;
+        text-decoration: none;
+      }
+      h3 {
+        margin: 0 0 8px;
+        font-size: 1rem;
+      }
+      p {
+        margin-top: 0;
+      }
+      .section-intro {
+        max-width: 800px;
+        margin: 0 0 22px;
+        color: var(--muted);
+      }
+      .card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--paper);
+        box-shadow: 0 3px 14px rgba(30, 42, 65, 0.05);
+      }
+      .invariant {
+        border-left: 5px solid var(--store-strong);
+        padding: 18px 20px;
+        background: var(--store);
+        font-weight: 650;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        margin-bottom: 14px;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .swatch {
+        width: 13px;
+        height: 13px;
+        border: 1px solid rgba(0, 0, 0, 0.15);
+        border-radius: 3px;
+      }
+      .line-key {
+        width: 25px;
+        height: 0;
+        border-top: 3px solid;
+      }
+      .line-key.dashed {
+        border-top-style: dashed;
+      }
+      .diagram {
+        overflow-x: auto;
+        padding: 18px;
+      }
+      .diagram svg {
+        display: block;
+        width: 100%;
+        min-width: 940px;
+        height: auto;
+      }
+      .flow-grid,
+      .boundary-grid {
+        display: grid;
+        gap: 14px;
+      }
+      .flow-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .boundary-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .flow-card,
+      .boundary {
+        padding: 20px;
+      }
+      .tag {
+        display: inline-block;
+        margin-bottom: 8px;
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 0.7rem;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .tag.youtube {
+        background: var(--youtube);
+        color: var(--youtube-strong);
+      }
+      .tag.extension {
+        background: var(--extension);
+        color: var(--extension-strong);
+      }
+      .tag.store {
+        background: var(--store);
+        color: var(--store-strong);
+      }
+      .steps {
+        margin: 18px 0 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: steps;
+      }
+      .steps li {
+        counter-increment: steps;
+        position: relative;
+        margin-left: 18px;
+        border-left: 2px solid var(--line);
+        padding: 0 0 20px 28px;
+      }
+      .steps li:last-child {
+        border-left-color: transparent;
+        padding-bottom: 0;
+      }
+      .steps li::before {
+        content: counter(steps);
+        position: absolute;
+        top: -2px;
+        left: -15px;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--store-strong);
+        color: white;
+        font-size: 0.76rem;
+        font-weight: 800;
+      }
+      .steps strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+      .steps p,
+      .boundary p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .boundary {
+        border-top-width: 4px;
+      }
+      .boundary.youtube {
+        border-top-color: var(--youtube-strong);
+      }
+      .boundary.isolated {
+        border-top-color: var(--isolated-strong);
+      }
+      .boundary.extension {
+        border-top-color: var(--extension-strong);
+      }
+      .boundary.store {
+        border-top-color: var(--store-strong);
+      }
+      .schema {
+        overflow-x: auto;
+        padding: 18px;
+      }
+      .schema table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+      }
+      .schema th,
+      .schema td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+      .schema th {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+      .schema tr:last-child td {
+        border-bottom: 0;
+      }
+      .toc {
+        position: sticky;
+        z-index: 10;
+        top: 18px;
+        width: 220px;
+        height: 0;
+        margin-left: auto;
+        transform: translateY(-12px);
+      }
+      .toc summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 40px;
+        cursor: pointer;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 5px 18px rgba(30, 42, 65, 0.08);
+        padding: 9px 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        list-style: none;
+      }
+      .toc summary::-webkit-details-marker {
+        display: none;
+      }
+      .toc nav {
+        position: absolute;
+        top: 47px;
+        right: 0;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.99);
+        box-shadow: 0 13px 32px rgba(30, 42, 65, 0.13);
+        padding: 8px;
+      }
+      .toc nav a {
+        display: block;
+        border-radius: 5px;
+        padding: 7px 9px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        text-decoration: none;
+      }
+      .toc nav a:hover,
+      .toc nav a:focus-visible {
+        background: var(--store);
+        color: var(--store-strong);
+        outline: none;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        background: var(--paper);
+        padding: 24px 0 42px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      @media (max-width: 820px) {
+        .flow-grid,
+        .boundary-grid {
+          grid-template-columns: 1fr;
+        }
+        .toc {
+          width: min(220px, calc(100vw - 32px));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="shell">
+        <p class="eyebrow">Runtime map</p>
+        <h1>Extension-origin audio storage</h1>
+        <p class="lede">
+          A hidden extension iframe gives the YouTube watch page access to
+          durable extension-origin IndexedDB. The standalone extension page
+          reaches the same database directly, so playback and library management
+          share one store without involving the service worker.
+        </p>
+        <div class="provenance">
+          <a href="https://github.com/hi-ogawa/youtube-audio-replacement"
+            >Repository</a
+          >
+          <a
+            href="https://github.com/hi-ogawa/youtube-audio-replacement/pull/14"
+            >Saved videos PR #14</a
+          >
+          <a
+            href="https://github.com/hi-ogawa/youtube-audio-replacement/tree/55d0a9fd47f0581f279e263b818a051576876e4a"
+            >Implementation snapshot</a
+          >
+          <a href="./extension-architecture.html"
+            >General extension architecture</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <details class="toc">
+        <summary>On this page <span aria-hidden="true">⌄</span></summary>
+        <nav aria-label="Page sections">
+          <a href="#mental-model">Mental model</a>
+          <a href="#runtime-map">Runtime map</a>
+          <a href="#operations">Storage operations</a>
+          <a href="#schema">Stored record</a>
+          <a href="#boundaries">Boundaries</a>
+        </nav>
+      </details>
+
+      <section id="mental-model">
+        <h2><a href="#mental-model">Mental model</a></h2>
+        <p class="section-intro">
+          Origin, rather than tab or frame, determines which IndexedDB database
+          code can open. Both <code>src/storage.html</code> and
+          <code>index.html</code> run under the extension origin, so their
+          separate <code>IdbStore</code> instances open the same database and
+          object store.
+        </p>
+        <div class="invariant card">
+          The YouTube page owns playback state, but the extension origin owns
+          replacement-audio blobs. The hidden frame is the bridge between those
+          two ownership boundaries.
+        </div>
+      </section>
+
+      <section id="runtime-map">
+        <h2><a href="#runtime-map">Runtime map</a></h2>
+        <p class="section-intro">
+          Color encodes origin or execution context. Dashed purple lines are
+          <code>window.postMessage</code> RPC, while the solid orange line is
+          DOM frame creation.
+        </p>
+        <div class="legend">
+          <span
+            ><i class="swatch" style="background: var(--youtube)"></i>YouTube
+            origin, MAIN world</span
+          >
+          <span
+            ><i class="swatch" style="background: var(--isolated)"></i>YouTube
+            origin, ISOLATED world</span
+          >
+          <span
+            ><i class="swatch" style="background: var(--extension)"></i
+            >Extension origin</span
+          >
+          <span
+            ><i class="swatch" style="background: var(--store)"></i
+            >Extension-origin IndexedDB</span
+          >
+          <span
+            ><i class="line-key dashed" style="border-color: var(--rpc)"></i
+            >Window RPC</span
+          >
+          <span
+            ><i class="line-key" style="border-color: var(--dom)"></i>Frame
+            mount</span
+          >
+        </div>
+        <div class="card diagram">
+          <svg
+            viewBox="0 0 1080 570"
+            role="img"
+            aria-label="Runtime map for extension-origin audio storage"
+          >
+            <defs>
+              <marker
+                id="arrow-rpc"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5.5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L6,3 L0,6 Z" fill="#7750a8" />
+              </marker>
+              <marker
+                id="arrow-dom"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5.5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L6,3 L0,6 Z" fill="#b75a28" />
+              </marker>
+              <marker
+                id="arrow-store"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5.5"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L6,3 L0,6 Z" fill="#08747d" />
+              </marker>
+              <style>
+                .box {
+                  stroke-width: 2;
+                }
+                .title {
+                  font:
+                    700 16px ui-sans-serif,
+                    system-ui;
+                  fill: #172033;
+                }
+                .sub {
+                  font:
+                    12px ui-monospace,
+                    monospace;
+                  fill: #657086;
+                }
+                .label {
+                  font:
+                    700 11px ui-sans-serif,
+                    system-ui;
+                  fill: #566273;
+                }
+                .rpc {
+                  stroke: #7750a8;
+                  stroke-width: 3;
+                  stroke-dasharray: 7 6;
+                  fill: none;
+                  marker-end: url(#arrow-rpc);
+                }
+                .dom {
+                  stroke: #b75a28;
+                  stroke-width: 3;
+                  fill: none;
+                  marker-end: url(#arrow-dom);
+                }
+                .store {
+                  stroke: #08747d;
+                  stroke-width: 3;
+                  fill: none;
+                  marker-end: url(#arrow-store);
+                }
+              </style>
+            </defs>
+
+            <rect
+              x="20"
+              y="20"
+              width="665"
+              height="525"
+              rx="14"
+              fill="#fff"
+              stroke="#d9dfeb"
+            />
+            <text x="42" y="49" class="label">YOUTUBE WATCH TAB</text>
+            <rect
+              class="box"
+              x="45"
+              y="75"
+              width="260"
+              height="104"
+              rx="10"
+              fill="#e8f4ec"
+              stroke="#27734a"
+            />
+            <text x="63" y="105" class="title">content.tsx</text>
+            <text x="63" y="129" class="sub">www.youtube.com, MAIN world</text>
+            <text x="63" y="151" class="sub">
+              loadAudio / storeAudio client
+            </text>
+
+            <rect
+              class="box"
+              x="385"
+              y="75"
+              width="260"
+              height="104"
+              rx="10"
+              fill="#fff4df"
+              stroke="#996515"
+            />
+            <text x="403" y="105" class="title">rpc-relay.js</text>
+            <text x="403" y="129" class="sub">
+              www.youtube.com, ISOLATED world
+            </text>
+            <text x="403" y="151" class="sub">
+              chrome.runtime.getURL + mount
+            </text>
+
+            <rect
+              x="45"
+              y="245"
+              width="600"
+              height="255"
+              rx="13"
+              fill="#f7f9ff"
+              stroke="#b9c8eb"
+              stroke-dasharray="6 5"
+            />
+            <text x="66" y="274" class="label">
+              HIDDEN WEB-ACCESSIBLE EXTENSION FRAME
+            </text>
+            <rect
+              class="box"
+              x="70"
+              y="300"
+              width="550"
+              height="125"
+              rx="10"
+              fill="#eaf0ff"
+              stroke="#3759a6"
+            />
+            <text x="90" y="331" class="title">
+              src/storage.html + storage-page.ts
+            </text>
+            <text x="90" y="356" class="sub">
+              chrome-extension://&lt;id&gt;/src/storage.html
+            </text>
+            <text x="90" y="380" class="sub">
+              StoragePageRpcHandlers: loadAudio, storeAudio
+            </text>
+            <text x="90" y="403" class="sub">
+              targetOrigin: https://www.youtube.com
+            </text>
+            <path class="rpc" d="M175 179 C175 220 220 238 220 300" />
+            <text x="83" y="222" class="label">window RPC</text>
+            <path class="dom" d="M515 179 V245" />
+            <text x="527" y="207" class="label">MAIN lacks chrome.runtime</text>
+            <text x="527" y="223" class="label">
+              resolve URL + append iframe
+            </text>
+
+            <rect
+              x="720"
+              y="20"
+              width="340"
+              height="250"
+              rx="14"
+              fill="#fff"
+              stroke="#d9dfeb"
+            />
+            <text x="742" y="49" class="label">STANDALONE EXTENSION TAB</text>
+            <rect
+              class="box"
+              x="745"
+              y="75"
+              width="290"
+              height="130"
+              rx="10"
+              fill="#eaf0ff"
+              stroke="#3759a6"
+            />
+            <text x="765" y="106" class="title">extension-page.tsx</text>
+            <text x="765" y="131" class="sub">
+              chrome-extension://&lt;id&gt;/index.html
+            </text>
+            <text x="765" y="155" class="sub">
+              listAudio / deleteAudio direct
+            </text>
+            <text x="765" y="179" class="sub">Saved videos UI</text>
+
+            <rect
+              class="box"
+              x="720"
+              y="335"
+              width="340"
+              height="175"
+              rx="14"
+              fill="#e8f7f7"
+              stroke="#08747d"
+            />
+            <text x="742" y="369" class="title">IndexedDB</text>
+            <text x="742" y="397" class="sub">
+              origin: chrome-extension://&lt;id&gt;
+            </text>
+            <text x="742" y="421" class="sub">
+              database: youtube-audio-replacement
+            </text>
+            <text x="742" y="445" class="sub">object store: audio</text>
+            <text x="742" y="469" class="sub">
+              keyPath: videoId, version: 1
+            </text>
+
+            <path class="store" d="M620 365 C670 365 680 390 720 390" />
+            <text x="635" y="350" class="label">get / put</text>
+            <path class="store" d="M890 205 V335" />
+            <text x="904" y="280" class="label">getAll / delete</text>
+          </svg>
+        </div>
+      </section>
+
+      <section id="operations">
+        <h2><a href="#operations">Storage operations</a></h2>
+        <p class="section-intro">
+          Watch-page operations cross the hidden-frame RPC boundary. Library
+          operations remain entirely within the extension origin.
+        </p>
+        <div class="flow-grid">
+          <article class="card flow-card">
+            <span class="tag youtube">Watch page</span>
+            <h3>Save or load replacement audio</h3>
+            <ol class="steps">
+              <li>
+                <strong>The relay mounts the frame</strong>
+                <p>
+                  <code>content.tsx</code> runs in MAIN world and cannot call
+                  <code>chrome.runtime.getURL</code>. The ISOLATED-world
+                  <code>entry.relay.ts</code> can, so it resolves the extension
+                  URL, appends one hidden <code>src/storage.html</code> iframe,
+                  and marks it ready after load. It is not part of later storage
+                  RPC calls.
+                </p>
+              </li>
+              <li>
+                <strong>MAIN waits for readiness</strong>
+                <p>
+                  <code>content.tsx</code> observes the frame and creates a
+                  typed window RPC client using its <code>contentWindow</code>.
+                </p>
+              </li>
+              <li>
+                <strong>Audio crosses by structured clone</strong>
+                <p>
+                  <code>StoredAudio</code>, including track blobs, is sent to
+                  <code>StoragePageRpcHandlers</code>, or returned from it.
+                </p>
+              </li>
+              <li>
+                <strong>The frame accesses IndexedDB</strong>
+                <p>
+                  <code>audioStorage.storeAudio</code> uses <code>put</code>,
+                  while <code>loadAudio</code> uses <code>get(videoId)</code>.
+                </p>
+              </li>
+            </ol>
+          </article>
+          <article class="card flow-card">
+            <span class="tag extension">Extension tab</span>
+            <h3>List or delete saved videos</h3>
+            <ol class="steps">
+              <li>
+                <strong>The saved view activates its query</strong>
+                <p>
+                  <code>extension-page.tsx</code> calls
+                  <code>audioStorage.listAudio</code> only while the
+                  saved-videos view is active.
+                </p>
+              </li>
+              <li>
+                <strong>The page reads the shared store directly</strong>
+                <p>
+                  <code>getAll()</code> produces metadata summaries and computes
+                  aggregate blob sizes without transferring the audio to another
+                  origin.
+                </p>
+              </li>
+              <li>
+                <strong>Deletion uses the video ID key</strong>
+                <p>
+                  After confirmation, <code>deleteAudio(videoId)</code> removes
+                  the record and invalidates the library query.
+                </p>
+              </li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section id="schema">
+        <h2><a href="#schema">Stored record</a></h2>
+        <p class="section-intro">
+          One record represents all replacement tracks for one YouTube video.
+          Existing one-blob records are interpreted as a single-track record
+          when loaded or listed.
+        </p>
+        <div class="card schema">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Role</th>
+                <th>Storage behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>videoId</code></td>
+                <td>Object-store key</td>
+                <td>Uniquely selects the replacement for a YouTube video.</td>
+              </tr>
+              <tr>
+                <td><code>name</code></td>
+                <td>Display name</td>
+                <td>Usually the uploaded file or archive name.</td>
+              </tr>
+              <tr>
+                <td><code>tracks[]</code></td>
+                <td>Replacement audio</td>
+                <td>
+                  Each entry stores a track name and <code>Blob</code>; summary
+                  size is the sum of all blob sizes.
+                </td>
+              </tr>
+              <tr>
+                <td><code>videoTitle?</code></td>
+                <td>Library label</td>
+                <td>Captured from YouTube metadata when audio is selected.</td>
+              </tr>
+              <tr>
+                <td><code>savedAt?</code></td>
+                <td>Recency</td>
+                <td>
+                  New records use <code>Date.now()</code>; listings sort
+                  descending, with legacy records last.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="boundaries">
+        <h2><a href="#boundaries">Boundaries</a></h2>
+        <p class="section-intro">
+          The mechanism separates playback access from persistence access and
+          narrows each cross-origin interface.
+        </p>
+        <div class="boundary-grid">
+          <article class="card boundary youtube">
+            <h3>YouTube MAIN world</h3>
+            <p>
+              Owns the panel, video synchronization, and selected-audio state.
+              It only receives two persistence methods: load and store.
+            </p>
+          </article>
+          <article class="card boundary isolated">
+            <h3>YouTube ISOLATED world</h3>
+            <p>
+              MAIN world cannot access <code>chrome.runtime</code>. The relay
+              can, so it calls <code>chrome.runtime.getURL</code> and mounts the
+              web-accessible extension frame. After this bootstrap, storage RPC
+              goes directly between MAIN and the frame.
+            </p>
+          </article>
+          <article class="card boundary extension">
+            <h3>Hidden storage frame</h3>
+            <p>
+              Runs with extension-origin storage access. Its RPC handler only
+              accepts messages from its parent window and sends responses to the
+              YouTube origin.
+            </p>
+          </article>
+          <article class="card boundary extension">
+            <h3>Extension tab</h3>
+            <p>
+              Shares the storage origin with the hidden frame and directly owns
+              library-only operations such as listing and deletion.
+            </p>
+          </article>
+          <article class="card boundary store">
+            <h3>IndexedDB</h3>
+            <p>
+              Durably stores blobs under the extension origin. The database is
+              independent of YouTube local storage and is shared across
+              extension pages and tabs.
+            </p>
+          </article>
+          <article class="card boundary store">
+            <h3>No service worker hop</h3>
+            <p>
+              The background worker is not part of this path. It remains
+              responsible for privileged tab creation and network fetching, not
+              replacement-audio persistence.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="shell">
+        Mapped against PR #14 commit <code>55d0a9f</code>. Relevant
+        implementation: <code>src/content.tsx</code>,
+        <code>src/lib/rpc/entry.relay.ts</code>,
+        <code>src/storage-page.ts</code>, <code>src/lib/storage.ts</code>, and
+        <code>src/extension-page.tsx</code>.
+      </div>
+    </footer>
+  </body>
+</html>

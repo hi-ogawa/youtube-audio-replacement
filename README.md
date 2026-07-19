@@ -33,6 +33,7 @@ Then open `http://localhost:5173/src/ui/preview.html`.
 ## References
 
 - [Extension architecture](docs/extension-architecture.html): execution contexts and acquisition RPC flow.
+- [Extension-origin storage](docs/extension-origin-storage.html): hidden-frame RPC and the shared replacement-audio IndexedDB store.
 - [Chrome Web Store submission](docs/chrome-store-submission.md): listing details, privacy disclosures, test instructions, and release checklist.
 - [Privacy policy](PRIVACY.md): local storage and network behavior.
 - [yt-dlp-ext](https://github.com/hi-ogawa/yt-dlp-ext): source for the YouTube acquisition path.
