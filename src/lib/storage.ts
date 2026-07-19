@@ -27,14 +27,6 @@ export interface StoredAudio extends SelectedAudio {
   savedAt?: number;
 }
 
-export interface StoredAudioSummary {
-  videoId: string;
-  name: string;
-  size: number;
-  videoMetadata?: StoredVideoMetadata;
-  savedAt?: number;
-}
-
 export interface StoredMixerTrackState {
   volume: number;
   muted: boolean;
@@ -108,16 +100,6 @@ export const videoStorage = {
 export const audioStorage = {
   loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
-  async listAudio(): Promise<StoredAudioSummary[]> {
-    return (await audioStore.getAll())
-      .map((audio) => ({
-        videoId: audio.videoId,
-        name: audio.name,
-        size: audio.tracks.reduce((total, track) => total + track.blob.size, 0),
-        videoMetadata: audio.videoMetadata,
-        savedAt: audio.savedAt,
-      }))
-      .sort((left, right) => (right.savedAt ?? 0) - (left.savedAt ?? 0));
-  },
+  listAudio: () => audioStore.getAll(),
   deleteAudio: (videoId: string) => audioStore.delete(videoId),
 };

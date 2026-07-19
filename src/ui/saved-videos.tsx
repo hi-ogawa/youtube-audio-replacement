@@ -1,7 +1,15 @@
 import { ExternalLink, Music2, Trash2 } from "lucide-react";
-import type { StoredAudioSummary } from "../lib/storage.ts";
+import type { StoredVideoMetadata } from "../lib/storage.ts";
 import { formatBytes } from "../lib/utils.ts";
 import { AppHeader } from "./app-header.tsx";
+
+export interface SavedVideo {
+  videoId: string;
+  name: string;
+  size: number;
+  videoMetadata?: StoredVideoMetadata;
+  savedAt?: number;
+}
 
 export function SavedVideosView({
   videos,
@@ -11,7 +19,7 @@ export function SavedVideosView({
   onOpenGenerator,
   onDelete,
 }: {
-  videos: StoredAudioSummary[];
+  videos: SavedVideo[];
   loading: boolean;
   error?: string;
   deletingVideoId?: string;
