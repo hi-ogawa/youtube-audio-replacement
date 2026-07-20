@@ -244,11 +244,11 @@ export function StemGeneratorView({
 
       <Section
         number="2"
-        title="Configure"
+        title="Choose output"
         description="Pick the tracks you want to work with. You can change their balance later in the YouTube mixer."
       >
         <fieldset>
-          <legend className="mb-2.5 text-sm font-semibold">Output</legend>
+          <legend className="sr-only">Stem output</legend>
           <div className="grid gap-2.5 sm:grid-cols-2">
             {OUTPUT_OPTIONS.map((option) => {
               const selected = configuration.twoStems === option.value;

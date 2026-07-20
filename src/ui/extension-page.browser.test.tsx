@@ -13,6 +13,9 @@ test("generator page", async () => {
   await expect
     .element(screen.getByRole("heading", { name: "1. Choose audio" }))
     .toBeVisible();
+  await expect
+    .element(screen.getByRole("heading", { name: "2. Choose output" }))
+    .toBeVisible();
   const fourStems = screen.getByRole("radio", { name: /Four stems/ });
   await expect.element(fourStems).toBeChecked();
   await expect
