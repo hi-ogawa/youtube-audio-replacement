@@ -182,17 +182,6 @@ export function Panel({
     });
   }
 
-  function updateMasterVolume(volume: number) {
-    updateMixer({ masterVolume: volume });
-  }
-
-  function updateMixerTrack(
-    trackName: string,
-    update: Partial<StoredMixerTrackState>,
-  ) {
-    updateMixer({ tracks: { [trackName]: update } });
-  }
-
   return (
     <div className="w-75 rounded-lg border border-border bg-panel p-2.5 text-sm text-foreground shadow-lg">
       <div className="flex items-center justify-between gap-3">
@@ -224,8 +213,7 @@ export function Panel({
         <Mixer
           mixerState={mixerState}
           disabled={!enabled}
-          onChange={updateMixerTrack}
-          onMasterVolumeChange={updateMasterVolume}
+          onChange={updateMixer}
         />
       )}
     </div>
@@ -236,12 +224,10 @@ function Mixer({
   mixerState,
   disabled,
   onChange,
-  onMasterVolumeChange,
 }: {
   mixerState: MixerState;
   disabled: boolean;
-  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
-  onMasterVolumeChange(volume: number): void;
+  onChange(update: MixerStateUpdate): void;
 }) {
   return (
     <div className="mt-2.5">
@@ -250,13 +236,13 @@ function Mixer({
           key={track.name}
           track={track}
           disabled={disabled}
-          onChange={onChange}
+          onChange={(update) => onChange({ tracks: { [track.name]: update } })}
         />
       ))}
       <MixerMasterRow
         volume={mixerState.masterVolume}
         disabled={disabled}
-        onChange={onMasterVolumeChange}
+        onChange={(masterVolume) => onChange({ masterVolume })}
       />
     </div>
   );
@@ -306,7 +292,7 @@ function MixerTrackRow({
 }: {
   track: MixerTrackState;
   disabled: boolean;
-  onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
+  onChange(update: Partial<StoredMixerTrackState>): void;
 }) {
   const displayName = formatTrackName(track.name);
   const trackDisabled = disabled || !track.enabled;
@@ -331,9 +317,7 @@ function MixerTrackRow({
         value={track.volume}
         aria-label={`${displayName} volume`}
         disabled={disabled}
-        onChange={(event) =>
-          onChange(track.name, { volume: Number(event.target.value) })
-        }
+        onChange={(event) => onChange({ volume: Number(event.target.value) })}
       />
       <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
         {track.volume}%
@@ -342,7 +326,7 @@ function MixerTrackRow({
         label={`Mute ${displayName}`}
         pressed={track.muted}
         disabled={disabled}
-        onClick={() => onChange(track.name, { muted: !track.muted })}
+        onClick={() => onChange({ muted: !track.muted })}
       >
         M
       </MixerButton>
@@ -351,7 +335,7 @@ function MixerTrackRow({
         pressed={track.soloed}
         disabled={disabled}
         accent
-        onClick={() => onChange(track.name, { soloed: !track.soloed })}
+        onClick={() => onChange({ soloed: !track.soloed })}
       >
         S
       </MixerButton>
