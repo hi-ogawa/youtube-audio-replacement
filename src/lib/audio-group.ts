@@ -1,9 +1,9 @@
 import type { ReplacementAudio } from "./player-sync.ts";
 import type {
   SelectedAudio,
+  StoredAudioTrack,
   StoredMixerState,
   StoredMixerTrackState,
-  StoredAudioTrack,
 } from "./storage.ts";
 
 const DEFAULT_MIXER_TRACK_STATE: StoredMixerTrackState = {
@@ -19,10 +19,21 @@ export interface MixerTrackState extends StoredMixerTrackState {
 }
 
 export type MixerState = MixerTrackState[];
+export type AudioPlaybackMode = "html-audio" | "web-audio";
 
 interface AudioGroupNotifications {
   onTimeChange(currentTime: number): void;
   onDurationChange(duration: number | undefined): void;
+}
+
+interface AudioGroupBackend extends ReplacementAudio {
+  hasTracks(): boolean;
+  setTracks(
+    tracks: StoredAudioTrack[],
+    notifications: AudioGroupNotifications,
+  ): Promise<void>;
+  setMixerState(mixerState: MixerState): void;
+  clear(): void;
 }
 
 export function createMixerState(
@@ -70,6 +81,68 @@ function deriveMixerState(
 }
 
 export class AudioGroup implements ReplacementAudio {
+  readonly mode: AudioPlaybackMode;
+  readonly #backend: AudioGroupBackend;
+
+  constructor(mode: AudioPlaybackMode = "html-audio") {
+    this.mode = mode;
+    this.#backend =
+      mode === "web-audio" ? new WebAudioGroup() : new HtmlAudioGroup();
+  }
+
+  get currentTime(): number {
+    return this.#backend.currentTime;
+  }
+
+  set currentTime(value: number) {
+    this.#backend.currentTime = value;
+  }
+
+  get playbackRate(): number {
+    return this.#backend.playbackRate;
+  }
+
+  set playbackRate(value: number) {
+    this.#backend.playbackRate = value;
+  }
+
+  get volume(): number {
+    return this.#backend.volume;
+  }
+
+  set volume(value: number) {
+    this.#backend.volume = value;
+  }
+
+  hasTracks(): boolean {
+    return this.#backend.hasTracks();
+  }
+
+  setTracks(
+    tracks: StoredAudioTrack[],
+    notifications: AudioGroupNotifications,
+  ): Promise<void> {
+    return this.#backend.setTracks(tracks, notifications);
+  }
+
+  setMixerState(mixerState: MixerState): void {
+    this.#backend.setMixerState(mixerState);
+  }
+
+  play(): Promise<void> {
+    return this.#backend.play();
+  }
+
+  pause(): void {
+    this.#backend.pause();
+  }
+
+  clear(): void {
+    this.#backend.clear();
+  }
+}
+
+class HtmlAudioGroup implements AudioGroupBackend {
   #masterVolume = 1;
   #players = new Map<string, { audio: HTMLAudioElement; objectUrl: string }>();
   #mixerState: MixerState = [];
@@ -107,10 +180,10 @@ export class AudioGroup implements ReplacementAudio {
     return this.#players.size > 0;
   }
 
-  setTracks(
+  async setTracks(
     tracks: StoredAudioTrack[],
     notifications: AudioGroupNotifications,
-  ): void {
+  ): Promise<void> {
     this.clear();
     for (const track of tracks) {
       const audio = document.createElement("audio");
@@ -173,6 +246,215 @@ export class AudioGroup implements ReplacementAudio {
       const state = mixer.get(name);
       audio.volume = state?.enabled
         ? Math.max(0, Math.min(1, this.#masterVolume * (state.volume / 100)))
+        : 0;
+    }
+  }
+}
+
+class WebAudioGroup implements AudioGroupBackend {
+  #context?: AudioContext;
+  #generation = 0;
+  #masterVolume = 1;
+  #mixerState: MixerState = [];
+  #tracks = new Map<string, { buffer: AudioBuffer; gain: GainNode }>();
+  #sources = new Set<AudioBufferSourceNode>();
+  #notifications?: AudioGroupNotifications;
+  #currentTime = 0;
+  #playbackRate = 1;
+  #startedAt = 0;
+  #playing = false;
+  #timeUpdateTimer?: ReturnType<typeof setInterval>;
+
+  get currentTime(): number {
+    if (!this.#playing || !this.#context) {
+      return this.#currentTime;
+    }
+    return (
+      this.#currentTime +
+      Math.max(0, this.#context.currentTime - this.#startedAt) *
+        this.#playbackRate
+    );
+  }
+
+  set currentTime(value: number) {
+    this.#currentTime = Math.max(0, value);
+    this.#notifications?.onTimeChange(this.#currentTime);
+    if (this.#playing) {
+      this.#startSources();
+    }
+  }
+
+  get playbackRate(): number {
+    return this.#playbackRate;
+  }
+
+  set playbackRate(value: number) {
+    if (value === this.#playbackRate) {
+      return;
+    }
+    this.#currentTime = this.currentTime;
+    this.#playbackRate = value;
+    if (this.#playing) {
+      this.#startSources();
+    }
+  }
+
+  get volume(): number {
+    return this.#masterVolume;
+  }
+
+  set volume(value: number) {
+    this.#masterVolume = value;
+    this.#applyMixer();
+  }
+
+  hasTracks(): boolean {
+    return this.#tracks.size > 0;
+  }
+
+  async setTracks(
+    tracks: StoredAudioTrack[],
+    notifications: AudioGroupNotifications,
+  ): Promise<void> {
+    this.clear();
+    const generation = this.#generation;
+    const context = new AudioContext();
+    this.#context = context;
+
+    let decodedTracks: { name: string; buffer: AudioBuffer }[];
+    try {
+      decodedTracks = await Promise.all(
+        tracks.map(async (track) => ({
+          name: track.name,
+          buffer: await context.decodeAudioData(await track.blob.arrayBuffer()),
+        })),
+      );
+    } catch (error) {
+      if (generation === this.#generation) {
+        this.clear();
+      }
+      throw error;
+    }
+    if (generation !== this.#generation) {
+      return;
+    }
+
+    this.#notifications = notifications;
+    for (const track of decodedTracks) {
+      const gain = context.createGain();
+      gain.connect(context.destination);
+      this.#tracks.set(track.name, { buffer: track.buffer, gain });
+    }
+    this.#applyMixer();
+    notifications.onTimeChange(0);
+    notifications.onDurationChange(this.#getPrimary()?.buffer.duration);
+  }
+
+  setMixerState(mixerState: MixerState): void {
+    this.#mixerState = mixerState;
+    this.#applyMixer();
+  }
+
+  async play(): Promise<void> {
+    if (!this.#context || this.#tracks.size === 0) {
+      return;
+    }
+    await this.#context.resume();
+    if (this.#playing) {
+      return;
+    }
+    this.#playing = true;
+    this.#startSources();
+    this.#timeUpdateTimer = setInterval(() => this.#updateTime(), 250);
+  }
+
+  pause(): void {
+    if (this.#playing) {
+      this.#currentTime = this.currentTime;
+    }
+    this.#playing = false;
+    this.#stopSources();
+    this.#stopTimeUpdates();
+    this.#notifications?.onTimeChange(this.#currentTime);
+  }
+
+  clear(): void {
+    this.#generation += 1;
+    this.pause();
+    for (const { gain } of this.#tracks.values()) {
+      gain.disconnect();
+    }
+    this.#tracks.clear();
+    this.#notifications = undefined;
+    this.#currentTime = 0;
+    if (this.#context) {
+      void this.#context.close();
+      this.#context = undefined;
+    }
+  }
+
+  #getPrimary() {
+    return this.#tracks.values().next().value as
+      | { buffer: AudioBuffer; gain: GainNode }
+      | undefined;
+  }
+
+  #startSources(): void {
+    const context = this.#context;
+    if (!context) {
+      return;
+    }
+
+    this.#stopSources();
+    const startAt = context.currentTime + 0.01;
+    this.#startedAt = startAt;
+    for (const { buffer, gain } of this.#tracks.values()) {
+      if (this.#currentTime >= buffer.duration) {
+        continue;
+      }
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.playbackRate.value = this.#playbackRate;
+      source.connect(gain);
+      source.start(startAt, this.#currentTime);
+      this.#sources.add(source);
+    }
+  }
+
+  #stopSources(): void {
+    for (const source of this.#sources) {
+      source.stop();
+      source.disconnect();
+    }
+    this.#sources.clear();
+  }
+
+  #updateTime(): void {
+    const duration = this.#getPrimary()?.buffer.duration;
+    let currentTime = this.currentTime;
+    if (duration !== undefined && currentTime >= duration) {
+      this.#currentTime = duration;
+      currentTime = duration;
+      this.#playing = false;
+      this.#stopSources();
+      this.#stopTimeUpdates();
+    }
+    this.#notifications?.onTimeChange(currentTime);
+  }
+
+  #stopTimeUpdates(): void {
+    if (this.#timeUpdateTimer) {
+      clearInterval(this.#timeUpdateTimer);
+      this.#timeUpdateTimer = undefined;
+    }
+  }
+
+  #applyMixer(): void {
+    const mixer = new Map(this.#mixerState.map((track) => [track.name, track]));
+    for (const [name, { gain }] of this.#tracks) {
+      const state = mixer.get(name);
+      gain.gain.value = state?.enabled
+        ? Math.max(0, this.#masterVolume * (state.volume / 100))
         : 0;
     }
   }

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatTrackName, resolveAudioFiles } from "../lib/audio-file.ts";
 import {
   AudioGroup,
+  type AudioPlaybackMode,
   createMixerState,
   type MixerState,
   type MixerTrackState,
@@ -87,9 +88,10 @@ export function Panel({
     ),
   );
   const [enabled, setEnabled] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
-  const [audioGroup] = useState(() => new AudioGroup());
+  const [audioGroup, setAudioGroup] = useState(() => new AudioGroup());
   const [playerSync] = useState(
     () =>
       new PlayerSync({
@@ -106,20 +108,39 @@ export function Panel({
   // The first track supplies display metadata. AudioGroup owns all player and
   // object URL cleanup, including when this source is replaced.
   useEffect(() => {
+    let cancelled = false;
+    setAudioReady(false);
     if (!selectedAudio) {
       audioGroup.clear();
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     // Install the source's mixer before creating players. Mixer-only changes
     // are applied synchronously in updateMixerTrack.
     audioGroup.setMixerState(mixerState);
-    audioGroup.setTracks(selectedAudio.tracks, {
-      onTimeChange: setCurrentTime,
-      onDurationChange: setDuration,
-    });
+    void audioGroup
+      .setTracks(selectedAudio.tracks, {
+        onTimeChange: setCurrentTime,
+        onDurationChange: setDuration,
+      })
+      .then(() => {
+        if (!cancelled) {
+          setAudioReady(true);
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error(error);
+          onError("Replacement audio playback failed.");
+        }
+      });
     setCurrentTime(0);
     setDuration(undefined);
+    return () => {
+      cancelled = true;
+    };
   }, [audioGroup, selectedAudio]);
 
   const chooseFileMutation = useMutation({
@@ -135,6 +156,7 @@ export function Panel({
         })),
       };
       const nextMixerState = createMixerState(nextAudio, {});
+      setAudioReady(false);
       setSelectedAudio(nextAudio);
       setMixerState(nextMixerState);
       videoStorage.updateState(videoId, {
@@ -168,6 +190,16 @@ export function Panel({
     setEnabled(true);
   }
 
+  function setPlaybackMode(mode: AudioPlaybackMode) {
+    if (mode === audioGroup.mode) {
+      return;
+    }
+    playerSync.disable();
+    setEnabled(false);
+    setAudioReady(false);
+    setAudioGroup(new AudioGroup(mode));
+  }
+
   function updateMixerTrack(
     trackName: string,
     update: Partial<StoredMixerTrackState>,
@@ -193,11 +225,7 @@ export function Panel({
             Prepare stems
           </button>
         ) : (
-          <Toggle
-            checked={enabled}
-            disabled={!selectedAudio}
-            onChange={toggle}
-          />
+          <Toggle checked={enabled} disabled={!audioReady} onChange={toggle} />
         )}
       </div>
       <AudioDrop
@@ -207,9 +235,40 @@ export function Panel({
         onChoose={chooseFileMutation.mutate}
       />
       {selectedAudio && (
-        <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+        <>
+          <PlaybackModeToggle
+            mode={audioGroup.mode}
+            onChange={setPlaybackMode}
+          />
+          <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+        </>
       )}
     </div>
+  );
+}
+
+function PlaybackModeToggle({
+  mode,
+  onChange,
+}: {
+  mode: AudioPlaybackMode;
+  onChange(mode: AudioPlaybackMode): void;
+}) {
+  const webAudio = mode === "web-audio";
+  return (
+    <button
+      className="mt-2 flex w-full cursor-pointer items-center justify-between rounded-md border border-button-border bg-button px-2 py-1 text-[11px] text-muted-foreground hover:bg-button-hover"
+      type="button"
+      role="switch"
+      aria-label="Use Web Audio playback"
+      aria-checked={webAudio}
+      onClick={() => onChange(webAudio ? "html-audio" : "web-audio")}
+    >
+      <span>Playback engine</span>
+      <span className="font-semibold text-foreground">
+        {webAudio ? "Web Audio" : "HTML Audio"}
+      </span>
+    </button>
   );
 }
 
