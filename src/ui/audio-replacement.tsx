@@ -5,6 +5,7 @@ import {
   AudioGroup,
   createMixerState,
   type MixerState,
+  type MixerStateUpdate,
   type MixerTrackState,
   toStoredMixerState,
   updateMixerState,
@@ -172,22 +173,24 @@ export function Panel({
     setEnabled(true);
   }
 
-  function updateMasterVolume(volume: number) {
-    const nextMixerState = { ...mixerState, masterVolume: volume };
+  function updateMixer(update: MixerStateUpdate) {
+    const nextMixerState = updateMixerState(mixerState, update);
     audioGroup.setMixerState(nextMixerState);
     setMixerState(nextMixerState);
+    videoStorage.updateState(videoId, {
+      mixer: toStoredMixerState(nextMixerState),
+    });
+  }
+
+  function updateMasterVolume(volume: number) {
+    updateMixer({ masterVolume: volume });
   }
 
   function updateMixerTrack(
     trackName: string,
     update: Partial<StoredMixerTrackState>,
   ) {
-    const nextMixerState = updateMixerState(mixerState, trackName, update);
-    audioGroup.setMixerState(nextMixerState);
-    setMixerState(nextMixerState);
-    videoStorage.updateState(videoId, {
-      mixer: toStoredMixerState(nextMixerState),
-    });
+    updateMixer({ tracks: { [trackName]: update } });
   }
 
   return (

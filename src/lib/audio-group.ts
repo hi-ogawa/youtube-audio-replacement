@@ -23,6 +23,10 @@ export interface MixerState {
   tracks: MixerTrackState[];
 }
 
+export type MixerStateUpdate = Partial<Omit<MixerState, "tracks">> & {
+  tracks?: Record<string, Partial<StoredMixerTrackState>>;
+};
+
 interface AudioGroupNotifications {
   onTimeChange(currentTime: number): void;
   onDurationChange(duration: number | undefined): void;
@@ -46,16 +50,20 @@ export function createMixerState(
 
 export function updateMixerState(
   mixerState: MixerState,
-  trackName: string,
-  update: Partial<StoredMixerTrackState>,
+  update: MixerStateUpdate,
 ): MixerState {
+  const { tracks: trackUpdates, ...mixerUpdate } = update;
   return {
     ...mixerState,
-    tracks: deriveMixerTrackState(
-      mixerState.tracks.map((track) =>
-        track.name === trackName ? { ...track, ...update } : track,
-      ),
-    ),
+    ...mixerUpdate,
+    tracks: trackUpdates
+      ? deriveMixerTrackState(
+          mixerState.tracks.map((track) => ({
+            ...track,
+            ...trackUpdates[track.name],
+          })),
+        )
+      : mixerState.tracks,
   };
 }
 
