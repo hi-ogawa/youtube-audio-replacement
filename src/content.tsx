@@ -82,6 +82,8 @@ class YouTubeVideo implements VideoSyncSource {
   }
 
   get volume() {
+    // player.getVolume() is only the slider value; video.volume also includes
+    // YouTube's per-video normalization gain.
     return this.video.volume;
   }
 
