@@ -32,7 +32,6 @@ interface YouTubePlayer extends HTMLElement {
     author?: string;
     length_seconds?: number | string;
   };
-  getVolume?(): number;
   isMuted?(): boolean;
   mute?(): void;
   unMute?(): void;
@@ -83,10 +82,9 @@ class YouTubeVideo implements VideoSyncSource {
   }
 
   get volume() {
-    const volume = this.player?.getVolume?.();
-    return typeof volume === "number"
-      ? Math.max(0, Math.min(1, volume / 100))
-      : this.video.volume;
+    // player.getVolume() is only the slider value; video.volume also includes
+    // YouTube's per-video normalization gain.
+    return this.video.volume;
   }
 
   addEventListener(

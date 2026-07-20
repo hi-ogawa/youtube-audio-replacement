@@ -45,6 +45,8 @@ export class PlayerSync {
     this.#originalMuted = video.muted;
     this.#alignTime();
     this.#alignRate();
+    // Copy volume once rather than continuously since YouTube disables its
+    // volume control while muted.
     audio.volume = this.#originalMuted ? 0 : video.volume;
     video.muted = true;
 
