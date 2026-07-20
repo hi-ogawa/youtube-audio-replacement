@@ -35,6 +35,12 @@ test("basic", async () => {
   await userEvent.upload(fileInput, "./fixtures/sine-2s.wav");
 
   await expect.element(screen.getByText("sine-2s.wav")).toBeVisible();
+  const playbackMode = screen.getByRole("switch", {
+    name: "Use Web Audio playback",
+  });
+  await expect.element(playbackMode).toHaveAttribute("aria-checked", "false");
+  await expect.element(screen.getByText("HTML Audio")).toBeVisible();
+  await page.mark("playback mode toggle");
   const toggle = screen.getByRole("switch", {
     name: "Use replacement audio",
   });
