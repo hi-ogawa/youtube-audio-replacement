@@ -39,6 +39,39 @@ type GeneratedFile = {
   url: string;
 };
 
+const OUTPUT_OPTIONS: {
+  value: Preferences["twoStems"];
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: null,
+    label: "Four stems",
+    description: "Separate vocals, drums, bass, and other instruments",
+  },
+  {
+    value: "vocals",
+    label: "Vocals + backing",
+    description: "Separate vocals from the rest",
+  },
+  {
+    value: "drums",
+    label: "Drums + backing",
+    description: "Separate drums from the rest",
+  },
+  {
+    value: "bass",
+    label: "Bass + backing",
+    description: "Separate bass from the rest",
+  },
+  {
+    value: "other",
+    label: "Other instruments + backing",
+    description:
+      "Guitars, keys, and anything not classified as vocals, drums, or bass",
+  },
+];
+
 export function StemGeneratorView({
   initialInput,
   sourceMode,
@@ -209,97 +242,135 @@ export function StemGeneratorView({
         </div>
       </Section>
 
-      <Section number="2" title="Configure">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
-            label="Model"
-            htmlFor="model"
-            help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
-          >
-            <select
-              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-              id="model"
-              value={configuration.model}
-              disabled={separationPending}
-              onChange={(event) =>
-                onConfigurationChange({
-                  ...configuration,
-                  model: event.target.value as Preferences["model"],
-                })
-              }
+      <Section
+        number="2"
+        title="Configure"
+        description="Pick the tracks you want to work with. You can change their balance later in the YouTube mixer."
+      >
+        <fieldset>
+          <legend className="mb-2.5 text-sm font-semibold">Output</legend>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            {OUTPUT_OPTIONS.map((option) => {
+              const selected = configuration.twoStems === option.value;
+              return (
+                <label
+                  className={`flex min-h-18 gap-3 rounded-lg border p-3 transition-colors ${
+                    option.value === null ? "sm:col-span-2" : ""
+                  } ${
+                    selected
+                      ? "border-accent-border bg-blue-50 ring-1 ring-accent-border dark:bg-blue-950/35"
+                      : "border-button-border bg-panel hover:bg-button"
+                  } ${separationPending ? "cursor-default opacity-60" : "cursor-pointer"}`}
+                  key={option.label}
+                >
+                  <input
+                    className="mt-0.5 size-4 shrink-0 accent-accent"
+                    type="radio"
+                    name="output"
+                    value={option.value ?? ""}
+                    checked={selected}
+                    disabled={separationPending}
+                    onChange={() =>
+                      onConfigurationChange({
+                        ...configuration,
+                        twoStems: option.value,
+                      })
+                    }
+                  />
+                  <span>
+                    <strong className="block text-sm font-semibold">
+                      {option.label}
+                    </strong>
+                    <span className="mt-1 block text-sm leading-snug text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        <details className="group mt-3 rounded-lg border border-button-border bg-button">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <span className="text-lg leading-none text-muted-foreground transition-transform group-open:rotate-90">
+              ›
+            </span>
+            <span className="shrink-0">Advanced settings</span>
+            <span className="ml-auto min-w-0 truncate text-right text-xs font-normal text-muted-foreground">
+              {configuration.model} · {configuration.shifts} shift
+              {configuration.shifts === 1 ? "" : "s"} ·{" "}
+              {configuration.method === "minus"
+                ? "subtract source"
+                : "combine other stems"}
+            </span>
+          </summary>
+          <div className="grid gap-4 border-t border-button-border p-3 sm:grid-cols-2">
+            <Field
+              label="Model"
+              htmlFor="model"
+              help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
             >
-              <option value="htdemucs">htdemucs</option>
-              <option value="htdemucs_ft">htdemucs_ft</option>
-            </select>
-          </Field>
-          <Field
-            label="Shifts"
-            htmlFor="shifts"
-            help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
-          >
-            <input
-              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-              type="number"
-              id="shifts"
-              min="1"
-              max="4"
-              value={configuration.shifts}
-              disabled={separationPending}
-              onChange={(event) =>
-                onConfigurationChange({
-                  ...configuration,
-                  shifts: Number(event.target.value),
-                })
-              }
-            />
-          </Field>
-          <Field
-            label="Two-stems"
-            htmlFor="twoStems"
-            help="Output the selected source and a mix without it. Other contains instruments not classified as vocals, drums, or bass."
-          >
-            <select
-              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
-              id="twoStems"
-              value={configuration.twoStems ?? ""}
-              disabled={separationPending}
-              onChange={(event) =>
-                onConfigurationChange({
-                  ...configuration,
-                  twoStems: (event.target.value ||
-                    null) as Preferences["twoStems"],
-                })
-              }
+              <select
+                className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                id="model"
+                value={configuration.model}
+                disabled={separationPending}
+                onChange={(event) =>
+                  onConfigurationChange({
+                    ...configuration,
+                    model: event.target.value as Preferences["model"],
+                  })
+                }
+              >
+                <option value="htdemucs">htdemucs</option>
+                <option value="htdemucs_ft">htdemucs_ft</option>
+              </select>
+            </Field>
+            <Field
+              label="Shifts"
+              htmlFor="shifts"
+              help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
             >
-              <option value="">off</option>
-              <option>vocals</option>
-              <option>drums</option>
-              <option>bass</option>
-              <option>other</option>
-            </select>
-          </Field>
-          <Field
-            label="Method"
-            htmlFor="method"
-            help="Add combines the other separated stems. Minus subtracts the source from the original and, with htdemucs_ft, runs about four times faster. Results vary by track."
-          >
-            <select
-              className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
-              id="method"
-              value={configuration.method}
-              disabled={!configuration.twoStems || separationPending}
-              onChange={(event) =>
-                onConfigurationChange({
-                  ...configuration,
-                  method: event.target.value as Preferences["method"],
-                })
-              }
+              <input
+                className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
+                type="number"
+                id="shifts"
+                min="1"
+                max="4"
+                value={configuration.shifts}
+                disabled={separationPending}
+                onChange={(event) =>
+                  onConfigurationChange({
+                    ...configuration,
+                    shifts: Number(event.target.value),
+                  })
+                }
+              />
+            </Field>
+            <Field
+              label="Backing mix"
+              htmlFor="method"
+              help="Subtract source removes the selected stem from the original and, with htdemucs_ft, runs about four times faster. Combine other stems mixes the other separated stems. Results vary by track."
             >
-              <option value="add">add</option>
-              <option value="minus">minus</option>
-            </select>
-          </Field>
-        </div>
+              <select
+                className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"
+                id="method"
+                value={configuration.method}
+                disabled={!configuration.twoStems || separationPending}
+                onChange={(event) =>
+                  onConfigurationChange({
+                    ...configuration,
+                    method: event.target.value as Preferences["method"],
+                  })
+                }
+              >
+                <option value="minus">Subtract source</option>
+                <option value="add">Combine other stems</option>
+              </select>
+            </Field>
+          </div>
+        </details>
         <p
           className="mt-4 rounded-md bg-button px-3 py-2.5 text-sm leading-relaxed text-muted-foreground"
           id="outputSummary"

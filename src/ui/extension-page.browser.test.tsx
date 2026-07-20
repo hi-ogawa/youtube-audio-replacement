@@ -13,6 +13,23 @@ test("generator page", async () => {
   await expect
     .element(screen.getByRole("heading", { name: "1. Choose audio" }))
     .toBeVisible();
+  const fourStems = screen.getByRole("radio", { name: /Four stems/ });
+  await expect.element(fourStems).toBeChecked();
+  await expect
+    .element(screen.getByText("htdemucs · 1 shift · subtract source"))
+    .toBeVisible();
+
+  await screen.getByRole("radio", { name: /Bass \+ backing/ }).click();
+  await expect.element(fourStems).not.toBeChecked();
+  await expect
+    .element(screen.getByText("Creates bass.wav and backing.wav."))
+    .toBeVisible();
+
+  await screen.getByText("Advanced settings", { exact: true }).click();
+  await expect.element(screen.getByLabelText("Backing mix")).toBeVisible();
+  await expect
+    .element(screen.getByLabelText("Backing mix"))
+    .toHaveValue("minus");
   await page.mark("extension page generator");
 });
 
