@@ -212,7 +212,7 @@ export function StemGeneratorView({
       <Section
         number="2"
         title="Choose output"
-        description="Pick the tracks you want to work with. You can change their balance later in the YouTube mixer."
+        description="Choose which tracks to create. “Other instruments” includes guitars, keys, and anything not classified as vocals, drums, or bass. You can adjust track balance later in the YouTube mixer."
       >
         <OutputConfiguration
           configuration={configuration}
@@ -341,28 +341,27 @@ const OUTPUT_OPTIONS: {
   {
     value: null,
     label: "Four stems",
-    description: "Separate vocals, drums, bass, and other instruments",
+    description: "Create vocals, drums, bass, and “other” stems",
   },
   {
     value: "vocals",
     label: "Vocals + backing",
-    description: "Separate vocals from the rest",
+    description: "Create a vocals stem and a backing track without vocals",
   },
   {
     value: "drums",
     label: "Drums + backing",
-    description: "Separate drums from the rest",
+    description: "Create a drums stem and a backing track without drums",
   },
   {
     value: "bass",
     label: "Bass + backing",
-    description: "Separate bass from the rest",
+    description: "Create a bass stem and a backing track without bass",
   },
   {
     value: "other",
     label: "Other instruments + backing",
-    description:
-      "Guitars, keys, and anything not classified as vocals, drums, or bass",
+    description: "Create an “other” stem and a backing track without it",
   },
 ];
 
@@ -412,7 +411,7 @@ function OutputConfiguration({
           <Field
             label="Model"
             htmlFor="model"
-            help="Choose the standard general-purpose model or the fine-tuned source-specialist models."
+            help="Choose a standard general-purpose model or a fine-tuned model specialized for a source."
           >
             <select
               className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
@@ -433,7 +432,7 @@ function OutputConfiguration({
           <Field
             label="Shifts"
             htmlFor="shifts"
-            help="Trade speed for separation quality by averaging multiple processing passes. Runtime grows roughly in proportion."
+            help="Choose how many processing passes to average. More shifts can improve separation quality, but runtime increases roughly in proportion."
           >
             <input
               className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm"
@@ -454,7 +453,7 @@ function OutputConfiguration({
           <Field
             label="Backing mix"
             htmlFor="method"
-            help="Subtract source removes the selected stem from the original and, with htdemucs_ft, runs about four times faster. Combine other stems mixes the other separated stems. Results vary by track."
+            help="Subtract source removes the selected source from the original. With htdemucs_ft, it runs about four times faster than Combine other stems. Combine other stems mixes the other separated stems. Results vary by track."
           >
             <select
               className="h-11 w-full rounded-md border border-button-border bg-panel px-3 text-sm disabled:opacity-50"

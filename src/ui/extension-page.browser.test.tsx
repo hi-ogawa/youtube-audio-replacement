@@ -16,6 +16,18 @@ test("generator page", async () => {
   await expect
     .element(screen.getByRole("heading", { name: "2. Choose output" }))
     .toBeVisible();
+  await expect
+    .element(
+      screen.getByText(
+        /“Other instruments” includes guitars, keys, and anything not classified/,
+      ),
+    )
+    .toBeVisible();
+  await expect
+    .element(
+      screen.getByText("Create a bass stem and a backing track without bass"),
+    )
+    .toBeVisible();
   const fourStems = screen.getByRole("radio", { name: /Four stems/ });
   await expect.element(fourStems).toBeChecked();
   await expect
