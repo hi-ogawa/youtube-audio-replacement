@@ -232,6 +232,7 @@ export function Panel({
         audio={selectedAudio}
         currentTime={currentTime}
         duration={duration}
+        loading={chooseFileMutation.isPending}
         onChoose={chooseFileMutation.mutate}
       />
       {selectedAudio && (
@@ -240,7 +241,11 @@ export function Panel({
             mode={audioGroup.mode}
             onChange={setPlaybackMode}
           />
-          <Mixer mixerState={mixerState} onChange={updateMixerTrack} />
+          <Mixer
+            mixerState={mixerState}
+            disabled={!enabled}
+            onChange={updateMixerTrack}
+          />
         </>
       )}
     </div>
@@ -274,15 +279,22 @@ function PlaybackModeToggle({
 
 function Mixer({
   mixerState,
+  disabled,
   onChange,
 }: {
   mixerState: MixerState;
+  disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   return (
     <div className="mt-2.5">
       {mixerState.map((track) => (
-        <MixerTrackRow key={track.name} track={track} onChange={onChange} />
+        <MixerTrackRow
+          key={track.name}
+          track={track}
+          disabled={disabled}
+          onChange={onChange}
+        />
       ))}
     </div>
   );
@@ -290,16 +302,19 @@ function Mixer({
 
 function MixerTrackRow({
   track,
+  disabled,
   onChange,
 }: {
   track: MixerTrackState;
+  disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
 }) {
   const displayName = formatTrackName(track.name);
+  const trackDisabled = disabled || !track.enabled;
 
   return (
     <div
-      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${track.enabled ? "" : "text-muted-foreground"}`}
+      className={`flex items-center gap-1.5 border-t border-border py-2 first:border-t-0 first:pt-0.5 last:pb-0 ${trackDisabled ? "text-muted-foreground" : ""}`}
     >
       <span
         className="w-12 shrink-0 truncate text-xs font-semibold"
@@ -308,13 +323,15 @@ function MixerTrackRow({
         {displayName}
       </span>
       <input
-        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent"
+        // TODO: Add explicit dark-mode styling for Chromium's native disabled range.
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default dark:disabled:opacity-65"
         type="range"
         min="0"
         max="100"
         step="1"
         value={track.volume}
         aria-label={`${displayName} volume`}
+        disabled={disabled}
         onChange={(event) =>
           onChange(track.name, { volume: Number(event.target.value) })
         }
@@ -325,6 +342,7 @@ function MixerTrackRow({
       <MixerButton
         label={`Mute ${displayName}`}
         pressed={track.muted}
+        disabled={disabled}
         onClick={() => onChange(track.name, { muted: !track.muted })}
       >
         M
@@ -332,6 +350,7 @@ function MixerTrackRow({
       <MixerButton
         label={`Solo ${displayName}`}
         pressed={track.soloed}
+        disabled={disabled}
         accent
         onClick={() => onChange(track.name, { soloed: !track.soloed })}
       >
@@ -344,19 +363,21 @@ function MixerTrackRow({
 function MixerButton({
   label,
   pressed,
+  disabled,
   accent = false,
   children,
   onClick,
 }: {
   label: string;
   pressed: boolean;
+  disabled: boolean;
   accent?: boolean;
   children: string;
   onClick(): void;
 }) {
   return (
     <button
-      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold ${
+      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded border text-[10px] font-bold disabled:cursor-default disabled:opacity-60 ${
         pressed
           ? accent
             ? "border-accent bg-accent text-white"
@@ -367,6 +388,7 @@ function MixerButton({
       aria-label={label}
       aria-pressed={pressed}
       title={label}
+      disabled={disabled}
       onClick={onClick}
     >
       {children}
@@ -409,11 +431,13 @@ function AudioDrop({
   audio,
   currentTime,
   duration,
+  loading,
   onChoose,
 }: {
   audio: SelectedAudio | undefined;
   currentTime: number | undefined;
   duration: number | undefined;
+  loading: boolean;
   onChoose(files: File[]): void;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -422,8 +446,10 @@ function AudioDrop({
   return (
     <>
       <button
-        className={`mt-2.5 flex h-13 w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 text-left transition-colors ${audio ? "border-button-border bg-button hover:bg-button-hover" : "border-dashed border-button-border text-muted-foreground hover:border-accent-border hover:bg-button-hover"} ${dragging ? "border-accent-border bg-button-hover" : ""}`}
+        className={`mt-2.5 flex h-13 w-full cursor-pointer items-center gap-2 rounded-md border px-2.5 text-left transition-colors disabled:cursor-wait disabled:opacity-70 ${audio ? "border-button-border bg-button hover:bg-button-hover" : "border-dashed border-button-border text-muted-foreground hover:border-accent-border hover:bg-button-hover"} ${dragging ? "border-accent-border bg-button-hover" : ""}`}
         type="button"
+        disabled={loading}
+        aria-busy={loading}
         onClick={() => inputRef.current?.click()}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -458,7 +484,11 @@ function AudioDrop({
           <circle cx="6" cy="18" r="3" />
           <circle cx="16" cy="16" r="3" />
         </svg>
-        {audio ? (
+        {loading ? (
+          <span className="text-xs" role="status" aria-live="polite">
+            Loading audio...
+          </span>
+        ) : audio ? (
           <>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-xs text-foreground">
@@ -485,6 +515,7 @@ function AudioDrop({
         type="file"
         accept="audio/*,.zip,application/zip"
         multiple
+        disabled={loading}
         hidden
         onChange={(event) => {
           const files = [...(event.target.files ?? [])];

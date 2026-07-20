@@ -1,7 +1,7 @@
 import "./styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import JSZip from "jszip";
-import { expect, test, vi } from "vitest";
+import { expect, onTestFinished, test, vi } from "vitest";
 import { render } from "vitest-browser-react";
 import { page, userEvent } from "vitest/browser";
 import { videoStorage } from "../lib/storage.ts";
@@ -104,10 +104,19 @@ test("imports and mixes every audio file in a ZIP", async () => {
 
   await expect.element(screen.getByText("song.stems.zip")).toBeVisible();
   expect(document.body.textContent).not.toContain("4 tracks");
-  await expect.element(screen.getByLabelText("Vocals volume")).toBeVisible();
+  const vocalsVolume = screen.getByLabelText("Vocals volume");
+  await expect.element(vocalsVolume).toBeDisabled();
   await expect.element(screen.getByLabelText("Drums volume")).toBeVisible();
   await expect.element(screen.getByLabelText("Bass volume")).toBeVisible();
   await expect.element(screen.getByLabelText("Other volume")).toBeVisible();
+  await expect
+    .element(screen.getByRole("button", { name: "Mute Vocals" }))
+    .toBeDisabled();
+  await page.mark("stem mixer inactive");
+
+  await screen.getByRole("switch", { name: "Use replacement audio" }).click();
+  await expect.element(vocalsVolume).toBeEnabled();
+  await page.mark("stem mixer active");
 
   const muteVocals = screen.getByRole("button", { name: "Mute Vocals" });
   await muteVocals.click();
@@ -136,7 +145,38 @@ test("imports and mixes every audio file in a ZIP", async () => {
       ],
     }),
   );
-  await page.mark("stem mixer");
+});
+
+test("dark mixer preview", async () => {
+  document.documentElement.classList.add("dark");
+  onTestFinished(() => {
+    document.documentElement.classList.remove("dark");
+  });
+  const screen = await render(
+    <div className="flex min-h-screen items-start justify-center bg-button p-8 font-sans text-foreground">
+      <QueryClientProvider client={new QueryClient()}>
+        <Panel
+          videoId="dark-preview"
+          getVideo={() => new FakeVideo()}
+          initialSelectedAudio={{
+            videoId: "dark-preview",
+            name: "song.stems.zip",
+            tracks: ["vocals", "drums", "bass", "other"].map((name) => ({
+              name: `${name}.wav`,
+              blob: new Blob(),
+            })),
+          }}
+          onSelectAudio={vi.fn()}
+          onGenerate={vi.fn()}
+          onError={vi.fn()}
+        />
+      </QueryClientProvider>
+    </div>,
+  );
+
+  await page.mark("stem mixer inactive dark");
+  await screen.getByRole("switch", { name: "Use replacement audio" }).click();
+  await page.mark("stem mixer active dark");
 });
 
 test("imports multiple audio files", async () => {

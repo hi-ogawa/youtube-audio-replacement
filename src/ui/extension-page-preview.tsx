@@ -1,12 +1,78 @@
 import { useEffect, useRef, useState } from "react";
 import type { Preferences } from "../lib/demucs/preferences.ts";
+import type { StoredAudio } from "../lib/storage.ts";
+import { ExtensionPageView, type ExtensionView } from "./extension-page.tsx";
+import { SavedVideosView } from "./saved-videos.tsx";
 import {
   type StemGeneratorSourceMode,
   type StemGeneratorSourceStates,
   StemGeneratorView,
 } from "./stem-generator.tsx";
 
-export function StemGeneratorMockup() {
+export function ExtensionPagePreview({
+  initialView = "generator",
+  emptySavedVideos = false,
+}: {
+  initialView?: ExtensionView;
+  emptySavedVideos?: boolean;
+}) {
+  const [view, setView] = useState(initialView);
+
+  return (
+    <ExtensionPageView view={view} onViewChange={setView}>
+      {view === "generator" ? (
+        <StemGeneratorMockup />
+      ) : (
+        <SavedVideosView
+          videos={emptySavedVideos ? [] : PREVIEW_SAVED_VIDEOS}
+          loading={false}
+          onDelete={() => undefined}
+        />
+      )}
+    </ExtensionPageView>
+  );
+}
+
+const PREVIEW_SAVED_VIDEOS: StoredAudio[] = [
+  {
+    videoId: "YsmSk0cZa6w",
+    videoMetadata: {
+      title: "RESCENE (리센느) 'Pretty Girl' Special Video",
+    },
+    name: "RESCENE (리센느) 'Pretty Girl' Special Video_webm.stems.zip",
+    tracks: [
+      {
+        name: "bass.wav",
+        blob: new Blob([new Uint8Array(38_400_000)]),
+      },
+    ],
+    savedAt: Date.UTC(2026, 6, 17),
+  },
+  {
+    videoId: "7GU_VQfgMT0",
+    videoMetadata: { title: "Live session rehearsal" },
+    name: "vocals.wav",
+    tracks: [
+      {
+        name: "vocals.wav",
+        blob: new Blob([new Uint8Array(12_800_000)]),
+      },
+    ],
+    savedAt: Date.UTC(2026, 6, 14),
+  },
+  {
+    videoId: "fallback-id",
+    name: "replacement-audio.wav",
+    tracks: [
+      {
+        name: "replacement-audio.wav",
+        blob: new Blob([new Uint8Array(6_400_000)]),
+      },
+    ],
+  },
+];
+
+function StemGeneratorMockup() {
   const loadingTimeoutRef = useRef<number>(undefined);
   const [sourceMode, setSourceMode] =
     useState<StemGeneratorSourceMode>("youtube");

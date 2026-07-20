@@ -100,4 +100,6 @@ export const videoStorage = {
 export const audioStorage = {
   loadAudio: (videoId: string) => audioStore.get(videoId),
   storeAudio: (audio: StoredAudio) => audioStore.put(audio),
+  listAudio: () => audioStore.getAll(),
+  deleteAudio: (videoId: string) => audioStore.delete(videoId),
 };

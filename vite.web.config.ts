@@ -16,6 +16,7 @@ export default defineConfig({
       instances: [{ browser: "chromium" }],
       headless: true,
       traceView: true,
+      viewport: { width: 800, height: 480 },
     },
   },
 });
