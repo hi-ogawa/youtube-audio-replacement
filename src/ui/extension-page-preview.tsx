@@ -83,7 +83,7 @@ function StemGeneratorMockup() {
   const [configuration, setConfiguration] = useState<Preferences>({
     model: "htdemucs",
     twoStems: null,
-    method: "add",
+    method: "minus",
     shifts: 1,
   });
 
