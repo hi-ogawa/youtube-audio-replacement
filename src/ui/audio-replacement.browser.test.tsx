@@ -35,6 +35,8 @@ test("basic", async () => {
   await userEvent.upload(fileInput, "./fixtures/sine-2s.wav");
 
   await expect.element(screen.getByText("sine-2s.wav")).toBeVisible();
+  const masterVolume = screen.getByLabelText("Master volume");
+  await expect.element(masterVolume).toBeDisabled();
   const toggle = screen.getByRole("switch", {
     name: "Use replacement audio",
   });
@@ -44,7 +46,14 @@ test("basic", async () => {
   await toggle.click();
   await expect.element(toggle).toHaveAttribute("aria-checked", "true");
   expect(video.muted).toBe(true);
+  await expect.element(masterVolume).toBeEnabled();
+  await expect.element(masterVolume).toHaveValue("80");
   await page.mark("replacement enabled");
+
+  await masterVolume.click();
+  await userEvent.keyboard("{Home}{ArrowRight>60/}");
+  await expect.element(masterVolume).toHaveValue("60");
+  await expect.element(screen.getByText("60%")).toBeVisible();
 
   const volume = screen.getByLabelText("Sine-2s volume");
   await volume.click();

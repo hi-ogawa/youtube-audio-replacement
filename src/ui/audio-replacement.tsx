@@ -87,6 +87,7 @@ export function Panel({
     ),
   );
   const [enabled, setEnabled] = useState(false);
+  const [masterVolume, setMasterVolume] = useState(100);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
   const [audioGroup] = useState(() => new AudioGroup());
@@ -165,7 +166,13 @@ export function Panel({
     }
 
     playerSync.enable(video, audioGroup);
+    setMasterVolume(Math.round(audioGroup.volume * 100));
     setEnabled(true);
+  }
+
+  function updateMasterVolume(volume: number) {
+    audioGroup.volume = volume / 100;
+    setMasterVolume(volume);
   }
 
   function updateMixerTrack(
@@ -210,8 +217,10 @@ export function Panel({
       {selectedAudio && (
         <Mixer
           mixerState={mixerState}
+          masterVolume={masterVolume}
           disabled={!enabled}
           onChange={updateMixerTrack}
+          onMasterVolumeChange={updateMasterVolume}
         />
       )}
     </div>
@@ -220,12 +229,16 @@ export function Panel({
 
 function Mixer({
   mixerState,
+  masterVolume,
   disabled,
   onChange,
+  onMasterVolumeChange,
 }: {
   mixerState: MixerState;
+  masterVolume: number;
   disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
+  onMasterVolumeChange(volume: number): void;
 }) {
   return (
     <div className="mt-2.5">
@@ -237,6 +250,48 @@ function Mixer({
           onChange={onChange}
         />
       ))}
+      <MixerMasterRow
+        volume={masterVolume}
+        disabled={disabled}
+        onChange={onMasterVolumeChange}
+      />
+    </div>
+  );
+}
+
+function MixerMasterRow({
+  volume,
+  disabled,
+  onChange,
+}: {
+  volume: number;
+  disabled: boolean;
+  onChange(volume: number): void;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-1.5 border-t-2 border-button-border py-2 last:pb-0 ${disabled ? "text-muted-foreground" : ""}`}
+      title="Copied from YouTube when replacement audio is enabled"
+    >
+      <span className="w-12 shrink-0 truncate text-xs font-semibold">
+        Master
+      </span>
+      <input
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-accent disabled:cursor-default dark:disabled:opacity-65"
+        type="range"
+        min="0"
+        max="100"
+        step="1"
+        value={volume}
+        aria-label="Master volume"
+        disabled={disabled}
+        onChange={(event) => onChange(Number(event.target.value))}
+      />
+      <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
+        {volume}%
+      </span>
+      <span className="size-6 shrink-0" aria-hidden="true" />
+      <span className="size-6 shrink-0" aria-hidden="true" />
     </div>
   );
 }
