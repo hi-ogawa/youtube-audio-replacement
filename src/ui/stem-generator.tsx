@@ -39,39 +39,6 @@ type GeneratedFile = {
   url: string;
 };
 
-const OUTPUT_OPTIONS: {
-  value: Preferences["twoStems"];
-  label: string;
-  description: string;
-}[] = [
-  {
-    value: null,
-    label: "Four stems",
-    description: "Separate vocals, drums, bass, and other instruments",
-  },
-  {
-    value: "vocals",
-    label: "Vocals + backing",
-    description: "Separate vocals from the rest",
-  },
-  {
-    value: "drums",
-    label: "Drums + backing",
-    description: "Separate drums from the rest",
-  },
-  {
-    value: "bass",
-    label: "Bass + backing",
-    description: "Separate bass from the rest",
-  },
-  {
-    value: "other",
-    label: "Other instruments + backing",
-    description:
-      "Guitars, keys, and anything not classified as vocals, drums, or bass",
-  },
-];
-
 export function StemGeneratorView({
   initialInput,
   sourceMode,
@@ -365,6 +332,39 @@ export function StemGeneratorView({
     </div>
   );
 }
+
+const OUTPUT_OPTIONS: {
+  value: Preferences["twoStems"];
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: null,
+    label: "Four stems",
+    description: "Separate vocals, drums, bass, and other instruments",
+  },
+  {
+    value: "vocals",
+    label: "Vocals + backing",
+    description: "Separate vocals from the rest",
+  },
+  {
+    value: "drums",
+    label: "Drums + backing",
+    description: "Separate drums from the rest",
+  },
+  {
+    value: "bass",
+    label: "Bass + backing",
+    description: "Separate bass from the rest",
+  },
+  {
+    value: "other",
+    label: "Other instruments + backing",
+    description:
+      "Guitars, keys, and anything not classified as vocals, drums, or bass",
+  },
+];
 
 function OutputConfiguration({
   configuration,
