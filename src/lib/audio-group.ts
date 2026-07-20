@@ -18,7 +18,10 @@ export interface MixerTrackState extends StoredMixerTrackState {
   enabled: boolean;
 }
 
-export type MixerState = MixerTrackState[];
+export interface MixerState {
+  masterVolume: number;
+  tracks: MixerTrackState[];
+}
 
 interface AudioGroupNotifications {
   onTimeChange(currentTime: number): void;
@@ -29,13 +32,16 @@ export function createMixerState(
   audio: SelectedAudio | undefined,
   stored: StoredMixerState,
 ): MixerState {
-  return deriveMixerState(
-    (audio?.tracks ?? []).map((track) => ({
-      name: track.name,
-      ...DEFAULT_MIXER_TRACK_STATE,
-      ...stored[track.name],
-    })),
-  );
+  return {
+    masterVolume: 100,
+    tracks: deriveMixerTrackState(
+      (audio?.tracks ?? []).map((track) => ({
+        name: track.name,
+        ...DEFAULT_MIXER_TRACK_STATE,
+        ...stored[track.name],
+      })),
+    ),
+  };
 }
 
 export function updateMixerState(
@@ -43,25 +49,28 @@ export function updateMixerState(
   trackName: string,
   update: Partial<StoredMixerTrackState>,
 ): MixerState {
-  return deriveMixerState(
-    mixerState.map((track) =>
-      track.name === trackName ? { ...track, ...update } : track,
+  return {
+    ...mixerState,
+    tracks: deriveMixerTrackState(
+      mixerState.tracks.map((track) =>
+        track.name === trackName ? { ...track, ...update } : track,
+      ),
     ),
-  );
+  };
 }
 
 export function toStoredMixerState(mixerState: MixerState): StoredMixerState {
   return Object.fromEntries(
-    mixerState.map(({ name, volume, muted, soloed }) => [
+    mixerState.tracks.map(({ name, volume, muted, soloed }) => [
       name,
       { volume, muted, soloed },
     ]),
   );
 }
 
-function deriveMixerState(
+function deriveMixerTrackState(
   tracks: Omit<MixerTrackState, "enabled">[],
-): MixerState {
+): MixerTrackState[] {
   const anySoloed = tracks.some((track) => track.soloed);
   return tracks.map((track) => ({
     ...track,
@@ -70,9 +79,8 @@ function deriveMixerState(
 }
 
 export class AudioGroup implements ReplacementAudio {
-  #masterVolume = 1;
   #players = new Map<string, { audio: HTMLAudioElement; objectUrl: string }>();
-  #mixerState: MixerState = [];
+  #mixerState: MixerState = { masterVolume: 100, tracks: [] };
 
   get currentTime(): number {
     return this.#getPrimary()?.currentTime ?? 0;
@@ -95,11 +103,11 @@ export class AudioGroup implements ReplacementAudio {
   }
 
   get volume(): number {
-    return this.#masterVolume;
+    return this.#mixerState.masterVolume / 100;
   }
 
   set volume(value: number) {
-    this.#masterVolume = value;
+    this.#mixerState = { ...this.#mixerState, masterVolume: value * 100 };
     this.#applyMixer();
   }
 
@@ -168,11 +176,13 @@ export class AudioGroup implements ReplacementAudio {
   }
 
   #applyMixer(): void {
-    const mixer = new Map(this.#mixerState.map((track) => [track.name, track]));
+    const mixer = new Map(
+      this.#mixerState.tracks.map((track) => [track.name, track]),
+    );
     for (const [name, { audio }] of this.#players) {
       const state = mixer.get(name);
       audio.volume = state?.enabled
-        ? Math.max(0, Math.min(1, this.#masterVolume * (state.volume / 100)))
+        ? Math.max(0, Math.min(1, this.volume * (state.volume / 100)))
         : 0;
     }
   }

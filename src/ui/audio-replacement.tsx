@@ -87,7 +87,6 @@ export function Panel({
     ),
   );
   const [enabled, setEnabled] = useState(false);
-  const [masterVolume, setMasterVolume] = useState(100);
   const [currentTime, setCurrentTime] = useState<number>();
   const [duration, setDuration] = useState<number>();
   const [audioGroup] = useState(() => new AudioGroup());
@@ -112,8 +111,8 @@ export function Panel({
       return;
     }
 
-    // Install the source's mixer before creating players. Mixer-only changes
-    // are applied synchronously in updateMixerTrack.
+    // Install the source's mixer before creating players. Mixer changes are
+    // applied synchronously by their update handlers.
     audioGroup.setMixerState(mixerState);
     audioGroup.setTracks(selectedAudio.tracks, {
       onTimeChange: setCurrentTime,
@@ -166,13 +165,17 @@ export function Panel({
     }
 
     playerSync.enable(video, audioGroup);
-    setMasterVolume(Math.round(audioGroup.volume * 100));
+    setMixerState((current) => ({
+      ...current,
+      masterVolume: Math.round(audioGroup.volume * 100),
+    }));
     setEnabled(true);
   }
 
   function updateMasterVolume(volume: number) {
-    audioGroup.volume = volume / 100;
-    setMasterVolume(volume);
+    const nextMixerState = { ...mixerState, masterVolume: volume };
+    audioGroup.setMixerState(nextMixerState);
+    setMixerState(nextMixerState);
   }
 
   function updateMixerTrack(
@@ -217,7 +220,6 @@ export function Panel({
       {selectedAudio && (
         <Mixer
           mixerState={mixerState}
-          masterVolume={masterVolume}
           disabled={!enabled}
           onChange={updateMixerTrack}
           onMasterVolumeChange={updateMasterVolume}
@@ -229,20 +231,18 @@ export function Panel({
 
 function Mixer({
   mixerState,
-  masterVolume,
   disabled,
   onChange,
   onMasterVolumeChange,
 }: {
   mixerState: MixerState;
-  masterVolume: number;
   disabled: boolean;
   onChange(trackName: string, update: Partial<StoredMixerTrackState>): void;
   onMasterVolumeChange(volume: number): void;
 }) {
   return (
     <div className="mt-2.5">
-      {mixerState.map((track) => (
+      {mixerState.tracks.map((track) => (
         <MixerTrackRow
           key={track.name}
           track={track}
@@ -251,7 +251,7 @@ function Mixer({
         />
       ))}
       <MixerMasterRow
-        volume={masterVolume}
+        volume={mixerState.masterVolume}
         disabled={disabled}
         onChange={onMasterVolumeChange}
       />
