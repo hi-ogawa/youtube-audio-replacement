@@ -515,7 +515,7 @@ function OutputOption({
         option.value === null ? "sm:col-span-2" : ""
       } ${
         selected
-          ? "border-accent-border bg-blue-50 ring-1 ring-accent-border dark:bg-blue-950/35"
+          ? "border-accent-border bg-selected ring-1 ring-accent-border"
           : "border-button-border bg-panel hover:bg-button"
       } ${disabled ? "cursor-default opacity-60" : "cursor-pointer"}`}
     >

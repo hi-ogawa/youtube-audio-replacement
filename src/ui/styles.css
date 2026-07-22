@@ -8,6 +8,7 @@
   --color-button: var(--button);
   --color-button-hover: var(--button-hover);
   --color-button-border: var(--button-border);
+  --color-selected: var(--selected);
   --color-accent: var(--accent);
   --color-accent-border: var(--accent-border);
   --color-error: var(--error);
@@ -22,6 +23,7 @@
   --button: #f2f2f2;
   --button-hover: #e5e5e5;
   --button-border: #c6c6c6;
+  --selected: #eff6ff;
   --accent: #065fd4;
   --accent-border: #3ea6ff;
   --error: #cc0000;
@@ -36,6 +38,7 @@
   --button: #3f3f3f;
   --button-hover: #515151;
   --button-border: #666;
+  --selected: rgb(23 37 84 / 35%);
   --accent: #065fd4;
   --accent-border: #3ea6ff;
   --error: #ff4e45;
