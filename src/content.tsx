@@ -12,6 +12,16 @@ import { ErrorPanel, Fab, StoredPanel } from "./ui/audio-replacement.tsx";
 import contentCss from "./ui/content.css?inline";
 
 const HOST_ID = "youtube-audio-replacement-host";
+const RANGE_INPUT_KEYS = new Set([
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowUp",
+  "ArrowDown",
+  "Home",
+  "End",
+  "PageUp",
+  "PageDown",
+]);
 const queryClient = new QueryClient();
 const backgroundRpc = createRuntimeRelayRpc<BackgroundRpcHandlers>();
 const initExtensionStorageRpc = once(async () => {
@@ -232,9 +242,16 @@ function createUi(videoId: string): MountedController {
   });
 
   const shadow = host.attachShadow({ mode: "open" });
-  // Keep focused controls from also triggering YouTube's global shortcuts.
-  shadow.addEventListener("keydown", (event) => event.stopPropagation());
-  shadow.addEventListener("keyup", (event) => event.stopPropagation());
+  // Keep native range controls from also triggering YouTube's global shortcuts.
+  shadow.addEventListener("keydown", (event) => {
+    if (
+      event.target instanceof HTMLInputElement &&
+      event.target.type === "range" &&
+      RANGE_INPUT_KEYS.has(event.key)
+    ) {
+      event.stopPropagation();
+    }
+  });
   const style = document.createElement("style");
   style.textContent = contentCss;
   shadow.append(style);
