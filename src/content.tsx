@@ -232,7 +232,9 @@ function createUi(videoId: string): MountedController {
   });
 
   const shadow = host.attachShadow({ mode: "open" });
+  // Keep focused controls from also triggering YouTube's global shortcuts.
   shadow.addEventListener("keydown", (event) => event.stopPropagation());
+  shadow.addEventListener("keyup", (event) => event.stopPropagation());
   const style = document.createElement("style");
   style.textContent = contentCss;
   shadow.append(style);
