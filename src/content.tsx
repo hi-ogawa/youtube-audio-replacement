@@ -243,7 +243,7 @@ function createUi(videoId: string): MountedController {
 
   const shadow = host.attachShadow({ mode: "open" });
   // Keep native range controls from also triggering YouTube's global shortcuts.
-  shadow.addEventListener("keydown", (event) => {
+  shadow.addEventListener("keydown", (event: KeyboardEvent) => {
     if (
       event.target instanceof HTMLInputElement &&
       event.target.type === "range" &&
