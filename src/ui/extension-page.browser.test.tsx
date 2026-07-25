@@ -2,7 +2,20 @@ import "./styles.css";
 import { expect, test } from "vitest";
 import { render } from "vitest-browser-react";
 import { page } from "vitest/browser";
+import { withSearchParam } from "../lib/url-state.ts";
 import { ExtensionPagePreview } from "./extension-page-preview.tsx";
+
+test("tab URLs preserve unrelated search parameters", () => {
+  const href = withSearchParam(
+    "chrome-extension://example/extension-page.html?videoId=abc123&theme=dark",
+    "view",
+    "saved",
+  );
+
+  expect(new URL(href).searchParams).toEqual(
+    new URLSearchParams({ videoId: "abc123", theme: "dark", view: "saved" }),
+  );
+});
 
 test("generator page", async () => {
   const screen = await render(<ExtensionPagePreview />);
@@ -58,6 +71,24 @@ test("saved videos page", async () => {
     .element(screen.getByText("3 videos using 57.6 MB"))
     .toBeVisible();
   await page.mark("extension page saved videos");
+});
+
+test("tabs are links with client-side navigation", async () => {
+  const screen = await render(<ExtensionPagePreview />);
+  const generatorLink = screen.getByRole("link", { name: "Generate stems" });
+  const savedLink = screen.getByRole("link", { name: "Saved videos" });
+
+  await expect.element(generatorLink).toHaveAttribute("aria-current", "page");
+  await expect
+    .element(savedLink)
+    .toHaveAttribute("href", withSearchParam(location.href, "view", "saved"));
+
+  await savedLink.click();
+
+  await expect
+    .element(screen.getByRole("heading", { name: "Saved videos" }))
+    .toBeVisible();
+  await expect.element(savedLink).toHaveAttribute("aria-current", "page");
 });
 
 test("empty saved videos page", async () => {

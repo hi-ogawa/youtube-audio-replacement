@@ -37,7 +37,7 @@ import {
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { audioStorage } from "./lib/storage.ts";
-import { useSearchParam } from "./lib/url-state.ts";
+import { useSearchParam, withSearchParam } from "./lib/url-state.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
 import { type ExtensionView, ExtensionPageView } from "./ui/extension-page.tsx";
@@ -67,7 +67,14 @@ function ExtensionPage({ initialInput }: { initialInput: string }) {
   }
 
   return (
-    <ExtensionPageView view={appView} onViewChange={navigateView}>
+    <ExtensionPageView
+      view={appView}
+      viewHrefs={{
+        generator: withSearchParam(location.href, "view", null),
+        saved: withSearchParam(location.href, "view", "saved"),
+      }}
+      onViewChange={navigateView}
+    >
       {appView === "saved" ? (
         <SavedVideosPage />
       ) : (
