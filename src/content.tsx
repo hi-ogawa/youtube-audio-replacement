@@ -232,6 +232,7 @@ function createUi(videoId: string): MountedController {
   });
 
   const shadow = host.attachShadow({ mode: "open" });
+  shadow.addEventListener("keydown", (event) => event.stopPropagation());
   const style = document.createElement("style");
   style.textContent = contentCss;
   shadow.append(style);
