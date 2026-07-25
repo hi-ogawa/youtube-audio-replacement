@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Preferences } from "../lib/demucs/preferences.ts";
 import type { StoredAudio } from "../lib/storage.ts";
+import { withSearchParam } from "../lib/url-state.ts";
 import { ExtensionPageView, type ExtensionView } from "./extension-page.tsx";
 import { SavedVideosView } from "./saved-videos.tsx";
 import {
@@ -19,7 +20,14 @@ export function ExtensionPagePreview({
   const [view, setView] = useState(initialView);
 
   return (
-    <ExtensionPageView view={view} onViewChange={setView}>
+    <ExtensionPageView
+      view={view}
+      viewHrefs={{
+        generator: withSearchParam(location.href, "view", null),
+        saved: withSearchParam(location.href, "view", "saved"),
+      }}
+      onViewChange={setView}
+    >
       {view === "generator" ? (
         <StemGeneratorMockup />
       ) : (

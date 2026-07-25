@@ -10,12 +10,7 @@ export function useSearchParam(name: string) {
   }, [name]);
 
   function navigate(nextValue: string | null) {
-    const url = new URL(location.href);
-    if (nextValue === null) {
-      url.searchParams.delete(name);
-    } else {
-      url.searchParams.set(name, nextValue);
-    }
+    const url = withSearchParam(location.href, name, nextValue);
     history.pushState({}, "", url);
     setValue(nextValue);
   }
@@ -25,4 +20,18 @@ export function useSearchParam(name: string) {
 
 function readSearchParam(name: string) {
   return new URL(location.href).searchParams.get(name);
+}
+
+export function withSearchParam(
+  href: string,
+  name: string,
+  value: string | null,
+) {
+  const url = new URL(href);
+  if (value === null) {
+    url.searchParams.delete(name);
+  } else {
+    url.searchParams.set(name, value);
+  }
+  return url.href;
 }
