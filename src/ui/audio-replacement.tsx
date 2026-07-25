@@ -274,6 +274,7 @@ function MixerMasterRow({
         value={volume}
         aria-label="Master volume"
         disabled={disabled}
+        onKeyDown={(event) => event.stopPropagation()}
         onChange={(event) => onChange(Number(event.target.value))}
       />
       <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
@@ -317,6 +318,7 @@ function MixerTrackRow({
         value={track.volume}
         aria-label={`${displayName} volume`}
         disabled={disabled}
+        onKeyDown={(event) => event.stopPropagation()}
         onChange={(event) => onChange({ volume: Number(event.target.value) })}
       />
       <span className="w-8 shrink-0 text-right font-mono text-[11px] text-muted-foreground tabular-nums">
