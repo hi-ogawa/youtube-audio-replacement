@@ -1,0 +1,23 @@
+playwright/story/main.tsx
+  s_b76a98f8922202::t_6e06dac6c411b7 1-53
+pnpm-lock.yaml
+  s_b76a98f8922202::t_fe9ea85768445b 40-41,62,468-470,1339-1341,1344-1346,1815,1817,2090,2094,2496,2498,2500,2666,2750
+src/ui/extension-page-preview.story.tsx
+  s_b76a98f8922202::t_0a817270e1ec82 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d99e64593aedc561c2e71f9d0aeecde4544b0e80",
+  "prompts": {},
+  "sessions": {
+    "s_b76a98f8922202": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_05a2173a4ffe9AuUdn7FKcKgbU",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Hiroshi Ogawa <4232207+hi-ogawa@users.noreply.github.com>"
+    }
+  }
+}
