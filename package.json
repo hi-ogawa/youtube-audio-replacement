@@ -13,6 +13,7 @@
     "lint-check": "vp check && pnpm lint-dead-code && pnpm typecheck",
     "lint-dead-code": "fallow dead-code --unused-exports --unused-types",
     "test-ui": "vitest --config vite.web.config.ts",
+    "test-story": "playwright test --config playwright.story.config.ts",
     "test-e2e": "playwright test"
   },
   "dependencies": {
@@ -26,7 +27,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.0",
     "@tailwindcss/vite": "^4.3.2",
     "@types/chrome": "^0.2.2",
     "@types/node": "^26.1.1",
