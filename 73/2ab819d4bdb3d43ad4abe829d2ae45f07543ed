@@ -1,0 +1,19 @@
+playwright/story/main.tsx
+  s_b76a98f8922202::t_aa455e376e5ae7 2-3,13-28,39,44-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "732ab819d4bdb3d43ad4abe829d2ae45f07543ed",
+  "prompts": {},
+  "sessions": {
+    "s_b76a98f8922202": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_05a2173a4ffe9AuUdn7FKcKgbU",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Hiroshi Ogawa <4232207+hi-ogawa@users.noreply.github.com>"
+    }
+  }
+}
