@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("interacts with the generator story", async ({ mount }) => {
-  const component = await mount("ui/extension-page-preview/Generator");
+  const component = await mount("extension-page-preview/Generator");
 
   await expect(
     component.getByRole("heading", { name: "Stem generator" }),
@@ -15,5 +15,15 @@ test("mounts saved-video variants", async ({ mount }) => {
   await expect(component.getByText("3 videos using 57.6 MB")).toBeVisible();
 
   component = await mount("ui/extension-page-preview/EmptySavedVideos");
+  await expect(component.getByText("No saved videos yet")).toBeVisible();
+});
+
+test("updates story props without navigating", async ({ mount }) => {
+  const component = await mount(
+    "ui/extension-page-preview/ConfigurableSavedVideos",
+  );
+  await expect(component.getByText("3 videos using 57.6 MB")).toBeVisible();
+
+  await component.update({ empty: true });
   await expect(component.getByText("No saved videos yet")).toBeVisible();
 });
