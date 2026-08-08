@@ -1,4 +1,16 @@
-import { ExternalLink, Music2, Trash2 } from "lucide-react";
+import {
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  Music2,
+  Trash2,
+} from "lucide-react";
+import { useState } from "react";
+import {
+  createAudioArchive,
+  toAudioArchiveFilename,
+} from "../lib/audio-archive.ts";
+import { downloadBlob } from "../lib/demucs/audio/stem-archive.ts";
 import type { StoredAudio } from "../lib/storage.ts";
 import { formatBytes } from "../lib/utils.ts";
 
@@ -71,6 +83,27 @@ function SavedVideoRow({
   onDelete(videoId: string): void;
 }) {
   const title = video.videoMetadata?.title || video.videoId;
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string>();
+
+  async function downloadTracks() {
+    setDownloading(true);
+    setDownloadError(undefined);
+    try {
+      const archive = await createAudioArchive(video.tracks);
+      const url = URL.createObjectURL(archive);
+      try {
+        downloadBlob(url, toAudioArchiveFilename(title));
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error(error);
+      setDownloadError("Could not create the ZIP archive.");
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <article className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm">
@@ -83,8 +116,29 @@ function SavedVideoRow({
           {video.name} / {formatBytes(getAudioSize(video))}
           {video.savedAt ? ` / ${formatSavedAt(video.savedAt)}` : ""}
         </p>
+        {downloadError && (
+          <p className="mt-1 text-sm text-error" role="alert">
+            {downloadError}
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <button
+          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-button-border px-3 text-sm font-semibold hover:bg-button-hover disabled:cursor-default disabled:opacity-50"
+          type="button"
+          disabled={downloading}
+          onClick={downloadTracks}
+        >
+          {downloading ? (
+            <LoaderCircle
+              className="size-3.5 animate-spin"
+              aria-hidden="true"
+            />
+          ) : (
+            <Download className="size-3.5" aria-hidden="true" />
+          )}
+          {downloading ? "Creating ZIP..." : "Download tracks"}
+        </button>
         <a
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-semibold text-white hover:opacity-90"
           href={`https://www.youtube.com/watch?v=${video.videoId}`}
