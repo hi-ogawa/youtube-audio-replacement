@@ -5,12 +5,6 @@ import {
   Music2,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
-import {
-  createAudioArchive,
-  toAudioArchiveFilename,
-} from "../lib/audio-archive.ts";
-import { downloadBlob } from "../lib/demucs/audio/stem-archive.ts";
 import type { StoredAudio } from "../lib/storage.ts";
 import { formatBytes } from "../lib/utils.ts";
 
@@ -19,13 +13,17 @@ export function SavedVideosView({
   loading,
   error,
   deletingVideoId,
+  downloadingVideoId,
   onDelete,
+  onDownload,
 }: {
   videos: StoredAudio[];
   loading: boolean;
   error?: string;
   deletingVideoId?: string;
+  downloadingVideoId?: string;
   onDelete(videoId: string): void;
+  onDownload(video: StoredAudio): void;
 }) {
   if (loading) {
     return <LibraryMessage>Loading saved videos...</LibraryMessage>;
@@ -66,7 +64,9 @@ export function SavedVideosView({
           key={video.videoId}
           video={video}
           deleting={deletingVideoId === video.videoId}
+          downloading={downloadingVideoId === video.videoId}
           onDelete={onDelete}
+          onDownload={onDownload}
         />
       ))}
     </div>
@@ -76,34 +76,17 @@ export function SavedVideosView({
 function SavedVideoRow({
   video,
   deleting,
+  downloading,
   onDelete,
+  onDownload,
 }: {
   video: StoredAudio;
   deleting: boolean;
+  downloading: boolean;
   onDelete(videoId: string): void;
+  onDownload(video: StoredAudio): void;
 }) {
   const title = video.videoMetadata?.title || video.videoId;
-  const [downloading, setDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState<string>();
-
-  async function downloadTracks() {
-    setDownloading(true);
-    setDownloadError(undefined);
-    try {
-      const archive = await createAudioArchive(video.tracks);
-      const url = URL.createObjectURL(archive);
-      try {
-        downloadBlob(url, toAudioArchiveFilename(title));
-      } finally {
-        URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error(error);
-      setDownloadError("Could not create the ZIP archive.");
-    } finally {
-      setDownloading(false);
-    }
-  }
 
   return (
     <article className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm">
@@ -116,18 +99,13 @@ function SavedVideoRow({
           {video.name} / {formatBytes(getAudioSize(video))}
           {video.savedAt ? ` / ${formatSavedAt(video.savedAt)}` : ""}
         </p>
-        {downloadError && (
-          <p className="mt-1 text-sm text-error" role="alert">
-            {downloadError}
-          </p>
-        )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <button
           className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-button-border px-3 text-sm font-semibold hover:bg-button-hover disabled:cursor-default disabled:opacity-50"
           type="button"
           disabled={downloading}
-          onClick={downloadTracks}
+          onClick={() => onDownload(video)}
         >
           {downloading ? (
             <LoaderCircle

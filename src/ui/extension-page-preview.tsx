@@ -27,6 +27,7 @@ export function ExtensionPagePreview({
           videos={emptySavedVideos ? [] : PREVIEW_SAVED_VIDEOS}
           loading={false}
           onDelete={() => undefined}
+          onDownload={() => undefined}
         />
       )}
     </ExtensionPageView>
