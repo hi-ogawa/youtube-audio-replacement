@@ -21,14 +21,6 @@ export async function createAudioArchive(files: AudioFile[]): Promise<Blob> {
   return zip.generateAsync({ type: "blob", compression: "STORE" });
 }
 
-export function toArchiveFilename(
-  name: string,
-  suffix: string,
-  fallback = "audio",
-): string {
-  return `${sanitizeFilename(name, fallback)}${suffix}`;
-}
-
 export function downloadBlob(url: string, filename: string): void {
   const link = document.createElement("a");
   link.href = url;
@@ -38,7 +30,7 @@ export function downloadBlob(url: string, filename: string): void {
   link.remove();
 }
 
-function sanitizeFilename(filename: string, fallback = "audio"): string {
+export function sanitizeFilename(filename: string, fallback = "audio"): string {
   const sanitized = filename
     .replaceAll(/[\\/:*?"<>|\u0000-\u001f]/g, "_")
     .replaceAll(/^\.+|[. ]+$/g, "")
