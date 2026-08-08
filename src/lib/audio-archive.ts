@@ -1,19 +1,21 @@
 import JSZip from "jszip";
-import type { StoredAudioTrack } from "./storage.ts";
 
-export async function createAudioArchive(
-  tracks: StoredAudioTrack[],
-): Promise<Blob> {
+interface AudioFile {
+  name: string;
+  blob: Blob;
+}
+
+export async function createAudioArchive(files: AudioFile[]): Promise<Blob> {
   const zip = new JSZip();
   const filenames = new Set<string>();
 
-  for (const track of tracks) {
+  for (const file of files) {
     const filename = deduplicateFilename(
-      sanitizeFilename(track.name),
+      sanitizeFilename(file.name),
       filenames,
     );
     filenames.add(filename);
-    zip.file(filename, track.blob, { compression: "STORE" });
+    zip.file(filename, file.blob, { compression: "STORE" });
   }
 
   return zip.generateAsync({ type: "blob", compression: "STORE" });
@@ -21,6 +23,20 @@ export async function createAudioArchive(
 
 export function toAudioArchiveFilename(title: string): string {
   return `${sanitizeFilename(title, "saved-audio")}.zip`;
+}
+
+export function toStemArchiveFilename(inputFilename: string): string {
+  const basename = inputFilename.replaceAll(".", "_");
+  return `${basename || "demucs"}.stems.zip`;
+}
+
+export function downloadBlob(url: string, filename: string): void {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
 }
 
 function sanitizeFilename(filename: string, fallback = "audio"): string {

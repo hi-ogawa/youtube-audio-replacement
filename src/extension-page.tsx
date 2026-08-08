@@ -13,7 +13,9 @@ import type {
 } from "./embed-content.ts";
 import {
   createAudioArchive,
+  downloadBlob,
   toAudioArchiveFilename,
+  toStemArchiveFilename,
 } from "./lib/audio-archive.ts";
 import { modelArtifactManager } from "./lib/demucs/audio/artifact-store.ts";
 import { AUDIO_SAMPLE_RATE } from "./lib/demucs/audio/constants.ts";
@@ -26,11 +28,6 @@ import {
   requiredModelFiles,
 } from "./lib/demucs/audio/models.ts";
 import type { SeparateRequest } from "./lib/demucs/audio/separate.ts";
-import {
-  createStemArchive,
-  downloadBlob,
-  toStemArchiveFilename,
-} from "./lib/demucs/audio/stem-archive.ts";
 import { encodeWavF32 } from "./lib/demucs/audio/wav.ts";
 import { separateInWorker } from "./lib/demucs/audio/worker-client.ts";
 import { loadPreferences, savePreferences } from "./lib/demucs/preferences.ts";
@@ -299,7 +296,12 @@ function StemGeneratorPage({ initialInput }: { initialInput: string }) {
         (output) => () => URL.revokeObjectURL(output.url),
       );
       const durationMs = performance.now() - started;
-      const archiveBlob = await createStemArchive(outputs);
+      const archiveBlob = await createAudioArchive(
+        outputs.map((output) => ({
+          name: `${output.name}.wav`,
+          blob: output.blob,
+        })),
+      );
       const archive = {
         name: toStemArchiveFilename(decoded.name),
         url: URL.createObjectURL(archiveBlob),
