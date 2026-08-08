@@ -102,8 +102,9 @@ function SavedVideoRow({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <button
-          className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-button-border px-3 text-sm font-semibold hover:bg-button-hover disabled:cursor-default disabled:opacity-50"
+          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-button-border text-muted-foreground hover:bg-button-hover hover:text-foreground disabled:cursor-default disabled:opacity-50"
           type="button"
+          aria-label={`Download saved tracks for ${title}`}
           disabled={downloading}
           onClick={() => onDownload(video)}
         >
@@ -115,7 +116,6 @@ function SavedVideoRow({
           ) : (
             <Download className="size-3.5" aria-hidden="true" />
           )}
-          {downloading ? "Creating ZIP..." : "Download tracks"}
         </button>
         <a
           className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-semibold text-white hover:opacity-90"
