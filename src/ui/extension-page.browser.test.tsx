@@ -58,9 +58,14 @@ test("saved videos page", async () => {
     .element(screen.getByText("3 videos using 57.6 MB"))
     .toBeVisible();
   await expect
-    .element(
-      screen.getByRole("button", { name: /Download saved tracks/ }).first(),
-    )
+    .element(screen.getByRole("link", { name: /Open .* on YouTube/ }).first())
+    .toBeVisible();
+  await screen
+    .getByLabelText(/Actions for/)
+    .first()
+    .click();
+  await expect
+    .element(screen.getByRole("menuitem", { name: "Download tracks" }).first())
     .toBeVisible();
   await page.mark("extension page saved videos");
 });

@@ -1,5 +1,6 @@
 import {
   Download,
+  EllipsisVertical,
   ExternalLink,
   LoaderCircle,
   Music2,
@@ -7,6 +8,12 @@ import {
 } from "lucide-react";
 import type { StoredAudio } from "../lib/storage.ts";
 import { formatBytes } from "../lib/utils.ts";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./dropdown-menu.tsx";
 
 export function SavedVideosView({
   videos,
@@ -89,59 +96,71 @@ function SavedVideoRow({
   const title = video.videoMetadata?.title || video.videoId;
 
   return (
-    <article className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm">
+    <article className="group relative grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm transition-colors hover:border-button-border hover:bg-button-hover focus-within:border-accent-border">
+      <a
+        className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
+        href={`https://www.youtube.com/watch?v=${video.videoId}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Open ${title} on YouTube`}
+      />
       <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-button text-muted-foreground">
         <Music2 className="size-5" aria-hidden="true" />
       </div>
       <div className="min-w-0">
-        <h2 className="truncate font-semibold">{title}</h2>
+        <h2 className="flex items-center gap-1.5 truncate font-semibold">
+          <span className="truncate">{title}</span>
+          <ExternalLink
+            className="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </h2>
         <p className="mt-1 truncate text-sm text-muted-foreground">
           {video.name} / {formatBytes(getAudioSize(video))}
           {video.savedAt ? ` / ${formatSavedAt(video.savedAt)}` : ""}
         </p>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <button
-          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-button-border text-muted-foreground hover:bg-button-hover hover:text-foreground disabled:cursor-default disabled:opacity-50"
-          type="button"
-          aria-label={`Download saved tracks for ${title}`}
-          disabled={downloading}
-          onClick={() => onDownload(video)}
-        >
-          {downloading ? (
-            <LoaderCircle
-              className="size-3.5 animate-spin"
-              aria-hidden="true"
-            />
-          ) : (
-            <Download className="size-3.5" aria-hidden="true" />
-          )}
-        </button>
-        <a
-          className="inline-flex h-9 items-center gap-1.5 rounded-md bg-accent px-3 text-sm font-semibold text-white hover:opacity-90"
-          href={`https://www.youtube.com/watch?v=${video.videoId}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          Open
-          <ExternalLink className="size-3.5" aria-hidden="true" />
-        </a>
-        <button
-          className="inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-button-border text-muted-foreground hover:bg-button-hover hover:text-error disabled:cursor-default disabled:opacity-50"
-          type="button"
-          aria-label={`Delete saved audio for ${title}`}
-          disabled={deleting}
-          onClick={() => {
-            if (
-              window.confirm(`Delete saved replacement audio for ${title}?`)
-            ) {
-              onDelete(video.videoId);
-            }
-          }}
-        >
-          <Trash2 className="size-4" aria-hidden="true" />
-        </button>
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="relative z-10 flex size-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-button hover:text-foreground"
+            type="button"
+            aria-label={`Actions for ${title}`}
+          >
+            <EllipsisVertical className="size-4" aria-hidden="true" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48" align="end">
+          <DropdownMenuItem
+            disabled={downloading}
+            onSelect={() => onDownload(video)}
+          >
+            {downloading ? (
+              <LoaderCircle
+                className="size-4 animate-spin"
+                aria-hidden="true"
+              />
+            ) : (
+              <Download className="size-4" aria-hidden="true" />
+            )}
+            {downloading ? "Creating ZIP..." : "Download tracks"}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-error focus:text-error"
+            disabled={deleting}
+            onSelect={() => {
+              if (
+                window.confirm(`Delete saved replacement audio for ${title}?`)
+              ) {
+                onDelete(video.videoId);
+              }
+            }}
+          >
+            <Trash2 className="size-4" aria-hidden="true" />
+            Delete saved audio
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </article>
   );
 }
