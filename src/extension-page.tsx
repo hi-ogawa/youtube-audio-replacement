@@ -14,8 +14,7 @@ import type {
 import {
   createAudioArchive,
   downloadBlob,
-  toAudioArchiveFilename,
-  toStemArchiveFilename,
+  toArchiveFilename,
 } from "./lib/audio-archive.ts";
 import { modelArtifactManager } from "./lib/demucs/audio/artifact-store.ts";
 import { AUDIO_SAMPLE_RATE } from "./lib/demucs/audio/constants.ts";
@@ -303,7 +302,7 @@ function StemGeneratorPage({ initialInput }: { initialInput: string }) {
         })),
       );
       const archive = {
-        name: toStemArchiveFilename(decoded.name),
+        name: toArchiveFilename(decoded.name, ".stems.zip", "demucs"),
         url: URL.createObjectURL(archiveBlob),
       };
       outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
@@ -407,7 +406,7 @@ function SavedVideosPage() {
       const url = URL.createObjectURL(archive);
       try {
         const title = audio.videoMetadata?.title || audio.videoId;
-        downloadBlob(url, toAudioArchiveFilename(title));
+        downloadBlob(url, toArchiveFilename(title, ".zip", "saved-audio"));
       } finally {
         URL.revokeObjectURL(url);
       }

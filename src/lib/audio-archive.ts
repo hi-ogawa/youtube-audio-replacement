@@ -21,13 +21,12 @@ export async function createAudioArchive(files: AudioFile[]): Promise<Blob> {
   return zip.generateAsync({ type: "blob", compression: "STORE" });
 }
 
-export function toAudioArchiveFilename(title: string): string {
-  return `${sanitizeFilename(title, "saved-audio")}.zip`;
-}
-
-export function toStemArchiveFilename(inputFilename: string): string {
-  const basename = inputFilename.replaceAll(".", "_");
-  return `${basename || "demucs"}.stems.zip`;
+export function toArchiveFilename(
+  name: string,
+  suffix: string,
+  fallback = "audio",
+): string {
+  return `${sanitizeFilename(name, fallback)}${suffix}`;
 }
 
 export function downloadBlob(url: string, filename: string): void {
