@@ -13,7 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "./dropdown-menu.tsx";
+} from "./components/dropdown-menu.tsx";
 
 export function SavedVideosView({
   videos,
