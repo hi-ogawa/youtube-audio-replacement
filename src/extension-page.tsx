@@ -13,8 +13,10 @@ import type {
 } from "./embed-content.ts";
 import {
   createAudioArchive,
+  createStemArchive,
   downloadBlob,
   sanitizeFilename,
+  toStemArchiveFilename,
 } from "./lib/audio-archive.ts";
 import { modelArtifactManager } from "./lib/demucs/audio/artifact-store.ts";
 import { AUDIO_SAMPLE_RATE } from "./lib/demucs/audio/constants.ts";
@@ -295,14 +297,9 @@ function StemGeneratorPage({ initialInput }: { initialInput: string }) {
         (output) => () => URL.revokeObjectURL(output.url),
       );
       const durationMs = performance.now() - started;
-      const archiveBlob = await createAudioArchive(
-        outputs.map((output) => ({
-          name: `${output.name}.wav`,
-          blob: output.blob,
-        })),
-      );
+      const archiveBlob = await createStemArchive(outputs);
       const archive = {
-        name: `${sanitizeFilename(decoded.name, "demucs")}.stems.zip`,
+        name: toStemArchiveFilename(decoded.name),
         url: URL.createObjectURL(archiveBlob),
       };
       outputCleanupRef.current.push(() => URL.revokeObjectURL(archive.url));
