@@ -11,6 +11,13 @@ import type {
   DownloadProgress,
   EmbedContentRpcHandlers,
 } from "./embed-content.ts";
+import {
+  createAudioArchive,
+  createStemArchive,
+  downloadBlob,
+  sanitizeFilename,
+  toStemArchiveFilename,
+} from "./lib/audio-archive.ts";
 import { modelArtifactManager } from "./lib/demucs/audio/artifact-store.ts";
 import { AUDIO_SAMPLE_RATE } from "./lib/demucs/audio/constants.ts";
 import { decodeAudioFile } from "./lib/demucs/audio/decode.ts";
@@ -22,11 +29,6 @@ import {
   requiredModelFiles,
 } from "./lib/demucs/audio/models.ts";
 import type { SeparateRequest } from "./lib/demucs/audio/separate.ts";
-import {
-  createStemArchive,
-  downloadBlob,
-  toStemArchiveFilename,
-} from "./lib/demucs/audio/stem-archive.ts";
 import { encodeWavF32 } from "./lib/demucs/audio/wav.ts";
 import { separateInWorker } from "./lib/demucs/audio/worker-client.ts";
 import { loadPreferences, savePreferences } from "./lib/demucs/preferences.ts";
@@ -36,7 +38,7 @@ import {
 } from "./lib/demucs/progress/model.ts";
 import { createHiddenIframeRpc } from "./lib/rpc/iframe.ts";
 import { EMBED_READY } from "./lib/rpc/shared.ts";
-import { audioStorage } from "./lib/storage.ts";
+import { audioStorage, type StoredAudio } from "./lib/storage.ts";
 import { useSearchParam } from "./lib/url-state.ts";
 import { formatBytes, formatDuration, once } from "./lib/utils.ts";
 import { parseVideoId } from "./lib/youtube.ts";
@@ -395,6 +397,18 @@ function SavedVideosPage() {
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["stored-audio-library"] }),
   });
+  const downloadStoredAudioMutation = useMutation({
+    mutationFn: async (audio: StoredAudio) => {
+      const archive = await createAudioArchive(audio.tracks);
+      const url = URL.createObjectURL(archive);
+      try {
+        const title = audio.videoMetadata?.title || audio.videoId;
+        downloadBlob(url, `${sanitizeFilename(title, "saved-audio")}.zip`);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    },
+  });
 
   return (
     <SavedVideosView
@@ -403,12 +417,16 @@ function SavedVideosPage() {
       error={
         storedAudioQuery.error
           ? "Saved videos could not be loaded from browser storage."
-          : deleteStoredAudioMutation.error
-            ? "The saved replacement could not be deleted."
-            : undefined
+          : downloadStoredAudioMutation.error
+            ? "The saved tracks could not be downloaded."
+            : deleteStoredAudioMutation.error
+              ? "The saved replacement could not be deleted."
+              : undefined
       }
       deletingVideoId={deleteStoredAudioMutation.variables}
+      downloadingVideoId={downloadStoredAudioMutation.variables?.videoId}
       onDelete={deleteStoredAudioMutation.mutate}
+      onDownload={downloadStoredAudioMutation.mutate}
     />
   );
 }
