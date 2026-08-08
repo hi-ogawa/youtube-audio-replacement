@@ -96,34 +96,35 @@ function SavedVideoRow({
   const title = video.videoMetadata?.title || video.videoId;
 
   return (
-    <article className="group relative grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-xl border border-border bg-panel p-4 shadow-sm transition-colors hover:border-button-border hover:bg-button-hover focus-within:border-accent-border">
+    <article className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center rounded-xl border border-border bg-panel shadow-sm transition-colors hover:border-button-border hover:bg-button-hover focus-within:border-accent-border">
       <a
-        className="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
+        className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-4 rounded-l-xl p-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-border"
         href={`https://www.youtube.com/watch?v=${video.videoId}`}
         target="_blank"
         rel="noreferrer"
         aria-label={`Open ${title} on YouTube`}
-      />
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-button text-muted-foreground">
-        <Music2 className="size-5" aria-hidden="true" />
-      </div>
-      <div className="min-w-0">
-        <h2 className="flex items-center gap-1.5 truncate font-semibold">
-          <span className="truncate">{title}</span>
-          <ExternalLink
-            className="size-3.5 shrink-0 text-muted-foreground"
-            aria-hidden="true"
-          />
-        </h2>
-        <p className="mt-1 truncate text-sm text-muted-foreground">
-          {video.name} / {formatBytes(getAudioSize(video))}
-          {video.savedAt ? ` / ${formatSavedAt(video.savedAt)}` : ""}
-        </p>
-      </div>
+      >
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-button text-muted-foreground">
+          <Music2 className="size-5" aria-hidden="true" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="flex items-center gap-1.5 truncate font-semibold">
+            <span className="truncate">{title}</span>
+            <ExternalLink
+              className="size-3.5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </h2>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {video.name} / {formatBytes(getAudioSize(video))}
+            {video.savedAt ? ` / ${formatSavedAt(video.savedAt)}` : ""}
+          </p>
+        </div>
+      </a>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="relative z-10 flex size-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-button hover:text-foreground"
+            className="mr-4 flex size-9 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-button hover:text-foreground"
             type="button"
             aria-label={`Actions for ${title}`}
           >
