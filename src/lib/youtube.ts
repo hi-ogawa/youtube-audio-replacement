@@ -67,31 +67,23 @@ export function parseVideoId(value: string): string | undefined {
 export async function fetchPlayerApi(
   videoId: string,
 ): Promise<PlayerApiResult> {
+  // From yt-dlp's VisionOS client configuration:
+  // https://github.com/yt-dlp/yt-dlp/blob/0d1e029d14058ddfb986fdafb07c00869c89105a/yt_dlp/extractor/youtube/_base.py#L295-L308
   const client = {
-    clientId: "28",
+    clientId: "101",
     userAgent:
-      "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
     context: {
-      clientName: "ANDROID_VR",
-      clientVersion: "1.65.10",
-      deviceMake: "Oculus",
-      deviceModel: "Quest 3",
-      androidSdkVersion: 32,
-      osName: "Android",
-      osVersion: "12L",
+      clientName: "VISIONOS",
+      clientVersion: "1.02",
+      deviceMake: "Apple",
+      deviceModel: "RealityDevice17,1",
+      osName: "visionOS",
+      osVersion: "26.5.23O471",
     },
   };
 
-  const ytcfg = (
-    window as unknown as { ytcfg?: { data_?: Record<string, unknown> } }
-  ).ytcfg;
-  const data = ytcfg?.data_;
-  const visitorData =
-    (data?.VISITOR_DATA as string | undefined) ??
-    ((
-      (data?.INNERTUBE_CONTEXT as Record<string, unknown> | undefined)
-        ?.client as Record<string, unknown> | undefined
-    )?.visitorData as string | undefined);
+  const visitorData = getVisitorData();
   if (!visitorData) {
     throw new Error("Could not extract visitorData from ytcfg");
   }
@@ -126,6 +118,16 @@ export async function fetchPlayerApi(
   }
 
   const result = (await response.json()) as Record<string, unknown>;
+  const playabilityStatus = result.playabilityStatus as
+    | Record<string, unknown>
+    | undefined;
+  if (playabilityStatus?.status !== "OK") {
+    throw new Error(
+      typeof playabilityStatus?.reason === "string"
+        ? playabilityStatus.reason
+        : `Video is not playable (${String(playabilityStatus?.status ?? "unknown")})`,
+    );
+  }
   const details = result.videoDetails as Record<string, unknown> | undefined;
   if (!details) {
     throw new Error("videoDetails not found in player API response");
@@ -157,4 +159,17 @@ export async function fetchPlayerApi(
             : undefined,
       })),
   };
+}
+
+export function getVisitorData(): string | undefined {
+  const data = (
+    window as unknown as { ytcfg?: { data_?: Record<string, unknown> } }
+  ).ytcfg?.data_;
+  return (
+    (data?.VISITOR_DATA as string | undefined) ??
+    ((
+      (data?.INNERTUBE_CONTEXT as Record<string, unknown> | undefined)
+        ?.client as Record<string, unknown> | undefined
+    )?.visitorData as string | undefined)
+  );
 }

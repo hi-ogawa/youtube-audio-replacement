@@ -99,12 +99,6 @@ When the user clicks the extension toolbar icon, the extension reads the active 
 The extension adds audio replacement controls to YouTube watch pages and synchronizes a user-selected local audio track with the YouTube player. When the user asks to prepare audio from a public YouTube video, it also requests that video's metadata and available audio formats from YouTube's player API. The extension does not run on unrelated sites.
 ```
 
-### `https://*.googlevideo.com/*` justification
-
-```text
-When the user explicitly loads a public YouTube video in the stem generator, YouTube supplies an audio-stream URL on a Googlevideo domain. The background service worker downloads that selected stream so it can be separated locally in the browser. Access is restricted to HTTPS Googlevideo hosts.
-```
-
 ### Remote code
 
 ```text

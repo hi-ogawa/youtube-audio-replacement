@@ -552,7 +552,13 @@ function SelectedSource({
   disabled: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4">
+    <div
+      className="flex flex-wrap items-center gap-4 rounded-md border border-button-border bg-button p-4"
+      role="status"
+      aria-label={
+        mode === "youtube" ? "YouTube source ready" : "Local source ready"
+      }
+    >
       <span
         className="grid size-8 shrink-0 place-items-center rounded-full bg-accent text-white"
         aria-hidden="true"
