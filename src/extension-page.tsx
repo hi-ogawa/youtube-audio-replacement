@@ -109,6 +109,7 @@ function StemGeneratorPage({ initialInput }: { initialInput: string }) {
         throw new Error("Enter a valid YouTube video ID or URL.");
       }
       const rpc = await initEmbedContentRpc();
+      await rpc.ready({});
       const onProgress = (progress: DownloadProgress) => {
         setSourceState("youtube", { status: "loading", progress });
       };

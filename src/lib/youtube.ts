@@ -81,21 +81,7 @@ export async function fetchPlayerApi(
     },
   };
 
-  let visitorData: string | undefined;
-  for (let attempt = 0; attempt < 50 && !visitorData; attempt++) {
-    const data = (
-      window as unknown as { ytcfg?: { data_?: Record<string, unknown> } }
-    ).ytcfg?.data_;
-    visitorData =
-      (data?.VISITOR_DATA as string | undefined) ??
-      ((
-        (data?.INNERTUBE_CONTEXT as Record<string, unknown> | undefined)
-          ?.client as Record<string, unknown> | undefined
-      )?.visitorData as string | undefined);
-    if (!visitorData) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-  }
+  const visitorData = getVisitorData();
   if (!visitorData) {
     throw new Error("Could not extract visitorData from ytcfg");
   }
@@ -171,4 +157,17 @@ export async function fetchPlayerApi(
             : undefined,
       })),
   };
+}
+
+export function getVisitorData(): string | undefined {
+  const data = (
+    window as unknown as { ytcfg?: { data_?: Record<string, unknown> } }
+  ).ytcfg?.data_;
+  return (
+    (data?.VISITOR_DATA as string | undefined) ??
+    ((
+      (data?.INNERTUBE_CONTEXT as Record<string, unknown> | undefined)
+        ?.client as Record<string, unknown> | undefined
+    )?.visitorData as string | undefined)
+  );
 }

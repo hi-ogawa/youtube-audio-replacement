@@ -1,9 +1,24 @@
 // Adapted from https://github.com/hi-ogawa/yt-dlp-ext/blob/main/src/content.ts
 import { EMBED_READY } from "./lib/rpc/shared.ts";
 import { registerWindowRpcHandlers } from "./lib/rpc/window.ts";
-import { fetchPlayerApi, selectAudioFormat } from "./lib/youtube.ts";
+import {
+  fetchPlayerApi,
+  getVisitorData,
+  selectAudioFormat,
+} from "./lib/youtube.ts";
 
 export class EmbedContentRpcHandlers {
+  async ready(_params: Record<string, never>) {
+    if (document.readyState !== "complete") {
+      await new Promise<void>((resolve) =>
+        window.addEventListener("load", () => resolve(), { once: true }),
+      );
+    }
+    if (!getVisitorData()) {
+      throw new Error("Could not extract visitorData from ytcfg");
+    }
+  }
+
   async download({
     videoId,
     onProgress,
