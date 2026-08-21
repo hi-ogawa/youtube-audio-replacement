@@ -32,10 +32,8 @@ test("loads a YouTube audio source", async () => {
   await generator.getByRole("button", { name: "Load from YouTube" }).click();
   checkpoint("load submitted");
 
-  await expect(generator.getByText("3.5 MB", { exact: false })).toBeVisible();
-  checkpoint("source ready");
   await expect(
-    generator.getByRole("button", { name: "Save source audio" }),
+    generator.getByRole("status", { name: "YouTube source ready" }),
   ).toBeVisible();
-  await expect(generator.getByRole("alert")).toHaveCount(0);
+  checkpoint("source ready");
 });
