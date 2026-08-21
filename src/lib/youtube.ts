@@ -67,6 +67,8 @@ export function parseVideoId(value: string): string | undefined {
 export async function fetchPlayerApi(
   videoId: string,
 ): Promise<PlayerApiResult> {
+  // From yt-dlp's VisionOS client configuration:
+  // https://github.com/yt-dlp/yt-dlp/blob/0d1e029d14058ddfb986fdafb07c00869c89105a/yt_dlp/extractor/youtube/_base.py#L295-L308
   const client = {
     clientId: "101",
     userAgent:
